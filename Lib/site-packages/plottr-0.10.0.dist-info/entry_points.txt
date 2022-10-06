@@ -1,0 +1,4 @@
+[console_scripts]
+plottr-autoplot-ddh5 = plottr.apps.autoplot:script
+plottr-inspectr = plottr.apps.inspectr:script
+plottr-monitr = plottr.apps.monitr:script

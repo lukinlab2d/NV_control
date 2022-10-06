@@ -1,0 +1,131 @@
+{
+  "build": "py310h8a704f9_0",
+  "build_number": 0,
+  "channel": "https://conda.anaconda.org/conda-forge/win-64",
+  "constrains": [],
+  "depends": [
+    "packaging",
+    "python >=3.10,<3.11.0a0",
+    "python_abi 3.10.* *_cp310",
+    "sip",
+    "toml",
+    "vc >=14.1,<15",
+    "vs2015_runtime >=14.16.27033"
+  ],
+  "extracted_package_dir": "C:\\Users\\lukin2dmaterials\\miniconda3\\pkgs\\pyqt5-sip-12.11.0-py310h8a704f9_0",
+  "features": "",
+  "files": [
+    "Lib/site-packages/PyQt5/sip.cp310-win_amd64.pyd",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/INSTALLER",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/LICENSE",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/LICENSE-GPL2",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/LICENSE-GPL3",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/METADATA",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/RECORD",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/REQUESTED",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/WHEEL",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/direct_url.json",
+    "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/top_level.txt",
+    ".nonadmin"
+  ],
+  "fn": "pyqt5-sip-12.11.0-py310h8a704f9_0.tar.bz2",
+  "license": "GPL-3.0-only",
+  "license_family": "GPL",
+  "link": {
+    "source": "C:\\Users\\lukin2dmaterials\\miniconda3\\pkgs\\pyqt5-sip-12.11.0-py310h8a704f9_0",
+    "type": 1
+  },
+  "md5": "b424269671c0e65277151e97494d244f",
+  "name": "pyqt5-sip",
+  "package_tarball_full_path": "C:\\Users\\lukin2dmaterials\\miniconda3\\pkgs\\pyqt5-sip-12.11.0-py310h8a704f9_0.tar.bz2",
+  "paths_data": {
+    "paths": [
+      {
+        "_path": "Lib/site-packages/PyQt5/sip.cp310-win_amd64.pyd",
+        "path_type": "hardlink",
+        "sha256": "a5a2e1472258a0c1b4fcb1f52876fa0c7f35561cf6082d8516bbda5286458bb8",
+        "sha256_in_prefix": "a5a2e1472258a0c1b4fcb1f52876fa0c7f35561cf6082d8516bbda5286458bb8",
+        "size_in_bytes": 114176
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/LICENSE",
+        "path_type": "hardlink",
+        "sha256": "2c93b5d4af4cfdfe8d7551b2bfe971e39deb37a8ae2d40765f3fd63846418c63",
+        "sha256_in_prefix": "2c93b5d4af4cfdfe8d7551b2bfe971e39deb37a8ae2d40765f3fd63846418c63",
+        "size_in_bytes": 2766
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/LICENSE-GPL2",
+        "path_type": "hardlink",
+        "sha256": "7ebb61006e46b9e9340dd135d5f4afbbcb1d1d6c6709f74473b35929007b9aeb",
+        "sha256_in_prefix": "7ebb61006e46b9e9340dd135d5f4afbbcb1d1d6c6709f74473b35929007b9aeb",
+        "size_in_bytes": 18161
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/LICENSE-GPL3",
+        "path_type": "hardlink",
+        "sha256": "63cb5f5c1ea39b732c495f354f971e40f6db84c567ca5573a68bb65af07741f8",
+        "sha256_in_prefix": "63cb5f5c1ea39b732c495f354f971e40f6db84c567ca5573a68bb65af07741f8",
+        "size_in_bytes": 35297
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "56c2bf9cdcada05077bafc19a660c095688f06fa8b19b018199c05f77ab166f8",
+        "sha256_in_prefix": "56c2bf9cdcada05077bafc19a660c095688f06fa8b19b018199c05f77ab166f8",
+        "size_in_bytes": 504
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "1ad1cfa99dff810e4c55c8116fae2138712eb16914353a1269729a76f9ed65e1",
+        "sha256_in_prefix": "1ad1cfa99dff810e4c55c8116fae2138712eb16914353a1269729a76f9ed65e1",
+        "size_in_bytes": 980
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "5b6ea960dec72ec053d63ac348bf6e7607ff99d34a2666262f6dec20ff857203",
+        "sha256_in_prefix": "5b6ea960dec72ec053d63ac348bf6e7607ff99d34a2666262f6dec20ff857203",
+        "size_in_bytes": 102
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "ff5609ee19aefc5ea7635256dc09bc29d7c573a546ec290ab7881fed833430c4",
+        "sha256_in_prefix": "ff5609ee19aefc5ea7635256dc09bc29d7c573a546ec290ab7881fed833430c4",
+        "size_in_bytes": 80
+      },
+      {
+        "_path": "Lib/site-packages/PyQt5_sip-12.11.0.dist-info/top_level.txt",
+        "path_type": "hardlink",
+        "sha256": "a503b6f07434ed6a350fe486c93a5e002a27d68bb8a84bdae11ff68f8fd2dbfb",
+        "sha256_in_prefix": "a503b6f07434ed6a350fe486c93a5e002a27d68bb8a84bdae11ff68f8fd2dbfb",
+        "size_in_bytes": 6
+      }
+    ],
+    "paths_version": 1
+  },
+  "requested_spec": "pyqt5-sip",
+  "sha256": "9f0b5a53c5bdeb123c58160fe4893cafebee3fdeec0483fb2c7cada9a5525b1d",
+  "size": 83878,
+  "subdir": "win-64",
+  "timestamp": 1657235032097,
+  "track_features": "",
+  "url": "https://conda.anaconda.org/conda-forge/win-64/pyqt5-sip-12.11.0-py310h8a704f9_0.tar.bz2",
+  "version": "12.11.0"
+}

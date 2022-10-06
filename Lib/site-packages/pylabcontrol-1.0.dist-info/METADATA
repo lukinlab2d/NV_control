@@ -1,0 +1,24 @@
+Metadata-Version: 2.1
+Name: pylabcontrol
+Version: 1.0
+Summary: Python Laboratory Control Software
+Home-page: https://github.com/LISE-B26/pylabcontrol
+Author: Arthur Safira, Jan Gieseler, and Aaron Kabcenell
+Author-email: b26lab@hotmail.com
+License: GPL
+Keywords: laboratory experiment control
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3.6
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Win32 (MS Windows)
+Requires-Dist: matplotlib
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: pyyaml
+Requires-Dist: PyQt5
+
+Core code has been stable and actively used for multiple years, so taking the project out of beta! 
+
+

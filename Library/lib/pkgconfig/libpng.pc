@@ -1,0 +1,12 @@
+prefix=C:/Users/lukin2dmaterials/miniconda3/envs/NV_control/Library
+exec_prefix=C:/Users/lukin2dmaterials/miniconda3/envs/NV_control/Library
+libdir=C:/Users/lukin2dmaterials/miniconda3/envs/NV_control/Library/lib
+includedir=C:/Users/lukin2dmaterials/miniconda3/envs/NV_control/Library/include/libpng16
+
+Name: libpng
+Description: Loads and saves PNG files
+Version: 1.6.37
+Requires: zlib
+Libs: -L${libdir} -lpng16
+Libs.private: -lz -lm
+Cflags: -I${includedir}

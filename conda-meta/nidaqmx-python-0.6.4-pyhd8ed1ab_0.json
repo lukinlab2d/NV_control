@@ -1,0 +1,864 @@
+{
+  "build": "pyhd8ed1ab_0",
+  "build_number": 0,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "constrains": [],
+  "depends": [
+    "numpy >=1.22,<2.0",
+    "python >=3.8,<4.0",
+    "six"
+  ],
+  "extracted_package_dir": "C:\\Users\\lukin2dmaterials\\miniconda3\\pkgs\\nidaqmx-python-0.6.4-pyhd8ed1ab_0",
+  "features": "",
+  "files": [
+    "Lib/site-packages/nidaqmx-0.6.4.dist-info/INSTALLER",
+    "Lib/site-packages/nidaqmx-0.6.4.dist-info/LICENSE",
+    "Lib/site-packages/nidaqmx-0.6.4.dist-info/METADATA",
+    "Lib/site-packages/nidaqmx-0.6.4.dist-info/RECORD",
+    "Lib/site-packages/nidaqmx-0.6.4.dist-info/REQUESTED",
+    "Lib/site-packages/nidaqmx-0.6.4.dist-info/WHEEL",
+    "Lib/site-packages/nidaqmx-0.6.4.dist-info/direct_url.json",
+    "Lib/site-packages/nidaqmx/__init__.py",
+    "Lib/site-packages/nidaqmx/_lib.py",
+    "Lib/site-packages/nidaqmx/_task_modules/__init__.py",
+    "Lib/site-packages/nidaqmx/_task_modules/ai_channel_collection.py",
+    "Lib/site-packages/nidaqmx/_task_modules/ao_channel_collection.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channel_collection.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__init__.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/ai_channel.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/ao_channel.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/channel.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/ci_channel.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/co_channel.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/di_channel.py",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/do_channel.py",
+    "Lib/site-packages/nidaqmx/_task_modules/ci_channel_collection.py",
+    "Lib/site-packages/nidaqmx/_task_modules/co_channel_collection.py",
+    "Lib/site-packages/nidaqmx/_task_modules/di_channel_collection.py",
+    "Lib/site-packages/nidaqmx/_task_modules/do_channel_collection.py",
+    "Lib/site-packages/nidaqmx/_task_modules/export_signals.py",
+    "Lib/site-packages/nidaqmx/_task_modules/in_stream.py",
+    "Lib/site-packages/nidaqmx/_task_modules/out_stream.py",
+    "Lib/site-packages/nidaqmx/_task_modules/read_functions.py",
+    "Lib/site-packages/nidaqmx/_task_modules/timing.py",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/__init__.py",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/arm_start_trigger.py",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/handshake_trigger.py",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/pause_trigger.py",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/reference_trigger.py",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/start_trigger.py",
+    "Lib/site-packages/nidaqmx/_task_modules/triggers.py",
+    "Lib/site-packages/nidaqmx/_task_modules/write_functions.py",
+    "Lib/site-packages/nidaqmx/constants.py",
+    "Lib/site-packages/nidaqmx/error_codes.py",
+    "Lib/site-packages/nidaqmx/errors.py",
+    "Lib/site-packages/nidaqmx/scale.py",
+    "Lib/site-packages/nidaqmx/stream_readers.py",
+    "Lib/site-packages/nidaqmx/stream_writers.py",
+    "Lib/site-packages/nidaqmx/system/__init__.py",
+    "Lib/site-packages/nidaqmx/system/_collections/__init__.py",
+    "Lib/site-packages/nidaqmx/system/_collections/device_collection.py",
+    "Lib/site-packages/nidaqmx/system/_collections/persisted_channel_collection.py",
+    "Lib/site-packages/nidaqmx/system/_collections/persisted_scale_collection.py",
+    "Lib/site-packages/nidaqmx/system/_collections/persisted_task_collection.py",
+    "Lib/site-packages/nidaqmx/system/_collections/physical_channel_collection.py",
+    "Lib/site-packages/nidaqmx/system/_watchdog_modules/__init__.py",
+    "Lib/site-packages/nidaqmx/system/_watchdog_modules/expiration_state.py",
+    "Lib/site-packages/nidaqmx/system/_watchdog_modules/expiration_states_collection.py",
+    "Lib/site-packages/nidaqmx/system/device.py",
+    "Lib/site-packages/nidaqmx/system/physical_channel.py",
+    "Lib/site-packages/nidaqmx/system/storage/__init__.py",
+    "Lib/site-packages/nidaqmx/system/storage/_alternate_task_constructor.py",
+    "Lib/site-packages/nidaqmx/system/storage/persisted_channel.py",
+    "Lib/site-packages/nidaqmx/system/storage/persisted_scale.py",
+    "Lib/site-packages/nidaqmx/system/storage/persisted_task.py",
+    "Lib/site-packages/nidaqmx/system/system.py",
+    "Lib/site-packages/nidaqmx/system/watchdog.py",
+    "Lib/site-packages/nidaqmx/task.py",
+    "Lib/site-packages/nidaqmx/types.py",
+    "Lib/site-packages/nidaqmx/utils.py",
+    ".nonadmin",
+    "Lib/site-packages/nidaqmx/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/_lib.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/ai_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/ao_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/ai_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/ao_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/ci_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/co_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/di_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/do_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/ci_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/co_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/di_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/do_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/export_signals.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/in_stream.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/out_stream.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/read_functions.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/timing.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/arm_start_trigger.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/handshake_trigger.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/pause_trigger.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/reference_trigger.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/start_trigger.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/triggers.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/_task_modules/__pycache__/write_functions.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/constants.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/error_codes.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/errors.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/scale.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/stream_readers.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/stream_writers.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_collections/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_collections/__pycache__/device_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_collections/__pycache__/persisted_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_collections/__pycache__/persisted_scale_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_collections/__pycache__/persisted_task_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_collections/__pycache__/physical_channel_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_watchdog_modules/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_watchdog_modules/__pycache__/expiration_state.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/_watchdog_modules/__pycache__/expiration_states_collection.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/__pycache__/device.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/__pycache__/physical_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/storage/__pycache__/__init__.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/storage/__pycache__/_alternate_task_constructor.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/storage/__pycache__/persisted_channel.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/storage/__pycache__/persisted_scale.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/storage/__pycache__/persisted_task.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/__pycache__/system.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/system/__pycache__/watchdog.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/task.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/types.cpython-310.pyc",
+    "Lib/site-packages/nidaqmx/__pycache__/utils.cpython-310.pyc"
+  ],
+  "fn": "nidaqmx-python-0.6.4-pyhd8ed1ab_0.tar.bz2",
+  "license": "MIT",
+  "license_family": "MIT",
+  "link": {
+    "source": "C:\\Users\\lukin2dmaterials\\miniconda3\\pkgs\\nidaqmx-python-0.6.4-pyhd8ed1ab_0",
+    "type": 1
+  },
+  "md5": "c999dae03ea9e83a941039defabe00cc",
+  "name": "nidaqmx-python",
+  "noarch": "python",
+  "package_tarball_full_path": "C:\\Users\\lukin2dmaterials\\miniconda3\\pkgs\\nidaqmx-python-0.6.4-pyhd8ed1ab_0.tar.bz2",
+  "package_type": "noarch_python",
+  "paths_data": {
+    "paths": [
+      {
+        "_path": "site-packages/nidaqmx-0.6.4.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5
+      },
+      {
+        "_path": "site-packages/nidaqmx-0.6.4.dist-info/LICENSE",
+        "path_type": "hardlink",
+        "sha256": "39010aa01b889abd576805a688fa732e5889d4c4f32391018de9410732da1bba",
+        "sha256_in_prefix": "39010aa01b889abd576805a688fa732e5889d4c4f32391018de9410732da1bba",
+        "size_in_bytes": 1194
+      },
+      {
+        "_path": "site-packages/nidaqmx-0.6.4.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "e27a237544ef781bc5391f578837bd5099c33cfd118848b2391ab2ed90db728e",
+        "sha256_in_prefix": "e27a237544ef781bc5391f578837bd5099c33cfd118848b2391ab2ed90db728e",
+        "size_in_bytes": 8249
+      },
+      {
+        "_path": "site-packages/nidaqmx-0.6.4.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "74e63414ca0f30134e187b54f5773f62bbd2ad313924ae35b7a5adb380532c69",
+        "sha256_in_prefix": "74e63414ca0f30134e187b54f5773f62bbd2ad313924ae35b7a5adb380532c69",
+        "size_in_bytes": 10280
+      },
+      {
+        "_path": "site-packages/nidaqmx-0.6.4.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "site-packages/nidaqmx-0.6.4.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "0c0f3afe1e10c30cc6791a33eb6a35b2f62de641845e9a144ee4edc33a136f7d",
+        "sha256_in_prefix": "0c0f3afe1e10c30cc6791a33eb6a35b2f62de641845e9a144ee4edc33a136f7d",
+        "size_in_bytes": 83
+      },
+      {
+        "_path": "site-packages/nidaqmx-0.6.4.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "6f5fc24fdc14b62b5fa63aedfe73d90ac896a47097c4b53789edc58a6d77e33d",
+        "sha256_in_prefix": "6f5fc24fdc14b62b5fa63aedfe73d90ac896a47097c4b53789edc58a6d77e33d",
+        "size_in_bytes": 110
+      },
+      {
+        "_path": "site-packages/nidaqmx/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "021c280fd63193276b8c20d8a392004af88d60fdc45f7b4fc7d58089d04f67fc",
+        "sha256_in_prefix": "021c280fd63193276b8c20d8a392004af88d60fdc45f7b4fc7d58089d04f67fc",
+        "size_in_bytes": 454
+      },
+      {
+        "_path": "site-packages/nidaqmx/_lib.py",
+        "path_type": "hardlink",
+        "sha256": "c77016a4c4382a15780d3bc5b9142c1878024ac182667c22883d741a26087df9",
+        "sha256_in_prefix": "c77016a4c4382a15780d3bc5b9142c1878024ac182667c22883d741a26087df9",
+        "size_in_bytes": 7453
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/ai_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "88ada25202d137dec9938872f0a302f5c9bc6f537d0720a364c6bf5e8e8215aa",
+        "sha256_in_prefix": "88ada25202d137dec9938872f0a302f5c9bc6f537d0720a364c6bf5e8e8215aa",
+        "size_in_bytes": 204477
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/ao_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "b882d6118bdc02892284350d6d1ebd3bc7519734b6d1e03f0177ecb256f624f1",
+        "sha256_in_prefix": "b882d6118bdc02892284350d6d1ebd3bc7519734b6d1e03f0177ecb256f624f1",
+        "size_in_bytes": 8646
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "2566a05cdac0b00078430409ca4f90d8377c964329a7c166e5ad38b072b28a82",
+        "sha256_in_prefix": "2566a05cdac0b00078430409ca4f90d8377c964329a7c166e5ad38b072b28a82",
+        "size_in_bytes": 4886
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "28afdef037c109fb8f55a82fec629e421bd1ffbfa769dfc53964518fa5b1c96b",
+        "sha256_in_prefix": "28afdef037c109fb8f55a82fec629e421bd1ffbfa769dfc53964518fa5b1c96b",
+        "size_in_bytes": 502
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/ai_channel.py",
+        "path_type": "hardlink",
+        "sha256": "85e71b9db142eea13f1e3b40a072e01c78011ccdcf601b045d91da343d6db165",
+        "sha256_in_prefix": "85e71b9db142eea13f1e3b40a072e01c78011ccdcf601b045d91da343d6db165",
+        "size_in_bytes": 329884
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/ao_channel.py",
+        "path_type": "hardlink",
+        "sha256": "38ec081e37d5eb0f82e5d354124cae0379a83e39b514d5d8e7a828f476434ec3",
+        "sha256_in_prefix": "38ec081e37d5eb0f82e5d354124cae0379a83e39b514d5d8e7a828f476434ec3",
+        "size_in_bytes": 78751
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/channel.py",
+        "path_type": "hardlink",
+        "sha256": "a036b78729ada346ea90d53986b708eacebd06839f1c39de397c81b0df89fbc0",
+        "sha256_in_prefix": "a036b78729ada346ea90d53986b708eacebd06839f1c39de397c81b0df89fbc0",
+        "size_in_bytes": 15773
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/ci_channel.py",
+        "path_type": "hardlink",
+        "sha256": "49d2522f4ddf86fed988f2dfdd861a49e90d7dd3ae2965375655acbcddec945c",
+        "sha256_in_prefix": "49d2522f4ddf86fed988f2dfdd861a49e90d7dd3ae2965375655acbcddec945c",
+        "size_in_bytes": 456410
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/co_channel.py",
+        "path_type": "hardlink",
+        "sha256": "cbca48f167304a25a1f7e56e6d8f9a425bb36ca44fcadeb6b5f4ef7cdae4fbcd",
+        "sha256_in_prefix": "cbca48f167304a25a1f7e56e6d8f9a425bb36ca44fcadeb6b5f4ef7cdae4fbcd",
+        "size_in_bytes": 62547
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/di_channel.py",
+        "path_type": "hardlink",
+        "sha256": "424132e5d81a8a34dd5169a9200c3ddba9076d8e73ee18edcea5b979d51d3d4a",
+        "sha256_in_prefix": "424132e5d81a8a34dd5169a9200c3ddba9076d8e73ee18edcea5b979d51d3d4a",
+        "size_in_bytes": 28525
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/channels/do_channel.py",
+        "path_type": "hardlink",
+        "sha256": "969ca99a214ee7733f4b277b400fdd79e82c37e83e8291acb9d658fe2aa411fc",
+        "sha256_in_prefix": "969ca99a214ee7733f4b277b400fdd79e82c37e83e8291acb9d658fe2aa411fc",
+        "size_in_bytes": 31452
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/ci_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "5b06d3def31dd63ed781b053acfbf1109c0b21ec17b44e0977f26ac718474c78",
+        "sha256_in_prefix": "5b06d3def31dd63ed781b053acfbf1109c0b21ec17b44e0977f26ac718474c78",
+        "size_in_bytes": 52205
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/co_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "740df1c6405c1aaac76c38e2c597bfedf1a437b9f9538afd16dc61b16d9145a4",
+        "sha256_in_prefix": "740df1c6405c1aaac76c38e2c597bfedf1a437b9f9538afd16dc61b16d9145a4",
+        "size_in_bytes": 9693
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/di_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "4170253e4dad37299d678a713870bf083ee3cd88a96d4ad92c94134280e8142b",
+        "sha256_in_prefix": "4170253e4dad37299d678a713870bf083ee3cd88a96d4ad92c94134280e8142b",
+        "size_in_bytes": 4314
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/do_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "fd34455e3d4b9c05ee21ca5a630aaea549b03ede0e92e466a01a70bc5e200fbd",
+        "sha256_in_prefix": "fd34455e3d4b9c05ee21ca5a630aaea549b03ede0e92e466a01a70bc5e200fbd",
+        "size_in_bytes": 4312
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/export_signals.py",
+        "path_type": "hardlink",
+        "sha256": "94b1be16a5f9cc2555007f6bb29e99a459ebc411da7176c955a0b019f46e0a70",
+        "sha256_in_prefix": "94b1be16a5f9cc2555007f6bb29e99a459ebc411da7176c955a0b019f46e0a70",
+        "size_in_bytes": 93200
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/in_stream.py",
+        "path_type": "hardlink",
+        "sha256": "73ae4198310c631d8e74b3e10f0a52a432c89e10a095f45c1caefb3c76a6cda7",
+        "sha256_in_prefix": "73ae4198310c631d8e74b3e10f0a52a432c89e10a095f45c1caefb3c76a6cda7",
+        "size_in_bytes": 88669
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/out_stream.py",
+        "path_type": "hardlink",
+        "sha256": "f5a041281137474249538b73783a7268f7d95e3f0acf989866e48e906aea5355",
+        "sha256_in_prefix": "f5a041281137474249538b73783a7268f7d95e3f0acf989866e48e906aea5355",
+        "size_in_bytes": 39730
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/read_functions.py",
+        "path_type": "hardlink",
+        "sha256": "592c702c2a403f416ca4d2d2d717b43f0dd6c910b8ec26fc255ff259a6f30185",
+        "sha256_in_prefix": "592c702c2a403f416ca4d2d2d717b43f0dd6c910b8ec26fc255ff259a6f30185",
+        "size_in_bytes": 24293
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/timing.py",
+        "path_type": "hardlink",
+        "sha256": "b47e2569fbd25953f3725a3af54e86ec355c1c8dce704d4b3669b5c78ea6eaaf",
+        "sha256_in_prefix": "b47e2569fbd25953f3725a3af54e86ec355c1c8dce704d4b3669b5c78ea6eaaf",
+        "size_in_bytes": 113251
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/triggering/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/triggering/arm_start_trigger.py",
+        "path_type": "hardlink",
+        "sha256": "812324c271482fcd9985d1c3bdd928b65abb2e7ec45a8cf4b6147ec7151b6dca",
+        "sha256_in_prefix": "812324c271482fcd9985d1c3bdd928b65abb2e7ec45a8cf4b6147ec7151b6dca",
+        "size_in_bytes": 20592
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/triggering/handshake_trigger.py",
+        "path_type": "hardlink",
+        "sha256": "39428373d8e2d4260b24afe4ba7f894e98e8f378b818bdc5b6f65158b09ac3c3",
+        "sha256_in_prefix": "39428373d8e2d4260b24afe4ba7f894e98e8f378b818bdc5b6f65158b09ac3c3",
+        "size_in_bytes": 5602
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/triggering/pause_trigger.py",
+        "path_type": "hardlink",
+        "sha256": "f08647b1f8450021db96c20809914836e9255d506affee6f666e55e6d3abb5be",
+        "sha256_in_prefix": "f08647b1f8450021db96c20809914836e9255d506affee6f666e55e6d3abb5be",
+        "size_in_bytes": 57044
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/triggering/reference_trigger.py",
+        "path_type": "hardlink",
+        "sha256": "e86dd11f0e06adbd49619c89aa470af16c9cccef5bcb150e43c6e97d01b4b2d0",
+        "sha256_in_prefix": "e86dd11f0e06adbd49619c89aa470af16c9cccef5bcb150e43c6e97d01b4b2d0",
+        "size_in_bytes": 94989
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/triggering/start_trigger.py",
+        "path_type": "hardlink",
+        "sha256": "24f2dea1ab5091ac630fda823d832c59b91b1867bc07f5c2e844274518930fa3",
+        "sha256_in_prefix": "24f2dea1ab5091ac630fda823d832c59b91b1867bc07f5c2e844274518930fa3",
+        "size_in_bytes": 92305
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/triggers.py",
+        "path_type": "hardlink",
+        "sha256": "998487ff96d1ef8e86e577ff4ce22f226c6e8ba7efffd1b9f783b079f3e2c907",
+        "sha256_in_prefix": "998487ff96d1ef8e86e577ff4ce22f226c6e8ba7efffd1b9f783b079f3e2c907",
+        "size_in_bytes": 4337
+      },
+      {
+        "_path": "site-packages/nidaqmx/_task_modules/write_functions.py",
+        "path_type": "hardlink",
+        "sha256": "6f9b44d3bfe350e719bba4d2916539796449e2ba71bd91fb2aa10f2880762c40",
+        "sha256_in_prefix": "6f9b44d3bfe350e719bba4d2916539796449e2ba71bd91fb2aa10f2880762c40",
+        "size_in_bytes": 15482
+      },
+      {
+        "_path": "site-packages/nidaqmx/constants.py",
+        "path_type": "hardlink",
+        "sha256": "724f558d8c526e3e3bcb5558132976bb2880cec26944c8dc93201a0d851d147e",
+        "sha256_in_prefix": "724f558d8c526e3e3bcb5558132976bb2880cec26944c8dc93201a0d851d147e",
+        "size_in_bytes": 51930
+      },
+      {
+        "_path": "site-packages/nidaqmx/error_codes.py",
+        "path_type": "hardlink",
+        "sha256": "077057f211631a5d522a0df80c566c8304a094a229cf28103d0f2f9ccf85270f",
+        "sha256_in_prefix": "077057f211631a5d522a0df80c566c8304a094a229cf28103d0f2f9ccf85270f",
+        "size_in_bytes": 91643
+      },
+      {
+        "_path": "site-packages/nidaqmx/errors.py",
+        "path_type": "hardlink",
+        "sha256": "f04aa215ad9a7686f910549e210a6e07501b43c148e6759cc75a119fbf5b88df",
+        "sha256_in_prefix": "f04aa215ad9a7686f910549e210a6e07501b43c148e6759cc75a119fbf5b88df",
+        "size_in_bytes": 6503
+      },
+      {
+        "_path": "site-packages/nidaqmx/scale.py",
+        "path_type": "hardlink",
+        "sha256": "442f63c7076746e9906d20062fb349b6162f1465ae365adc97e8ccc482d78842",
+        "sha256_in_prefix": "442f63c7076746e9906d20062fb349b6162f1465ae365adc97e8ccc482d78842",
+        "size_in_bytes": 35403
+      },
+      {
+        "_path": "site-packages/nidaqmx/stream_readers.py",
+        "path_type": "hardlink",
+        "sha256": "0f4dd61783231496d258ef2e9b49ea892e6b0e973fd6d7a30b9f3336dd87f3e2",
+        "sha256_in_prefix": "0f4dd61783231496d258ef2e9b49ea892e6b0e973fd6d7a30b9f3336dd87f3e2",
+        "size_in_bytes": 114435
+      },
+      {
+        "_path": "site-packages/nidaqmx/stream_writers.py",
+        "path_type": "hardlink",
+        "sha256": "341b2b974692cf7264fb5fa42b59431a040a7deebcbf2a0f2fa75671715643e9",
+        "sha256_in_prefix": "341b2b974692cf7264fb5fa42b59431a040a7deebcbf2a0f2fa75671715643e9",
+        "size_in_bytes": 65824
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "fbd4b5b57031b9d6c376ef91297d17bcb0efb7feb3346c1965e6d44d819eaa18",
+        "sha256_in_prefix": "fbd4b5b57031b9d6c376ef91297d17bcb0efb7feb3346c1965e6d44d819eaa18",
+        "size_in_bytes": 417
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_collections/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_collections/device_collection.py",
+        "path_type": "hardlink",
+        "sha256": "fe37977602c59917c8a9f919b999d0f190c3d5b902543c963d64c3bfaf0347c5",
+        "sha256_in_prefix": "fe37977602c59917c8a9f919b999d0f190c3d5b902543c963d64c3bfaf0347c5",
+        "size_in_bytes": 3957
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_collections/persisted_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "9005d78a28735cf9307b24bd4bf2be797165525d0f84bf3f04260a766898c5ce",
+        "sha256_in_prefix": "9005d78a28735cf9307b24bd4bf2be797165525d0f84bf3f04260a766898c5ce",
+        "size_in_bytes": 4207
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_collections/persisted_scale_collection.py",
+        "path_type": "hardlink",
+        "sha256": "b1e4e31a1450910bb0091fa5ab2ab6c2006a6d8309ac838e6492a2be89af56a3",
+        "sha256_in_prefix": "b1e4e31a1450910bb0091fa5ab2ab6c2006a6d8309ac838e6492a2be89af56a3",
+        "size_in_bytes": 4074
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_collections/persisted_task_collection.py",
+        "path_type": "hardlink",
+        "sha256": "80d81a362841aa1ad25f527d2654e7bb61c166bc688e18f222d306c5f05317d3",
+        "sha256_in_prefix": "80d81a362841aa1ad25f527d2654e7bb61c166bc688e18f222d306c5f05317d3",
+        "size_in_bytes": 4011
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_collections/physical_channel_collection.py",
+        "path_type": "hardlink",
+        "sha256": "69abe504f8322c8e660d8c7ae334922a9ee14bfe0e44b17807956537eca414da",
+        "sha256_in_prefix": "69abe504f8322c8e660d8c7ae334922a9ee14bfe0e44b17807956537eca414da",
+        "size_in_bytes": 13250
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_watchdog_modules/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_watchdog_modules/expiration_state.py",
+        "path_type": "hardlink",
+        "sha256": "583f3f3f418155cb7cdaa4c665e43ae2290c0b7030b6f3b2a670c27ae8635b74",
+        "sha256_in_prefix": "583f3f3f418155cb7cdaa4c665e43ae2290c0b7030b6f3b2a670c27ae8635b74",
+        "size_in_bytes": 8158
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/_watchdog_modules/expiration_states_collection.py",
+        "path_type": "hardlink",
+        "sha256": "6d6b1b01345823b147f3e85ee0ca81efd942e39aca3b6070a7344beb51a258d9",
+        "sha256_in_prefix": "6d6b1b01345823b147f3e85ee0ca81efd942e39aca3b6070a7344beb51a258d9",
+        "size_in_bytes": 1368
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/device.py",
+        "path_type": "hardlink",
+        "sha256": "5da03dd581d4f5c4e69ea91d85a844639c4b74d2fa47215c3bf0e8ba9f36fa8b",
+        "sha256_in_prefix": "5da03dd581d4f5c4e69ea91d85a844639c4b74d2fa47215c3bf0e8ba9f36fa8b",
+        "size_in_bytes": 88283
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/physical_channel.py",
+        "path_type": "hardlink",
+        "sha256": "100e7cc57cc9ae653bcab61941623f32b69be6510c3bae0b29203016af50f606",
+        "sha256_in_prefix": "100e7cc57cc9ae653bcab61941623f32b69be6510c3bae0b29203016af50f606",
+        "size_in_bytes": 42144
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/storage/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "c5a21d96efed789d9f1516c70c72c37dc18ca4ca9bbab48710b17f2706247a24",
+        "sha256_in_prefix": "c5a21d96efed789d9f1516c70c72c37dc18ca4ca9bbab48710b17f2706247a24",
+        "size_in_bytes": 270
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/storage/_alternate_task_constructor.py",
+        "path_type": "hardlink",
+        "sha256": "73dba0e63fbea893fd6cd60c8ff99ad91b60cc5137dea4c39e66ea0dc58738e4",
+        "sha256_in_prefix": "73dba0e63fbea893fd6cd60c8ff99ad91b60cc5137dea4c39e66ea0dc58738e4",
+        "size_in_bytes": 1022
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/storage/persisted_channel.py",
+        "path_type": "hardlink",
+        "sha256": "1a6208313325554e52f09a00e89318e4b9895068fcf07772fa2ac69ceedbd151",
+        "sha256_in_prefix": "1a6208313325554e52f09a00e89318e4b9895068fcf07772fa2ac69ceedbd151",
+        "size_in_bytes": 3800
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/storage/persisted_scale.py",
+        "path_type": "hardlink",
+        "sha256": "572e55c3a89c2aa5adb5bcbe31a6f270eea3d7f228be9ffd0857f1d8d7344ab2",
+        "sha256_in_prefix": "572e55c3a89c2aa5adb5bcbe31a6f270eea3d7f228be9ffd0857f1d8d7344ab2",
+        "size_in_bytes": 4013
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/storage/persisted_task.py",
+        "path_type": "hardlink",
+        "sha256": "bc256296ab5dffb5f68e02fe3c25852690eead8d17220f8daaf3851660884750",
+        "sha256_in_prefix": "bc256296ab5dffb5f68e02fe3c25852690eead8d17220f8daaf3851660884750",
+        "size_in_bytes": 4630
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/system.py",
+        "path_type": "hardlink",
+        "sha256": "3b8ef44c7e432535c212bd7af159a41ebc543ce6f81039f84c4b7266e5a690d7",
+        "sha256_in_prefix": "3b8ef44c7e432535c212bd7af159a41ebc543ce6f81039f84c4b7266e5a690d7",
+        "size_in_bytes": 34181
+      },
+      {
+        "_path": "site-packages/nidaqmx/system/watchdog.py",
+        "path_type": "hardlink",
+        "sha256": "3ccc01f10cc25b1f18f4e55efbef85a0805cfa6e9934112fb46199f5741f47c8",
+        "sha256_in_prefix": "3ccc01f10cc25b1f18f4e55efbef85a0805cfa6e9934112fb46199f5741f47c8",
+        "size_in_bytes": 24948
+      },
+      {
+        "_path": "site-packages/nidaqmx/task.py",
+        "path_type": "hardlink",
+        "sha256": "4fe3b8056765dc6ef0435d9018fd370bde05bcf6462ebf29383d663a2698f771",
+        "sha256_in_prefix": "4fe3b8056765dc6ef0435d9018fd370bde05bcf6462ebf29383d663a2698f771",
+        "size_in_bytes": 55813
+      },
+      {
+        "_path": "site-packages/nidaqmx/types.py",
+        "path_type": "hardlink",
+        "sha256": "f220a5f15247c97fae419ff81d98e32db5dc804259a84b641982f0a38ce5d591",
+        "sha256_in_prefix": "f220a5f15247c97fae419ff81d98e32db5dc804259a84b641982f0a38ce5d591",
+        "size_in_bytes": 1374
+      },
+      {
+        "_path": "site-packages/nidaqmx/utils.py",
+        "path_type": "hardlink",
+        "sha256": "50f0a16cb55fc18fea21395fe526e67dbaccda9995c0c5523a6e25be9bb1c311",
+        "sha256_in_prefix": "50f0a16cb55fc18fea21395fe526e67dbaccda9995c0c5523a6e25be9bb1c311",
+        "size_in_bytes": 6604
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/_lib.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/ai_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/ao_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/ai_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/ao_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/ci_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/co_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/di_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/channels/__pycache__/do_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/ci_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/co_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/di_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/do_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/export_signals.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/in_stream.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/out_stream.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/read_functions.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/timing.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/arm_start_trigger.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/handshake_trigger.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/pause_trigger.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/reference_trigger.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/triggering/__pycache__/start_trigger.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/triggers.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/_task_modules/__pycache__/write_functions.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/constants.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/error_codes.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/errors.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/scale.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/stream_readers.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/stream_writers.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_collections/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_collections/__pycache__/device_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_collections/__pycache__/persisted_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_collections/__pycache__/persisted_scale_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_collections/__pycache__/persisted_task_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_collections/__pycache__/physical_channel_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_watchdog_modules/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_watchdog_modules/__pycache__/expiration_state.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/_watchdog_modules/__pycache__/expiration_states_collection.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/__pycache__/device.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/__pycache__/physical_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/storage/__pycache__/__init__.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/storage/__pycache__/_alternate_task_constructor.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/storage/__pycache__/persisted_channel.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/storage/__pycache__/persisted_scale.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/storage/__pycache__/persisted_task.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/__pycache__/system.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/system/__pycache__/watchdog.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/task.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/types.cpython-310.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "Lib/site-packages/nidaqmx/__pycache__/utils.cpython-310.pyc",
+        "path_type": "pyc_file"
+      }
+    ],
+    "paths_version": 1
+  },
+  "requested_spec": "nidaqmx-python",
+  "sha256": "25223ec069c102fe382adda3d2bbf9e199881c2ee48bc5ef16a6a9c72d5ee7be",
+  "size": 157787,
+  "subdir": "noarch",
+  "timestamp": 1661716117606,
+  "track_features": "",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/nidaqmx-python-0.6.4-pyhd8ed1ab_0.tar.bz2",
+  "version": "0.6.4"
+}
