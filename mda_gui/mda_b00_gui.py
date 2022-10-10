@@ -493,6 +493,8 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
                 )
                     
             ######################################################################## X and Y scanning #########################################################################
+            print('----------------------------------------------------------------')
+            print('XY scan started')
             for f in range(grid_size_y): # this loops for each row (y)
                 if self.isStopped == 1: break
                 start0 = time.time()
@@ -562,7 +564,7 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
 
                 end = time.time() - start0
                 if f == 0 or f == grid_size_y-1 or f == int(grid_size_y/2):
-                    print(end)
+                    print("Time per row: " + str(end) + " s")
                 
                 self.sc.axes.pcolormesh(X, Y, xy_scan_data_array, cmap = "inferno")
                 self.sc.axes.xaxis.set_tick_params(labelsize = 8)
@@ -592,6 +594,10 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
 
             cid = self.sc.mpl_connect('button_press_event', mouse_event)
             most_recent_data_array = xy_scan_data_array # make temp holding global data_array the same as xy_scan_data_array
+
+            print('XY scan finished')
+            print('----------------------------------------------------------------')
+            
 
         # xy_scan resolution check then run fnc
         def xy_scan_resolution_validation_fnc():

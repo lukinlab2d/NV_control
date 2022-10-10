@@ -28,9 +28,9 @@ ni_9402_counter_channel = "cDAQ1Mod1/ctr0"
 ni_9402_clock_channel = "cDAQ1Mod1/ctr1"
 ni_9402_source_channel = "/cDAQ1/Ctr1InternalOutput"
 ni_9402_sampling_rate = 1e5 #10
-ni_9402_samples_per_channel = 1 # 1
 ni_9402_duty_cycle = 0.5                                  # is this for the clock?
-ni_9402_integration_time = 0.02 # 0.01
+ni_9402_integration_time = 0.03 # 0.01
+ni_9402_samples_per_channel = int(ni_9402_integration_time * ni_9402_sampling_rate) # 1
 ni_9402_timeout = 60
 
 ni_9402 = Counter("ni_9402_module", ni_9402_device_name, ni_9402_counter_channel,
@@ -52,7 +52,7 @@ fnc_2 = ni_9402.integrateavg
 
 loop = Loop(
     # p_sweep.sweep(0, 10000, step = 0.01), # .sweep(start, stop, num values to generate)
-    p_sweep.sweep(0, 10000000, step = 1), # .sweep(start, stop, num values to generate)
+    p_sweep.sweep(0, 10000, step = 1), # .sweep(start, stop, num values to generate)
     delay = 0.0
     ).each(fnc_2)
 
@@ -68,5 +68,5 @@ plot = QtPlot(
     # fig_x_position=None
     )
 
-# loop.with_bg_task(plot.update)
+loop.with_bg_task(plot.update)
 loop.run()
