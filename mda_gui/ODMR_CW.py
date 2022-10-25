@@ -36,19 +36,7 @@ from PIL import Image
 from PlotPulse import *
 
 
-from qcodes.dataset import do1d, do2d, dond, LinSweep, LogSweep, ArraySweep
-from qcodes.utils.dataset.doNd import plot
-from qcodes.dataset.sqlite.database import initialise_or_create_database_at
-from qcodes.dataset.experiment_container import load_or_create_experiment
-from qcodes.tests.instrument_mocks import DummyInstrument, DummyInstrumentWithMeasurement
-from qcodes.dataset.measurements import Measurement
-from qcodes.dataset.plotting import plot_dataset
-
-def ns2cycles(time_in_ns, samp_rate=1e7):
-        return int(time_in_ns/1e9*samp_rate)
-    
-
-class ODMR(Instrument):
+class ODMR_CW(Instrument):
 
     def __init__(self, name='ODMRObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
         self.ifPlotPulse=ifPlotPulse
@@ -73,20 +61,19 @@ class ODMR(Instrument):
         uwPower = self.settings['uwPower']
 
         # Pulse lengths
-        num_loops                = self.settings['num_loops'];               #samp_rate_DAQ              = self.settings['samp_rate_DAQ']
-        laser_init_delay_in_ns   = self.settings['laser_init_delay_in_ns'];  laser_init_duration_in_ns  = self.settings['laser_init_duration_in_ns']
-        laser_read_delay_in_ns   = self.settings['laser_read_delay_in_ns'];  laser_read_duration_in_ns  = self.settings['laser_read_duration_in_ns']
-        AFG_delay_in_ns          = self.settings['AFG_delay_in_ns'];         AFG_duration_in_ns         = self.settings['AFG_duration_in_ns']
-        read_signal_delay_in_ns  = self.settings['read_signal_delay_in_ns']; read_signal_duration_in_ns = self.settings['read_signal_duration_in_ns']
-        read_ref_delay_in_ns     = self.settings['read_ref_delay_in_ns'];    read_ref_duration_in_ns    = self.settings['read_ref_duration_in_ns']
+        num_loops                = self.settings['num_loops'];        wait_btwn_sig_ref          = self.settings['wait_btwn_sig_ref']
+        AFG_delay_in_ns          = self.settings['AFG_delay_in_ns'];  AFG_duration_in_ns         = self.settings['AFG_duration_in_ns']
+        when_AFG_ends = AFG_delay_in_ns + AFG_duration_in_ns      
+        read_signal_delay_in_ns  = AFG_delay_in_ns;                   read_signal_duration_in_ns = AFG_duration_in_ns
+        read_ref_delay_in_ns     = when_AFG_ends + wait_btwn_sig_ref; read_ref_duration_in_ns    = AFG_duration_in_ns
+        laser_delay_in_ns        = AFG_delay_in_ns;                   laser_duration_in_ns       = wait_btwn_sig_ref + 2*AFG_duration_in_ns
         
         if read_signal_duration_in_ns != read_ref_duration_in_ns:
             raise Exception("Duration of reading signal and reference must be the same")    
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
-        pulse_sequence += [spc.Pulse('Laser',  laser_init_delay_in_ns,  duration=int(laser_init_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',  laser_read_delay_in_ns,  duration=int(laser_read_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',  laser_delay_in_ns,  duration=int(laser_duration_in_ns))] # times are in ns
         pulse_sequence += [spc.Pulse('AFG', AFG_delay_in_ns, duration=int(AFG_duration_in_ns))] # times are in ns
         pulse_sequence += [spc.Pulse('MWswitch', AFG_delay_in_ns, duration=int(AFG_duration_in_ns))]
         pulse_sequence += [spc.Pulse('Counter', read_signal_delay_in_ns,   duration=int(read_signal_duration_in_ns))] # times are in ns
@@ -121,7 +108,7 @@ class ODMR(Instrument):
             )
         self.ctrtask.timing.cfg_implicit_timing(
             sample_mode = AcquisitionType.CONTINUOUS,
-            samps_per_chan = 2*num_reads # x2 to make sure buffer doesn't overflow
+            samps_per_chan = int(1.2*num_reads) # x2 to make sure buffer doesn't overflow
             )
         pulseWidthChan.ci_ctr_timebase_src = "/cDAQ1Mod1/PFI0" # counter out PFI str gated/counter PFI channel str
         pulseWidthChan.ci_pulse_width_term = "/cDAQ1Mod1/PFI1" # gate PFI string
@@ -156,7 +143,7 @@ class ODMR(Instrument):
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig,ref).then(qctask(sig.close))
 
-        data = loop.get_data_set(name='ODMR')
+        data = loop.get_data_set(name='ODMR_CW')
         data.add_metadata(self.settings)
         
         plot = QtPlot(

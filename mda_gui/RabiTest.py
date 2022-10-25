@@ -42,11 +42,11 @@ read_ref_delay_after_pulse_in_ns    = 1500;     read_ref_duration_in_ns    = 300
 
 settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops,
             'uwPower': uwPower, 'uwFreq': uwFreq,
-            'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
-            'AFG_delay_after_init_in_ns':AFG_delay_after_init_in_ns,
-            'laser_read_delay_after_pulse_in_ns': laser_read_delay_after_pulse_in_ns,'laser_read_duration_in_ns': laser_read_duration_in_ns,
-            'read_signal_delay_after_pulse_in_ns':read_signal_delay_after_pulse_in_ns, 'read_signal_duration_in_ns':read_signal_duration_in_ns,
-            'read_ref_delay_after_pulse_in_ns':read_ref_delay_after_pulse_in_ns, 'read_ref_duration_in_ns':read_ref_duration_in_ns}
+            'laser_init_delay_in_ns':             laser_init_delay_in_ns,             'laser_init_duration_in_ns': laser_init_duration_in_ns,
+            'AFG_delay_after_init_in_ns':         AFG_delay_after_init_in_ns,
+            'laser_read_delay_after_pulse_in_ns': laser_read_delay_after_pulse_in_ns, 'laser_read_duration_in_ns': laser_read_duration_in_ns,
+            'read_signal_delay_after_pulse_in_ns':read_signal_delay_after_pulse_in_ns,'read_signal_duration_in_ns':read_signal_duration_in_ns,
+            'read_ref_delay_after_pulse_in_ns':   read_ref_delay_after_pulse_in_ns,   'read_ref_duration_in_ns':   read_ref_duration_in_ns}
 
 start = time.time()
 RabiObject = Rabi(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument

@@ -20,7 +20,6 @@ from qcodes.actions import Task as qctask
 from qcodes.loops import Loop
 from qcodes.plots.pyqtgraph import QtPlot
 import numpy as np
-import datetime as dt
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 
