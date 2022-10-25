@@ -32,6 +32,7 @@ from PlotPulse import *
 
 start = 2.8e9; stop = 3e9; num_sweep_points = 21
 freqsArray = np.linspace(start, stop, num_sweep_points)
+uwPower = -15
 
 num_loops               = int(200000);            #samp_rate_DAQ              = 1e7 # not important
 laser_init_delay_in_ns  = 1e3;                  laser_init_duration_in_ns  = 1e3; when_init_end = laser_init_delay_in_ns+laser_init_duration_in_ns
@@ -41,7 +42,7 @@ read_signal_delay_in_ns = when_pulse_end+500;   read_signal_duration_in_ns = 300
 read_ref_delay_in_ns    = when_pulse_end+1500;  read_ref_duration_in_ns    = 300
 
 
-settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, #'samp_rate_DAQ': samp_rate_DAQ,
+settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
             'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
             'laser_read_delay_in_ns': laser_read_delay_in_ns,'laser_read_duration_in_ns': laser_read_duration_in_ns,
             'AFG_delay_in_ns':AFG_delay_in_ns, 'AFG_duration_in_ns':AFG_duration_in_ns,

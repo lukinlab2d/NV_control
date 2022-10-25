@@ -22,6 +22,7 @@ from qcodes.plots.pyqtgraph import QtPlot
 import numpy as np
 import datetime as dt
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
+from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 
 import nidaqmx, time
 from nidaqmx.constants import *
@@ -42,10 +43,10 @@ class Rabi(Instrument):
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam = {'delay_time': 2, 'channel':3}
-        self.CounterParam = {'delay_time': 2, 'channel':4}
-        self.AFGParam = {'delay_time': 2, 'channel':1}
-        self.MWswitchParam = {'delay_time': 2, 'channel':2}
+        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.CounterParam =     {'delay_time': 2, 'channel':4}
+        self.AFGParam =         {'delay_time': 2, 'channel':1}
+        self.MWswitchParam =    {'delay_time': 2, 'channel':2}
         settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
                         'AFG': self.AFGParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
@@ -54,11 +55,8 @@ class Rabi(Instrument):
 
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.tausArray = np.linspace(start, stop, num_sweep_points)
+        self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
 
-        print()
-        self.now = dt.datetime.now(); self.date = self.now.strftime("%Y-%m-%d")
-        print(self.now)   
-    
         self.add_parameter(
             name = "sig",
             parameter_class  = Signal,
@@ -70,10 +68,20 @@ class Rabi(Instrument):
             parameter_class = Reference,
         )
         self.savedPulseSequencePlots = {}
+
+        # SRS object
+        self.srs = SRS()
+        self.srs.set_freq(self.uwFreq) #Hz
+        self.srs.set_RFAmplitude(self.uwPower) #dBm
+        self.srs.enableIQmodulation()
+        self.srs.enable_RFOutput()
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
-        ref = self.ref
+        ref = self.ref # this is implemented as a Parameter
+
+        # For each iteration, sweep tau (sig.sweep calls set_raw() method of Parameter sig)
+        # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
             sig.sweep(self.tausArray[0], self.tausArray[-1], num=len(self.tausArray)),
             delay = 0,
@@ -101,14 +109,11 @@ class Rabi(Instrument):
         img = Image.open(dataPlotFile)
         img.show()
         
-        if self.settings['ifPlotPulse']:
+        if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
                 fig = self.savedPulseSequencePlots[index]
                 pulsePlotFilename = data.location + "/pulsePlot_" + str(index) + ".png"
                 fig.savefig(pulsePlotFilename)
-                # time.sleep(0.2)
-                # img = Image.open(pulsePlotFilename)
-                # img.show()
     
 class Signal(Parameter):
     def __init__(self, settings=None, name='sig', measurementObject=None, **kwargs):
@@ -138,6 +143,8 @@ class Signal(Parameter):
         return sig_avg
 
     def set_raw(self, tau_ns):
+        # Make pulses, program Pulse Blaster
+
         print("Loop " + str(self.loopCounter))
         num_loops                 = self.settings['num_loops'];               
         laser_init_delay_in_ns    = self.settings['laser_init_delay_in_ns'];    laser_init_duration_in_ns  = self.settings['laser_init_duration_in_ns']; when_init_end = laser_init_delay_in_ns+laser_init_duration_in_ns
@@ -196,7 +203,6 @@ class Signal(Parameter):
     
     def plotPulseSequences(self):
         if self.settings['ifPlotPulse']:
-            
             if np.mod(self.loopCounter,5) == 0 or self.loopCounter == len(self.tausArray)-1: # plot every 5 sequences and plot the last seq
                 plotPulseObject = PlotPulse(pulseSequence=self.pulseSequence, ifShown=True, ifSave=False)
                 fig = plotPulseObject.makePulsePlot()

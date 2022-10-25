@@ -57,10 +57,10 @@ class ODMR(Instrument):
         # clock speed is in MHz - is 'status' needed in the dictionary?
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam = {'delay_time': 2, 'channel':3}
-        self.CounterParam = {'delay_time': 2, 'channel':4}
-        self.AFGParam = {'delay_time': 2, 'channel':1}
-        self.MWswitchParam = {'delay_time': 2, 'channel':2}
+        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.CounterParam =     {'delay_time': 2, 'channel':4}
+        self.AFGParam =         {'delay_time': 2, 'channel':1}
+        self.MWswitchParam =    {'delay_time': 2, 'channel':2}
 
         settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
                         'AFG': self.AFGParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
@@ -68,9 +68,12 @@ class ODMR(Instrument):
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
+        # List of frequencies and power
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.freqsArray = np.linspace(start, stop, num_sweep_points)
+        uwPower = self.settings['uwPower']
 
+        # Pulse lengths
         num_loops                = self.settings['num_loops'];               #samp_rate_DAQ              = self.settings['samp_rate_DAQ']
         laser_init_delay_in_ns   = self.settings['laser_init_delay_in_ns'];  laser_init_duration_in_ns  = self.settings['laser_init_duration_in_ns']
         laser_read_delay_in_ns   = self.settings['laser_read_delay_in_ns'];  laser_read_duration_in_ns  = self.settings['laser_read_duration_in_ns']
@@ -79,12 +82,9 @@ class ODMR(Instrument):
         read_ref_delay_in_ns     = self.settings['read_ref_delay_in_ns'];    read_ref_duration_in_ns    = self.settings['read_ref_duration_in_ns']
         
         if read_signal_duration_in_ns != read_ref_duration_in_ns:
-            raise Exception("Duration of reading signal and reference must be the same") 
+            raise Exception("Duration of reading signal and reference must be the same")    
 
-        print()
-        self.now = dt.datetime.now(); self.date = self.now.strftime("%Y-%m-%d")
-        print(self.now)   
-    
+        # Make pulse sequence (per each freq)
         pulse_sequence = []
         pulse_sequence += [spc.Pulse('Laser',  laser_init_delay_in_ns,  duration=int(laser_init_duration_in_ns))] # times are in ns
         pulse_sequence += [spc.Pulse('Laser',  laser_read_delay_in_ns,  duration=int(laser_read_duration_in_ns))] # times are in ns
@@ -94,21 +94,21 @@ class ODMR(Instrument):
         pulse_sequence += [spc.Pulse('Counter', read_ref_delay_in_ns,  duration=int(read_ref_duration_in_ns))] # times are in ns
         self.pulse_sequence = pulse_sequence
         
+        # Pulse Blaster object
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings)
         self.pb.program_pb(pulse_sequence, num_loops=num_loops)
 
+        # SRS object
         self.srs = SRS()
-        global srs; srs = self.srs
         self.srs.set_freq(3e9) #Hz
-        self.srs.set_RFAmplitude(-30) #dBm
+        self.srs.set_RFAmplitude(uwPower) #dBm
         self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
 
         num_reads_per_iter = 0
         for pulse in pulse_sequence:
             if pulse.channel_id == 'Counter': num_reads_per_iter +=1
-        num_reads = int(num_loops * num_reads_per_iter)
-
+        num_reads = int(num_loops * num_reads_per_iter) # the results look like this: sig-ref-sig-ref-...-sig-ref for num_loops times
 
         # Pulse width counter. Timebase = signal; gate = PB signal
         self.ctrtask = nidaqmx.Task()
@@ -141,12 +141,17 @@ class ODMR(Instrument):
             parameter_class = Reference,
         )
 
+        # Make Pulse Blaster, Counter, SRS global objects
         global pb; pb = self.pb
         global ctrtask; ctrtask = self.ctrtask
+        global srs; srs = self.srs
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
-        ref = self.ref
+        ref = self.ref # this is implemented as a Parameter
+
+        # For each iteration, sweep frequency (sig.sweep calls set_raw() method of Parameter sig)
+        # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
             sig.sweep(self.freqsArray[0], self.freqsArray[-1], num=len(self.freqsArray)),
             delay = 0,

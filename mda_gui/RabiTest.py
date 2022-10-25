@@ -30,6 +30,7 @@ from Rabi import *
 
 start = 10; stop = 600; num_sweep_points = 60
 tausArray = np.linspace(start, stop, num_sweep_points)
+uwPower = -20; uwFreq = 2.87e9
 
 num_loops                           = int(2000);            
 laser_init_delay_in_ns              = 1e3;      laser_init_duration_in_ns  = 1e3
@@ -39,7 +40,8 @@ read_signal_delay_after_pulse_in_ns = 500;      read_signal_duration_in_ns = 300
 read_ref_delay_after_pulse_in_ns    = 1500;     read_ref_duration_in_ns    = 300
 
 
-settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, #'samp_rate_DAQ': samp_rate_DAQ,
+settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops,
+            'uwPower': uwPower, 'uwFreq': uwFreq,
             'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
             'AFG_delay_after_init_in_ns':AFG_delay_after_init_in_ns,
             'laser_read_delay_after_pulse_in_ns': laser_read_delay_after_pulse_in_ns,'laser_read_duration_in_ns': laser_read_duration_in_ns,
