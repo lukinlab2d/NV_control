@@ -14,6 +14,7 @@ executed using the legacy QCoDeS Loop() fnc.
 ################################## importing required modules ####################################
 
 import qcodes as qc
+import qcodes.actions
 import nidaqmx
 import time
 from qcodes_contrib_drivers.drivers.NationalInstruments.DAQ import *
@@ -44,11 +45,6 @@ p_measure = qc.ManualParameter(name = "counts_num")
 p_sweep = qc.Parameter(name = "time_s", set_cmd = p_measure.set)
 
 fnc_2 = ni_9402.integrateavg
-# print(dir(ni_9402))
-# print(fnc_2.full_name)
-# print("-------------------------------------------------------------")
-# print("-------------------------------------------------------------")
-# fnc_2 = ni_9402.read_counter_cdaq1mod1ctr0
 
 loop = Loop(
     # p_sweep.sweep(0, 10000, step = 0.01), # .sweep(start, stop, num values to generate)
@@ -56,17 +52,36 @@ loop = Loop(
     delay = 0.0
     ).each(fnc_2)
 
-data = loop.get_data_set(name = "test")
+data = loop.get_data_set()
 # print(dir(data))
 
 plot = QtPlot(
     data.ni_9402_module_integrateavg, # ni_9402_module_integrateavg
-    # data.ni_9402_module_read_counter_cdaq1mod1ctr0,
     figsize = (1200, 600),
     interval = 1,
     theme = ((255, 255, 255), "black"), # color in quotes is background color
-    # fig_x_position=None
     )
 
 loop.with_bg_task(plot.update)
 loop.run()
+
+
+# plot = QtPlot(
+#     figsize = (1200, 600),
+#     interval = 1,
+#     theme = ((255, 255, 255), "black"), # color in quotes is background color
+#     )
+
+# loop = Loop(
+#     # p_sweep.sweep(0, 10000, step = 0.01), # .sweep(start, stop, num values to generate)
+#     p_sweep.sweep(0, 10000, step = 1), # .sweep(start, stop, num values to generate)
+#     delay = 0.0
+#     ).each(
+#         fnc_2,
+#         print(hasattr(qc.loops.active_data_set, 'data_set')),
+#         plot.add(qc.loops.active_data_set()),
+#         # plot.add_updater(plot_config=qc.config),
+#         plot.update()
+#         )
+
+# loop.run()

@@ -1,9 +1,7 @@
 """
 B00 gui for room-temp NV center measurement experiment control
 
-Dates: 070622 -> 090222
-
-Author: Miles D. Ackerman (undergraduate during the summer of 2022). Email: miles.ackerman1@gmail.com
+Author: Miles D. Ackerman (undergraduate during the summer of 2022). Email: miles.ackerman1@gmail.com. Date: 070622 -> 090222
 
 General info:
 This file makes a GUI to control the room-temp NV center-based measurement setup in LISE room B00 in the Lukin Group in the Harvard PHY dept. The setup
@@ -80,6 +78,9 @@ import numpy
 import pyqtgraph as pg
 import time
 from datetime import date
+import threading
+from mda_gui import TurnOnLaser, TurnOffLaser
+from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 
 # MatPlotLib plotting packages
 import matplotlib
@@ -375,6 +376,7 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
             scan_galvo.voltage_cdaq1mod2ao2(z) # this is for the z-piezo
 
             # self.spot, = self.sc.axes.plot(self.eventXdata, self.eventYdata, marker="o", markersize=3, markeredgecolor="red", markerfacecolor="red")
+            print('Set Coordinates to (' + str(x) + ', ' + str(y) + ', ' + str(z) + ')') # EP 10/16
 
             scan_galvo.close()  
 
@@ -383,6 +385,15 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
         
         def snake_fnc():
             self.isSnake = int(snake_checkbox.isChecked())
+        
+        def toggle_laser_fnc():
+            if toggle_laser_checkbox.isChecked():
+                global pb
+                pb = TurnOnLaser.turnOnLaser(channel=3)
+            else:
+                pb.turn_off()
+                pb.close() # close the instrument
+                print('Laser turned off')
                 
         ########### XY scanning #############
         # print/display XY scan parameters fnc
@@ -740,6 +751,9 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             global most_recent_data_array
             most_recent_data_array = np.zeros((grid_size_z, grid_size_x))
 
+            print('XZ scan finished')
+            print('----------------------------------------------------------------')
+
             ################### resetting position of mirrors ####################
             scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
             scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
@@ -763,6 +777,8 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
            
                         
             ####################################################################### x and z scanning #########################################################################
+            print('----------------------------------------------------------------')
+            print('XZ scan started')
             for f in range(grid_size_z): # this loops for each row z
                 if self.isStopped == 1: break
                 start0 = time.time()
@@ -995,6 +1011,9 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             global most_recent_data_array
             most_recent_data_array = np.zeros((grid_size_z, grid_size_y))
 
+            print('YZ scan finished')
+            print('----------------------------------------------------------------')
+
             ################### resetting position of mirrors ####################
             scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
             scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
@@ -1017,6 +1036,8 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
                 )
 
             ######################################################################## Y and Z scanning #########################################################################
+            print('----------------------------------------------------------------')
+            print('YZ scan started')
             for f in range(grid_size_z): # this loops for each row z
                 if self.isStopped == 1: break
                 start0 = time.time()
@@ -1624,9 +1645,9 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
 
         
         # stop button
-        stop_button = QPushButton("Stop", self) # button
+        stop_button = QPushButton("Stop scan", self) # button
         stop_button.setParent(left_window)
-        stop_button.resize(30,20)
+        stop_button.resize(65,20)
         stop_button.move(265, 300)
         stop_button.clicked.connect(stop_fnc) 
 
@@ -1636,6 +1657,13 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
         snake_checkbox.resize(60,20)
         snake_checkbox.move(210, 250)
         snake_checkbox.clicked.connect(snake_fnc) 
+
+        # toggle_laser checkbox
+        toggle_laser_checkbox = QCheckBox("Laser", self) # button
+        toggle_laser_checkbox.setParent(left_window)
+        toggle_laser_checkbox.resize(60,20)
+        toggle_laser_checkbox.move(75, 250)
+        toggle_laser_checkbox.clicked.connect(toggle_laser_fnc)
 ####################################################################### context menu ######################################################################
 
     def contextMenuEvent(self, event): # context (right-click) menu
@@ -1648,16 +1676,34 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
 
 ############################################################## start gui ################################################################################
 
-# ?
-if __name__ == '__main__':
-
-    # start = time.time()
-    # time.sleep(0.005)
-    # print(time.time() - start)
-
+def runGUI():
     app = QtWidgets.QApplication(sys.argv)
     mw = Parent()
     mw.show()
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+
+    # t1 = threading.Thread(target=runGUI, args=())
+    # t2 = threading.Thread(target=TurnOnLaser.turnOnLaser, args=(2e9,50))
+ 
+    # # starting thread 1
+    # t1.start()
+    # # starting thread 2
+    # t2.start()
+    
+    # while True:
+    #     if t1.is_alive == False: 
+    #         t2.join(timeout=1e-3)
+    #         break
+
+    # # wait until thread 1 is completely executed
+    # t1.join()
+    # # wait until thread 2 is completely executed
+    # t2.join()
+
+    
+
+    runGUI()
 
 #################################################################### END #######################################################################################
