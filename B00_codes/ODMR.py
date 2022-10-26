@@ -22,7 +22,7 @@ import numpy as np
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 
-import nidaqmx
+import nidaqmx, time
 from nidaqmx.constants import *
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import Parameter

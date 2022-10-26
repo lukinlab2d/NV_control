@@ -79,7 +79,7 @@ import pyqtgraph as pg
 import time
 from datetime import date
 import threading
-from mda_gui import TurnOnLaser, TurnOffLaser
+from B00_codes import TurnOnLaser, TurnOffLaser
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 
 # MatPlotLib plotting packages

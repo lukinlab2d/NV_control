@@ -52,7 +52,7 @@ loop = Loop(
     delay = 0.0
     ).each(fnc_2)
 
-data = loop.get_data_set()
+data = loop.get_data_set(name='Live_counter')
 # print(dir(data))
 
 plot = QtPlot(

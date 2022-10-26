@@ -35,7 +35,7 @@ if cw != 1:
 
     start = 2.8e9; stop = 3e9; num_sweep_points = 21
     freqsArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -15
+    uwPower = -50
 
     # Test for pulsed ODMR
     num_loops               = int(20000);          
@@ -60,12 +60,12 @@ if cw != 1:
 else:
 
     # Test for CW ODMR
-    start = 2.8e9; stop = 3e9; num_sweep_points = 21
+    start = 2.7e9; stop = 3e9; num_sweep_points = 61
     freqsArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -15
+    uwPower = 0
 
-    num_loops = int(200000); wait_btwn_sig_ref = 20
-    AFG_delay_in_ns = 1e3; AFG_duration_in_ns = 1e3 # if 200k loops, delay should be 600 ns or longer
+    num_loops = int(300000); wait_btwn_sig_ref = 20
+    AFG_delay_in_ns = 1e3; AFG_duration_in_ns = 3e3 # if 200k loops, delay should be 600 ns or longer
 
 
     settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,

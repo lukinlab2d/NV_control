@@ -5,7 +5,7 @@
 import json
   
 # Opening JSON file
-filename = 'C:/Users/lukin2dmaterials/data/2022-10-22/#002_{name}_19-00-20/snapshot.json'
+filename = 'C:/Users/lukin2dmaterials/data/2022-10-25/#101_ODMR_CW_20-07-24/snapshot.json'
 f = open(filename)
   
 # returns JSON object as 
@@ -13,20 +13,23 @@ f = open(filename)
 data = json.load(f)
   
 # Iterating through the json list
-print(data)
-for i in data['loop']:
-    print(i)
+for k, v in data.items():
+    if k != 'loop' and k!= 'arrays':
+        print (k, v)
+
+# for i in data['loop']:
+#     print(i)
     
-print('---------')
-for ii in data['loop']['sweep_values']:
-    print(ii)
-    print(data['loop']['sweep_values'][ii])
+# print('---------')
+# for ii in data['loop']['sweep_values']:
+#     print(ii)
+#     print(data['loop']['sweep_values'][ii])
 
-print('---------')
-print( data['loop']['delay'])
+# print('---------')
+# print( data['loop']['delay'])
 
-print('---------')
-print(data['loop']['use_threads'])
+# print('---------')
+# print(data['loop']['use_threads'])
   
-# Closing file
-f.close()
+# # Closing file
+# f.close()

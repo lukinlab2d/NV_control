@@ -22,7 +22,7 @@ import numpy as np
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 
-import nidaqmx
+import nidaqmx, time
 from nidaqmx.constants import *
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import Parameter
@@ -84,6 +84,7 @@ class ODMR_CW(Instrument):
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings)
         self.pb.program_pb(pulse_sequence, num_loops=num_loops)
 
+
         # SRS object
         self.srs = SRS()
         self.srs.set_freq(3e9) #Hz
@@ -121,10 +122,13 @@ class ODMR_CW(Instrument):
             num_reads_per_iter = num_reads_per_iter,
             read_duration_in_ns = read_signal_duration_in_ns,
         )
-
         self.add_parameter(
             name = "ref",
             parameter_class = Reference,
+        )
+        self.add_parameter(
+            name = "sigOverRef",
+            parameter_class = SigOverRef,
         )
 
         # Make Pulse Blaster, Counter, SRS global objects
@@ -135,24 +139,31 @@ class ODMR_CW(Instrument):
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
         ref = self.ref # this is implemented as a Parameter
+        sigOverRef = self.sigOverRef
 
         # For each iteration, sweep frequency (sig.sweep calls set_raw() method of Parameter sig)
         # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
             sig.sweep(self.freqsArray[0], self.freqsArray[-1], num=len(self.freqsArray)),
             delay = 0,
-            sleepTimeAfterFinishing=0).each(sig,ref).then(qctask(sig.close))
+            sleepTimeAfterFinishing=0).each(sig,ref,sigOverRef).then(qctask(sig.close))
 
         data = loop.get_data_set(name='ODMR_CW')
         data.add_metadata(self.settings)
         
+        # plot = QtPlot(
+        #     data.ODMRObject_sig, # this is implemented as a Parameter
+        #     figsize = (1200, 600),
+        #     interval = 1,
+        #     name = 'sig'
+        #     )
+        # plot.add(data.ODMRObject_ref, name='ref')
         plot = QtPlot(
-            data.ODMRObject_sig, # this is implemented as a Parameter
+            data.ODMRObject_sigOverRef, # this is implemented as a Parameter
             figsize = (1200, 600),
             interval = 1,
-            name = 'sig'
+            name = 'sig/ref'
             )
-        plot.add(data.ODMRObject_ref, name='ref')
 
         loop.with_bg_task(plot.update)
         loop.run()
@@ -213,3 +224,10 @@ class Reference(Parameter):
 
     def get_raw(self):
         return ref_avg
+
+class SigOverRef(Parameter):
+    def __init__(self, name='sigOverRef',**kwargs):
+        super().__init__(name, **kwargs)
+
+    def get_raw(self):
+        return sig_avg/ref_avg

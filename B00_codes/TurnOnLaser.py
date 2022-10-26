@@ -30,7 +30,7 @@ def turnOnLaser(channel):
     settings = {'clock_speed': clock_speed, 'Laser': LaserParam, 'PB_type': 'USB',
                 'min_pulse_dur': int(5*1e3/clock_speed)}
 
-    pb = spc.B00PulseBlaster("SpinCorePB", settings=settings)
+    pb = spc.B00PulseBlaster("SpinCorePB_toTurnOn", settings=settings)
 
     pb.turn_on_infinite(channel=channel, verbose=False)
 
