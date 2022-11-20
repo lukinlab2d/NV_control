@@ -48,6 +48,7 @@ class ODMR_CW(Instrument):
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.AFGParam =         {'delay_time': 2, 'channel':1}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
+        global laserChannel; laserChannel = self.LaserParam['channel']
 
         settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
                         'AFG': self.AFGParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
@@ -61,12 +62,11 @@ class ODMR_CW(Instrument):
         uwPower = self.settings['uwPower']
 
         # Pulse lengths
-        num_loops                = self.settings['num_loops'];        wait_btwn_sig_ref          = self.settings['wait_btwn_sig_ref']
-        AFG_delay_in_ns          = self.settings['AFG_delay_in_ns'];  AFG_duration_in_ns         = self.settings['AFG_duration_in_ns']
-        when_AFG_ends = AFG_delay_in_ns + AFG_duration_in_ns      
-        read_signal_delay_in_ns  = AFG_delay_in_ns;                   read_signal_duration_in_ns = AFG_duration_in_ns
-        read_ref_delay_in_ns     = when_AFG_ends + wait_btwn_sig_ref; read_ref_duration_in_ns    = AFG_duration_in_ns
-        laser_delay_in_ns        = AFG_delay_in_ns;                   laser_duration_in_ns       = wait_btwn_sig_ref + 2*AFG_duration_in_ns
+        num_loops                = self.settings['num_loops'];                wait_btwn_sig_ref          = self.settings['wait_btwn_sig_ref']
+        AFG_delay_in_ns          = self.settings['AFG_delay_in_ns'];          AFG_duration_in_ns         = self.settings['AFG_duration_in_ns'];                             when_AFG_ends         = AFG_delay_in_ns + AFG_duration_in_ns      
+        read_signal_delay_in_ns  = AFG_delay_in_ns;                           read_signal_duration_in_ns = AFG_duration_in_ns + self.settings['AFG_off_to_read_signal_off'];when_read_signal_ends = read_signal_delay_in_ns + read_signal_duration_in_ns 
+        read_ref_delay_in_ns     = when_read_signal_ends + wait_btwn_sig_ref; read_ref_duration_in_ns    = read_signal_duration_in_ns;                                      when_read_ref_ends    = read_ref_delay_in_ns + read_ref_duration_in_ns
+        laser_delay_in_ns        = self.settings['laser_delay_in_ns'];        laser_duration_in_ns       = when_read_ref_ends - laser_delay_in_ns + 100
         
         if read_signal_duration_in_ns != read_ref_duration_in_ns:
             raise Exception("Duration of reading signal and reference must be the same")    
@@ -80,11 +80,6 @@ class ODMR_CW(Instrument):
         pulse_sequence += [spc.Pulse('Counter', read_ref_delay_in_ns,  duration=int(read_ref_duration_in_ns))] # times are in ns
         self.pulse_sequence = pulse_sequence
         
-        # Pulse Blaster object
-        self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings)
-        self.pb.program_pb(pulse_sequence, num_loops=num_loops)
-
-
         # SRS object
         self.srs = SRS()
         self.srs.set_freq(3e9) #Hz
@@ -121,6 +116,8 @@ class ODMR_CW(Instrument):
             num_loops = num_loops,
             num_reads_per_iter = num_reads_per_iter,
             read_duration_in_ns = read_signal_duration_in_ns,
+            pulse_sequence = pulse_sequence,
+            settings = self.settings
         )
         self.add_parameter(
             name = "ref",
@@ -132,7 +129,7 @@ class ODMR_CW(Instrument):
         )
 
         # Make Pulse Blaster, Counter, SRS global objects
-        global pb; pb = self.pb
+        global pb
         global ctrtask; ctrtask = self.ctrtask
         global srs; srs = self.srs
     
@@ -150,20 +147,21 @@ class ODMR_CW(Instrument):
 
         data = loop.get_data_set(name='ODMR_CW')
         data.add_metadata(self.settings)
+        self.data = data
         
-        # plot = QtPlot(
-        #     data.ODMRObject_sig, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig'
-        #     )
-        # plot.add(data.ODMRObject_ref, name='ref')
         plot = QtPlot(
-            data.ODMRObject_sigOverRef, # this is implemented as a Parameter
+            data.ODMRObject_sig, # this is implemented as a Parameter
             figsize = (1200, 600),
             interval = 1,
-            name = 'sig/ref'
+            name = 'sig'
             )
+        plot.add(data.ODMRObject_ref, name='ref')
+        # plot = QtPlot(
+        #     data.ODMRObject_sigOverRef, # this is implemented as a Parameter
+        #     figsize = (1200, 600),
+        #     interval = 1,
+        #     name = 'sig/ref'
+        #     )
 
         loop.with_bg_task(plot.update)
         loop.run()
@@ -171,34 +169,45 @@ class ODMR_CW(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
         
         if self.ifPlotPulse:
             pulsePlotFilename = data.location + "/pulsePlot.png"
             plotPulseObject = PlotPulse(measurementObject=self, plotFilename=pulsePlotFilename, ifShown=True)
             plotPulseObject.makePulsePlot()
+    
+    def getDataFilename(self):
+        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/ODMRObject_sig_set.dat'
 
     
 class Signal(Parameter):
     def __init__(self, num_reads: int, num_reads_per_iter: int, num_loops: int,
-                 read_duration_in_ns: int, name='sig',**kwargs):
+                 read_duration_in_ns: int, name='sig', pulse_sequence=None, settings=None, **kwargs):
         super().__init__(name, **kwargs)
         self.num_reads = num_reads
         self.num_reads_per_iter = num_reads_per_iter
         self.num_loops = num_loops
         self.read_duration_in_ns = read_duration_in_ns
         self.loopCounter = 0
+        self.pulse_sequence = pulse_sequence
+        self.settings = settings
 
     def get_raw(self):
         self.loopCounter += 1
         ctrtask.start()
 
+        # Pulse Blaster object inittialized here to avoid long delay between initialization and first run
+        self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
+        self.pb.program_pb(self.pulse_sequence, num_loops=self.num_loops)
+        pb = self.pb
+
         pb.start_pulse_seq()
         pb.wait()
-        pb.stop_pulse_seq_without_closing()
+        pb.stop_pulse_seq()
+        pb.close()
 
-        xLineData = np.array(ctrtask.read(self.num_reads, timeout=0.5))
+        xLineData = np.array(ctrtask.read(self.num_reads, timeout=10))
 
         ctrtask.stop()
         
@@ -207,6 +216,7 @@ class Signal(Parameter):
         ref = rate[1::self.num_reads_per_iter]
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
+        global sig_avg_over_ref_avg; sig_avg_over_ref_avg = sig_avg/ref_avg
         return sig_avg
     
     def set_raw(self, value):
@@ -216,7 +226,8 @@ class Signal(Parameter):
 
     def close(self):
         ctrtask.close()
-        pb.stop_pulse_seq()
+        pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
+        pb.turn_on_infinite(channel=laserChannel)
 
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):
@@ -230,4 +241,4 @@ class SigOverRef(Parameter):
         super().__init__(name, **kwargs)
 
     def get_raw(self):
-        return sig_avg/ref_avg
+        return sig_avg_over_ref_avg

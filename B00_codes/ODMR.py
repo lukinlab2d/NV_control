@@ -60,6 +60,7 @@ class ODMR(Instrument):
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.AFGParam =         {'delay_time': 2, 'channel':1}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
+        global laserChannel; laserChannel = self.LaserParam['channel']
 
         settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
                         'AFG': self.AFGParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
@@ -72,31 +73,39 @@ class ODMR(Instrument):
         self.freqsArray = np.linspace(start, stop, num_sweep_points)
         uwPower = self.settings['uwPower']
 
-        # Pulse lengths
-        num_loops                = self.settings['num_loops'];               #samp_rate_DAQ              = self.settings['samp_rate_DAQ']
-        laser_init_delay_in_ns   = self.settings['laser_init_delay_in_ns'];  laser_init_duration_in_ns  = self.settings['laser_init_duration_in_ns']
-        laser_read_delay_in_ns   = self.settings['laser_read_delay_in_ns'];  laser_read_duration_in_ns  = self.settings['laser_read_duration_in_ns']
-        AFG_delay_in_ns          = self.settings['AFG_delay_in_ns'];         AFG_duration_in_ns         = self.settings['AFG_duration_in_ns']
-        read_signal_delay_in_ns  = self.settings['read_signal_delay_in_ns']; read_signal_duration_in_ns = self.settings['read_signal_duration_in_ns']
-        read_ref_delay_in_ns     = self.settings['read_ref_delay_in_ns'];    read_ref_duration_in_ns    = self.settings['read_ref_duration_in_ns']
+        # Pulse parameters
+        num_loops               = self.settings['num_loops']
+        laser_init_delay_in_ns  = self.settings['laser_init_delay_in_ns'];  laser_init_duration_in_ns = self.settings['laser_init_duration_in_ns']
+        laser_to_AFG_delay      = self.settings['laser_to_AFG_delay'];      AFG_duration_in_ns        = self.settings['AFG_duration_in_ns']
+        laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration             = self.settings['read_duration']   
+        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']
         
+        when_init_end   = laser_init_delay_in_ns+laser_init_duration_in_ns
+        AFG_delay_in_ns = when_init_end+laser_to_AFG_delay;                 when_pulse_end = AFG_delay_in_ns+AFG_duration_in_ns
+        
+        laser_read_signal_delay_in_ns    = when_pulse_end
+        read_signal_delay_in_ns          = when_pulse_end + laser_to_DAQ_delay;   read_signal_duration_in_ns = read_duration; when_read_signal_end = read_signal_delay_in_ns + read_signal_duration_in_ns
+        laser_read_signal_duration_in_ns = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay_in_ns; when_laser_read_signal_end = laser_read_signal_delay_in_ns + laser_read_signal_duration_in_ns
+        
+        laser_read_ref_delay_in_ns = when_laser_read_signal_end + laser_to_AFG_delay + AFG_duration_in_ns
+        read_ref_delay_in_ns       = laser_read_ref_delay_in_ns + laser_to_DAQ_delay;  
+        read_ref_duration_in_ns    = read_duration; when_read_ref_end = read_ref_delay_in_ns + read_ref_duration_in_ns
+        laser_read_ref_duration_in_ns = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay_in_ns
+
         if read_signal_duration_in_ns != read_ref_duration_in_ns:
             raise Exception("Duration of reading signal and reference must be the same")    
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
-        pulse_sequence += [spc.Pulse('Laser',  laser_init_delay_in_ns,  duration=int(laser_init_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',  laser_read_delay_in_ns,  duration=int(laser_read_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('AFG', AFG_delay_in_ns, duration=int(AFG_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('MWswitch', AFG_delay_in_ns, duration=int(AFG_duration_in_ns))]
-        pulse_sequence += [spc.Pulse('Counter', read_signal_delay_in_ns,   duration=int(read_signal_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Counter', read_ref_delay_in_ns,  duration=int(read_ref_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_init_delay_in_ns,        duration=int(laser_init_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay_in_ns, duration=int(laser_read_signal_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay_in_ns,    duration=int(laser_read_ref_duration_in_ns))]
+        pulse_sequence += [spc.Pulse('AFG',      AFG_delay_in_ns,               duration=int(AFG_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('MWswitch', AFG_delay_in_ns,               duration=int(AFG_duration_in_ns))]
+        pulse_sequence += [spc.Pulse('Counter',  read_signal_delay_in_ns,       duration=int(read_signal_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Counter',  read_ref_delay_in_ns,          duration=int(read_ref_duration_in_ns))] # times are in ns
         self.pulse_sequence = pulse_sequence
         
-        # Pulse Blaster object
-        self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings)
-        self.pb.program_pb(pulse_sequence, num_loops=num_loops)
-
         # SRS object
         self.srs = SRS()
         self.srs.set_freq(3e9) #Hz
@@ -133,31 +142,38 @@ class ODMR(Instrument):
             num_loops = num_loops,
             num_reads_per_iter = num_reads_per_iter,
             read_duration_in_ns = read_signal_duration_in_ns,
+            pulse_sequence = pulse_sequence,
+            settings = self.settings
         )
-
         self.add_parameter(
             name = "ref",
             parameter_class = Reference,
         )
+        self.add_parameter(
+            name = "sigOverRef",
+            parameter_class = SigOverRef,
+        )
 
         # Make Pulse Blaster, Counter, SRS global objects
-        global pb; pb = self.pb
+        global pb;
         global ctrtask; ctrtask = self.ctrtask
         global srs; srs = self.srs
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
         ref = self.ref # this is implemented as a Parameter
+        sigOverRef = self.sigOverRef
 
         # For each iteration, sweep frequency (sig.sweep calls set_raw() method of Parameter sig)
         # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
             sig.sweep(self.freqsArray[0], self.freqsArray[-1], num=len(self.freqsArray)),
             delay = 0,
-            sleepTimeAfterFinishing=0).each(sig,ref).then(qctask(sig.close))
+            sleepTimeAfterFinishing=0).each(sig,ref,sigOverRef).then(qctask(sig.close))
 
         data = loop.get_data_set(name='ODMR')
         data.add_metadata(self.settings)
+        self.data = data
         
         plot = QtPlot(
             data.ODMRObject_sig, # this is implemented as a Parameter
@@ -166,6 +182,12 @@ class ODMR(Instrument):
             name = 'sig'
             )
         plot.add(data.ODMRObject_ref, name='ref')
+        # plot = QtPlot(
+        #     data.ODMRObject_sigOverRef, # this is implemented as a Parameter
+        #     figsize = (1200, 600),
+        #     interval = 1,
+        #     name = 'sig/ref'
+        #     )
 
         loop.with_bg_task(plot.update)
         loop.run()
@@ -180,27 +202,38 @@ class ODMR(Instrument):
             pulsePlotFilename = data.location + "/pulsePlot.png"
             plotPulseObject = PlotPulse(measurementObject=self, plotFilename=pulsePlotFilename, ifShown=True)
             plotPulseObject.makePulsePlot()
+    
+    def getDataFilename(self):
+        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/ODMRObject_sig_set.dat'
 
     
 class Signal(Parameter):
     def __init__(self, num_reads: int, num_reads_per_iter: int, num_loops: int,
-                 read_duration_in_ns: int, name='sig',**kwargs):
+                 read_duration_in_ns: int, name='sig', pulse_sequence=None, settings=None, **kwargs):
         super().__init__(name, **kwargs)
         self.num_reads = num_reads
         self.num_reads_per_iter = num_reads_per_iter
         self.num_loops = num_loops
         self.read_duration_in_ns = read_duration_in_ns
         self.loopCounter = 0
+        self.pulse_sequence = pulse_sequence
+        self.settings = settings
 
     def get_raw(self):
         self.loopCounter += 1
         ctrtask.start()
 
+        # Pulse Blaster object inittialized here to avoid long delay between initialization and first run
+        self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
+        self.pb.program_pb(self.pulse_sequence, num_loops=self.num_loops)
+        pb = self.pb
+
         pb.start_pulse_seq()
         pb.wait()
-        pb.stop_pulse_seq_without_closing()
+        pb.stop_pulse_seq()
+        pb.close()
 
-        xLineData = np.array(ctrtask.read(self.num_reads, timeout=0.5))
+        xLineData = np.array(ctrtask.read(self.num_reads, timeout=10))
 
         ctrtask.stop()
         
@@ -209,6 +242,7 @@ class Signal(Parameter):
         ref = rate[1::self.num_reads_per_iter]
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
+        global sig_avg_over_ref_avg; sig_avg_over_ref_avg = sig_avg/ref_avg
         return sig_avg
     
     def set_raw(self, value):
@@ -218,7 +252,8 @@ class Signal(Parameter):
 
     def close(self):
         ctrtask.close()
-        pb.stop_pulse_seq()
+        pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
+        pb.turn_on_infinite(channel=laserChannel)
 
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):
@@ -226,3 +261,10 @@ class Reference(Parameter):
 
     def get_raw(self):
         return ref_avg
+
+class SigOverRef(Parameter):
+    def __init__(self, name='sigOverRef',**kwargs):
+        super().__init__(name, **kwargs)
+
+    def get_raw(self):
+        return sig_avg_over_ref_avg

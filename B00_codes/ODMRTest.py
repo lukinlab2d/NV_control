@@ -28,52 +28,68 @@ import matplotlib.pyplot as plt
 from ODMR import *  
 from ODMR_CW import *
 from PlotPulse import *
+import dataReader
 
 ####################################################################################################################
 cw = 1
 if cw != 1:
+    # Dataset 1
+    for i in np.linspace(800,2000,1):
+        # Test for Pulsed ODMR
+        start = 2.85e9; stop = 2.89e9; num_sweep_points = 81
+        freqsArray = np.linspace(start, stop, num_sweep_points)
+        uwPower = -30
 
-    start = 2.8e9; stop = 3e9; num_sweep_points = 21
-    freqsArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -50
+        num_loops               = int(1e6)
+        laser_init_delay_in_ns  = 10;       laser_init_duration_in_ns = 1e3
+        laser_to_AFG_delay      = 1000;     AFG_duration_in_ns        = 100
+        laser_to_DAQ_delay      = 1400;     read_duration             = 300
+        DAQ_to_laser_off_delay  = 10000
 
-    # Test for pulsed ODMR
-    num_loops               = int(20000);          
-    laser_init_delay_in_ns  = 1e3;                  laser_init_duration_in_ns  = 1e3; when_init_end = laser_init_delay_in_ns+laser_init_duration_in_ns
-    AFG_delay_in_ns         = when_init_end+40;     AFG_duration_in_ns         = 40; when_pulse_end = AFG_delay_in_ns+AFG_duration_in_ns
-    laser_read_delay_in_ns  = when_pulse_end;       laser_read_duration_in_ns  = 2e3
-    read_signal_delay_in_ns = when_pulse_end+500;   read_signal_duration_in_ns = 300
-    read_ref_delay_in_ns    = when_pulse_end+1500;  read_ref_duration_in_ns    = 300
+        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
+                    'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
+                    'laser_to_AFG_delay':     laser_to_AFG_delay ,   'AFG_duration_in_ns':        AFG_duration_in_ns,
+                    'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
+                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay}
 
+        start = time.time()
+        ODMRObject = ODMR(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
+        ODMRObject.runScan()
+        print('Total time = ' + str(time.time() - start) + ' s')
 
-    settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
-                'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
-                'laser_read_delay_in_ns': laser_read_delay_in_ns,'laser_read_duration_in_ns': laser_read_duration_in_ns,
-                'AFG_delay_in_ns':AFG_delay_in_ns, 'AFG_duration_in_ns':AFG_duration_in_ns,
-                'read_signal_delay_in_ns':read_signal_delay_in_ns, 'read_signal_duration_in_ns':read_signal_duration_in_ns,
-                'read_ref_delay_in_ns':read_ref_delay_in_ns, 'read_ref_duration_in_ns':read_ref_duration_in_ns}
-
-
-    ODMRObject = ODMR(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
-    ODMRObject.runScan()
+        dataFilename = ODMRObject.getDataFilename()
+        dataReader.readData(dataFilename)
+        ODMRObject.close()
 
 else:
-
     # Test for CW ODMR
-    start = 2.7e9; stop = 3e9; num_sweep_points = 61
-    freqsArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = 0
+    # Dataset 
+    for i in range(1):
+        start = 2.855e9; stop = 2.885e9; num_sweep_points = 61
+        freqsArray = np.linspace(start, stop, num_sweep_points)
+        uwPower = -50
 
-    num_loops = int(300000); wait_btwn_sig_ref = 20
-    AFG_delay_in_ns = 1e3; AFG_duration_in_ns = 3e3 # if 200k loops, delay should be 600 ns or longer
+        num_loops = int(1e6); wait_btwn_sig_ref = 20e3
+        AFG_delay_in_ns = 1000; AFG_duration_in_ns = 10e3
+        laser_delay_in_ns = 10; AFG_off_to_read_signal_off = 0
+
+        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
+                    'AFG_delay_in_ns':AFG_delay_in_ns, 'AFG_duration_in_ns':AFG_duration_in_ns, 
+                    'AFG_off_to_read_signal_off':AFG_off_to_read_signal_off,
+                    'wait_btwn_sig_ref':wait_btwn_sig_ref, 'laser_delay_in_ns':laser_delay_in_ns
+                    }
+
+        start = time.time()
+        ODMRObject = ODMR_CW(settings=settings, ifPlotPulse=True) # implemented as Instrument. Turn of plot if pulse length > 1e5 ns
+        ODMRObject.runScan()
+        print('Total time = ' + str(time.time() - start) + ' s')
+
+        dataFilename = ODMRObject.getDataFilename()
+        dataReader.readData(dataFilename)
+        ODMRObject.close()
 
 
-    settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
-                'AFG_delay_in_ns':AFG_delay_in_ns, 'AFG_duration_in_ns':AFG_duration_in_ns,
-                'wait_btwn_sig_ref':wait_btwn_sig_ref
-                }
 
 
-    ODMRObject = ODMR_CW(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
-    ODMRObject.runScan()
+
 

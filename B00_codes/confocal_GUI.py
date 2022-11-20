@@ -376,7 +376,13 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
             scan_galvo.voltage_cdaq1mod2ao2(z) # this is for the z-piezo
 
             # self.spot, = self.sc.axes.plot(self.eventXdata, self.eventYdata, marker="o", markersize=3, markeredgecolor="red", markerfacecolor="red")
-            print('Set Coordinates to (' + str(x) + ', ' + str(y) + ', ' + str(z) + ')') # EP 10/16
+            print('Set coordinates to (' + str(x) + ', ' + str(y) + ', ' + str(z) + ')') # EP 10/16
+
+            with open('C:/Users/lukin2dmaterials/miniconda3/envs/NV_control/B00_codes/NVlocation.txt', 'w') as f:
+                f.write(str(x) + '\n')
+                f.write(str(y) + '\n')
+                f.write(str(z))
+                f.close()
 
             scan_galvo.close()  
 

@@ -25,32 +25,42 @@ from nidaqmx.constants import(
 )
 from PlotPulse import *
 from Rabi import *
+import dataReader
 
 ####################################################################################################################
 
-start = 10; stop = 600; num_sweep_points = 60
-tausArray = np.linspace(start, stop, num_sweep_points)
-uwPower = -20; uwFreq = 2.87e9
 
-num_loops                           = int(2000);            
-laser_init_delay_in_ns              = 1e3;      laser_init_duration_in_ns  = 1e3
-AFG_delay_after_init_in_ns          = 40
-laser_read_delay_after_pulse_in_ns  = 0;        laser_read_duration_in_ns  = 2e3
-read_signal_delay_after_pulse_in_ns = 500;      read_signal_duration_in_ns = 300
-read_ref_delay_after_pulse_in_ns    = 1500;     read_ref_duration_in_ns    = 300
+for i in np.linspace(1000,2000,1):
+    # dataset
+    start = 810; stop = 10; num_sweep_points = 41
+    tausArray = np.linspace(start, stop, num_sweep_points)
+    uwPower = -40; uwFreq = 2.871e9
+    if True: #uwFreq != 2.868e9:
+        print(uwFreq)
+
+        # Test for pulsed ODMR
+        num_loops               = int(1e6)
+        laser_init_delay_in_ns  = 10;       laser_init_duration_in_ns = 1e3
+        laser_to_AFG_delay      = 1000;       
+        laser_to_DAQ_delay      = 1400;     read_duration             = 300
+        DAQ_to_laser_off_delay  = 20000
+
+        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
+                    'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
+                    'laser_to_AFG_delay':     laser_to_AFG_delay ,   
+                    'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
+                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay}
+
+        start = time.time()
+        RabiObject = Rabi(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
+        RabiObject.runScan()
+        print('Total time = ' + str(time.time() - start) + ' s')
+
+        dataFilename = RabiObject.getDataFilename()
+        dataReader.readData(dataFilename)
+        RabiObject.close()
+        
 
 
-settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops,
-            'uwPower': uwPower, 'uwFreq': uwFreq,
-            'laser_init_delay_in_ns':             laser_init_delay_in_ns,             'laser_init_duration_in_ns': laser_init_duration_in_ns,
-            'AFG_delay_after_init_in_ns':         AFG_delay_after_init_in_ns,
-            'laser_read_delay_after_pulse_in_ns': laser_read_delay_after_pulse_in_ns, 'laser_read_duration_in_ns': laser_read_duration_in_ns,
-            'read_signal_delay_after_pulse_in_ns':read_signal_delay_after_pulse_in_ns,'read_signal_duration_in_ns':read_signal_duration_in_ns,
-            'read_ref_delay_after_pulse_in_ns':   read_ref_delay_after_pulse_in_ns,   'read_ref_duration_in_ns':   read_ref_duration_in_ns}
-
-start = time.time()
-RabiObject = Rabi(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
-RabiObject.runScan()
-print('Total time = ' + str(time.time() - start) + ' s')
 
 
