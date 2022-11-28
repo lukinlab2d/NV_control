@@ -24,26 +24,22 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PlotPulse import *
-from T2R import *
+from CalibrateLaser2MWDelay import *
 import dataReader
 
 ####################################################################################################################
 
 
 for i in np.linspace(1000,2000,1):
-    # T2R
-    start = 1510; stop = 10; num_sweep_points = 76; ifRandomized = 0
+    # CalibrateLaser2MWDelay
+    start = -5e3; stop = 10e3; num_sweep_points = 16
     tausArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -30; uwFreq = 2.8705e9
+    
     if True:
-        print(uwFreq)
-
         # Test for pulsed ODMR
-        num_loops               = int(1e6)
-        laser_init_delay_in_ns  = 0;        laser_init_duration_in_ns = 0
-        laser_to_AFG_delay      = 1000;     piOverTwo_time            = 14
-        laser_to_DAQ_delay      = 900;      read_duration             = 300
-        DAQ_to_laser_off_delay  = 5000;     AFG_2_switch_delay        = 10 # cannot be between 0 and 10
+        num_loops               = int(5e4)
+        laser_init_delay_in_ns  = 250e3;  laser_init_duration_in_ns = 251e3
+        read_duration           = 300
 
         # For NV tracking
         if_tracking = 0
@@ -69,19 +65,16 @@ for i in np.linspace(1000,2000,1):
                             'z_minus_range':          z_minus_range ,        'z_plus_range':           z_plus_range,
                             'xz_displacement_limit':  xz_displacement_limit,}
 
-        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
+        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops,
                     'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
-                    'laser_to_AFG_delay':     laser_to_AFG_delay ,   'piOverTwo_time':            piOverTwo_time,
-                    'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
-                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':          trackingSettings,
-                    'AFG_2_switch_delay':    AFG_2_switch_delay,     'ifRandomized':              ifRandomized}
+                    'read_duration':          read_duration,         'trackingSettings':          trackingSettings}
         
 
         start = time.time()
-        T2RObject = T2R(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
-        T2RObject.runScan()
+        CalibrateLaser2MWDelayObject = CalibrateLaser2MWDelay(settings=settings, ifPlotPulse=True, ifRandom=False) # this is implemented as an Instrument
+        CalibrateLaser2MWDelayObject.runScan()
         print('Total time = ' + str(time.time() - start) + ' s')
 
-        dataFilename = T2RObject.getDataFilename()
-        dataReader.readData(dataFilename)
-        T2RObject.close()
+        dataFilename = CalibrateLaser2MWDelayObject.getDataFilename()
+        # dataReader.readData(dataFilename)
+        CalibrateLaser2MWDelayObject.close()

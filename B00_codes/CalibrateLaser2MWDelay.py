@@ -37,9 +37,9 @@ from PIL import Image
 from PlotPulse import *    
 from Confocal import *
 
-class T2R(Instrument):
+class CalibrateLaser2MWDelay(Instrument):
 
-    def __init__(self, name='T2RObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
+    def __init__(self, name='CalibrateLaser2MWDelayObject', settings=None, ifPlotPulse=True, ifRandom=False, **kwargs) -> None:
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
@@ -57,19 +57,7 @@ class T2R(Instrument):
 
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.tausArray = np.linspace(start, stop, num_sweep_points)
-
-        ifRandomized = self.settings['ifRandomized']
-        if ifRandomized: np.random.shuffle(self.tausArray)
-
-        self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
-
-        # arr = np.linspace(105000,300000,40)
-        # arr2 = np.linspace(13000,100000,30)
-        # arr3 = np.linspace(10,10010,51)
-        # arr4 = np.concatenate((arr3,arr2,arr))
-        # self.tausArray = arr4
-        # np.random.shuffle(self.tausArray)
-        # print(self.tausArray)
+        if ifRandom: np.random.shuffle(self.tausArray)
 
         self.add_parameter(
             name = "sig",
@@ -86,13 +74,6 @@ class T2R(Instrument):
             parameter_class = SigOverRef,
         )
         self.savedPulseSequencePlots = {}
-
-        # SRS object
-        self.srs = SRS()
-        self.srs.set_freq(self.uwFreq) #Hz
-        self.srs.set_RFAmplitude(self.uwPower) #dBm
-        self.srs.enableIQmodulation()
-        self.srs.enable_RFOutput()
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
@@ -105,27 +86,20 @@ class T2R(Instrument):
             # sig.sweep(self.tausArray[0], self.tausArray[-1], num=len(self.tausArray)),
             sig.sweep(keys=self.tausArray),
             delay = 0,
-            sleepTimeAfterFinishing=0).each(sig, ref, sigOverRef,
+            sleepTimeAfterFinishing=0).each(sig,
                                             qctask(sig.plotPulseSequences),
                                             ).then(qctask(sig.turn_on_at_end))
 
-        data = loop.get_data_set(name='T2R')
+        data = loop.get_data_set(name='CalibrateLaser2MWDelay')
         data.add_metadata(self.settings)
         self.data = data
         
         plot = QtPlot(
-            data.T2RObject_sig, # this is implemented as a Parameter
+            data.CalibrateLaser2MWDelayObject_sig, # this is implemented as a Parameter
             figsize = (1200, 600),
             interval = 1,
             name = 'sig'
             )
-        plot.add(data.T2RObject_ref, name='ref')
-        # plot = QtPlot(
-        #     data.T2RObject_sigOverRef, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig/ref'
-        #     )
 
         loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
@@ -135,8 +109,6 @@ class T2R(Instrument):
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
         img = Image.open(dataPlotFile)
         img.show()
-
-        self.srs.disable_RFOutput()
         
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
@@ -145,14 +117,14 @@ class T2R(Instrument):
                 fig.savefig(pulsePlotFilename)
 
     def getDataFilename(self):
-        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/T2RObject_sig_set.dat'
+        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/CalibrateLaser2MWDelayObject_sig_set.dat'
     
 class Signal(Parameter):
     def __init__(self, settings=None, name='sig', measurementObject=None, **kwargs):
         super().__init__(name, **kwargs)
         self.settings = settings
         self.trackingSettings = self.settings['trackingSettings']
-        self.T2RObject = measurementObject
+        self.CalibrateLaser2MWDelayObject = measurementObject
         self.loopCounter = 0
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.tausArray = np.linspace(start, stop, num_sweep_points)
@@ -194,45 +166,15 @@ class Signal(Parameter):
         # Pulse parameters
         num_loops               = self.settings['num_loops']
         laser_init_delay_in_ns  = self.settings['laser_init_delay_in_ns'];  laser_init_duration_in_ns = self.settings['laser_init_duration_in_ns']
-        laser_to_AFG_delay      = self.settings['laser_to_AFG_delay'];      AFG_duration_in_ns        = self.settings['piOverTwo_time']
-        laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration             = self.settings['read_duration']   
-        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  
-
-        if tau_ns > 30:
-            AFG_2_switch_delay  = self.settings['AFG_2_switch_delay']
-        else: 
-            AFG_2_switch_delay  = 0
-        
-        when_init_end    = laser_init_delay_in_ns+laser_init_duration_in_ns
-        AFG_delay_in_ns  = when_init_end + laser_to_AFG_delay;                 when_pulse_end = AFG_delay_in_ns + 2*AFG_duration_in_ns + tau_ns
-        AFG2_delay_in_ns = AFG_delay_in_ns + AFG_duration_in_ns + tau_ns;      
-
-        laser_read_signal_delay_in_ns    = when_pulse_end
-        read_signal_delay_in_ns          = when_pulse_end + laser_to_DAQ_delay;   read_signal_duration_in_ns = read_duration; when_read_signal_end = read_signal_delay_in_ns + read_signal_duration_in_ns
-        laser_read_signal_duration_in_ns = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay_in_ns; when_laser_read_signal_end = laser_read_signal_delay_in_ns + laser_read_signal_duration_in_ns
-        
-        laser_read_ref_delay_in_ns = when_laser_read_signal_end + laser_to_AFG_delay + 2*AFG_duration_in_ns + tau_ns
-        read_ref_delay_in_ns       = laser_read_ref_delay_in_ns + laser_to_DAQ_delay;  
-        read_ref_duration_in_ns    = read_duration; when_read_ref_end = read_ref_delay_in_ns + read_ref_duration_in_ns
-        laser_read_ref_duration_in_ns = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay_in_ns
-        self.read_duration = read_signal_duration_in_ns
-
-
-        if read_signal_duration_in_ns != read_ref_duration_in_ns:
-            raise Exception("Duration of reading signal and reference must be the same")
+        read_duration           = self.settings['read_duration']        
+       
+        read_signal_delay_in_ns = laser_init_delay_in_ns + tau_ns; read_signal_duration_in_ns = read_duration
+        self.read_duration      = read_signal_duration_in_ns
 
         # Make pulse sequence
         pulse_sequence = []
-        if not laser_init_delay_in_ns == 0:
-            pulse_sequence += [spc.Pulse('Laser',    laser_init_delay_in_ns,             duration=int(laser_init_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay_in_ns,      duration=int(laser_read_signal_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay_in_ns,         duration=int(laser_read_ref_duration_in_ns))]
-        pulse_sequence += [spc.Pulse('AFG',      AFG_delay_in_ns-AFG_2_switch_delay, duration=int(AFG_duration_in_ns + AFG_2_switch_delay))] # times are in ns
-        pulse_sequence += [spc.Pulse('MWswitch', AFG_delay_in_ns,                    duration=int(AFG_duration_in_ns))]
-        pulse_sequence += [spc.Pulse('AFG',      AFG2_delay_in_ns-AFG_2_switch_delay,duration=int(AFG_duration_in_ns + AFG_2_switch_delay))] # times are in ns
-        pulse_sequence += [spc.Pulse('MWswitch', AFG2_delay_in_ns,                   duration=int(AFG_duration_in_ns))]
-        pulse_sequence += [spc.Pulse('Counter',  read_signal_delay_in_ns,            duration=int(read_signal_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Counter',  read_ref_delay_in_ns,               duration=int(read_ref_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_init_delay_in_ns,        duration=int(laser_init_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Counter',  read_signal_delay_in_ns,       duration=int(read_signal_duration_in_ns))] # times are in ns
         self.pulse_sequence = pulse_sequence
         
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
@@ -270,7 +212,7 @@ class Signal(Parameter):
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False)
                 fig = plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.tausArray)-1: # only save first and last pulse sequence
-                self.T2RObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
+                self.CalibrateLaser2MWDelayObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
 
     def turn_on_at_end(self):

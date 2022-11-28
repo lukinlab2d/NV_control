@@ -31,10 +31,10 @@ import dataReader
 
 
 for i in np.linspace(1000,2000,1):
-    # dataset
-    start = 810; stop = 10; num_sweep_points = 41
+    # Rabi
+    start = 250; stop = 10; num_sweep_points = 61
     tausArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -40; uwFreq = 2.871e9
+    uwPower = -30; uwFreq = 2.8705e9
     if True: #uwFreq != 2.868e9:
         print(uwFreq)
 
@@ -43,13 +43,13 @@ for i in np.linspace(1000,2000,1):
         laser_init_delay_in_ns  = 10;       laser_init_duration_in_ns = 1e3
         laser_to_AFG_delay      = 1000;       
         laser_to_DAQ_delay      = 1400;     read_duration             = 300
-        DAQ_to_laser_off_delay  = 20000
+        DAQ_to_laser_off_delay  = 2000;     AFG_2_switch_delay        = 10 # cannot be between 0 and 10
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
                     'laser_init_delay_in_ns': laser_init_delay_in_ns,'laser_init_duration_in_ns': laser_init_duration_in_ns,
                     'laser_to_AFG_delay':     laser_to_AFG_delay ,   
                     'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
-                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay}
+                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'AFG_2_switch_delay':        AFG_2_switch_delay}
 
         start = time.time()
         RabiObject = Rabi(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
@@ -57,7 +57,7 @@ for i in np.linspace(1000,2000,1):
         print('Total time = ' + str(time.time() - start) + ' s')
 
         dataFilename = RabiObject.getDataFilename()
-        dataReader.readData(dataFilename)
+        dataReader.readData(dataFilename, type='Rabi')
         RabiObject.close()
         
 

@@ -50,7 +50,7 @@ class Rabi(Instrument):
 
         settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
                         'AFG': self.AFGParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
-                        'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
+                        'min_pulse_dur': int(1*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
@@ -121,6 +121,8 @@ class Rabi(Instrument):
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
         img = Image.open(dataPlotFile)
         img.show()
+
+        self.srs.disable_RFOutput()
         
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
@@ -169,7 +171,7 @@ class Signal(Parameter):
         laser_init_delay_in_ns  = self.settings['laser_init_delay_in_ns'];  laser_init_duration_in_ns = self.settings['laser_init_duration_in_ns']
         laser_to_AFG_delay      = self.settings['laser_to_AFG_delay'];      AFG_duration_in_ns        = tau_ns
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration             = self.settings['read_duration']   
-        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']
+        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  AFG_2_switch_delay        = self.settings['AFG_2_switch_delay']
         
         when_init_end   = laser_init_delay_in_ns+laser_init_duration_in_ns
         AFG_delay_in_ns = when_init_end+laser_to_AFG_delay;                 when_pulse_end = AFG_delay_in_ns+AFG_duration_in_ns
@@ -189,14 +191,15 @@ class Signal(Parameter):
             raise Exception("Duration of reading signal and reference must be the same")
 
         # Make pulse sequence
+        # print(AFG_delay_in_ns-AFG_2_switch_delay)
         pulse_sequence = []
-        pulse_sequence += [spc.Pulse('Laser',    laser_init_delay_in_ns,        duration=int(laser_init_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay_in_ns, duration=int(laser_read_signal_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay_in_ns,    duration=int(laser_read_ref_duration_in_ns))]
-        pulse_sequence += [spc.Pulse('AFG',      AFG_delay_in_ns,               duration=int(AFG_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('MWswitch', AFG_delay_in_ns,               duration=int(AFG_duration_in_ns))]
-        pulse_sequence += [spc.Pulse('Counter',  read_signal_delay_in_ns,       duration=int(read_signal_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Counter',  read_ref_delay_in_ns,          duration=int(read_ref_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_init_delay_in_ns,             duration=int(laser_init_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay_in_ns,      duration=int(laser_read_signal_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay_in_ns,         duration=int(laser_read_ref_duration_in_ns))]
+        pulse_sequence += [spc.Pulse('AFG',      int(AFG_delay_in_ns-AFG_2_switch_delay), duration=int(AFG_duration_in_ns + AFG_2_switch_delay))] # times are in ns
+        pulse_sequence += [spc.Pulse('MWswitch', AFG_delay_in_ns,                    duration=int(AFG_duration_in_ns))]
+        pulse_sequence += [spc.Pulse('Counter',  read_signal_delay_in_ns,            duration=int(read_signal_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Counter',  read_ref_delay_in_ns,               duration=int(read_ref_duration_in_ns))] # times are in ns
         self.pulse_sequence = pulse_sequence
         
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
