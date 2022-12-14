@@ -24,7 +24,7 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PlotPulse import *
-from T2R import *
+from T2E import *
 import dataReader
 
 NO_MS_EQUALS_1 = 0
@@ -34,34 +34,34 @@ THREE_PI_HALF_FINAL = 2
 ####################################################################################################################
 
 
-for i in np.linspace(2.870e9,2.871e9,1):
-    # T2R
-    start = 6010; stop = 10; num_sweep_points = 101; 
-    ifRandomized = 0; ifLooped = False; normalized_style = Q_FINAL
+for i in np.linspace(24, 18, 4):
+    # T2E
+    start = 20; stop = 60020; num_sweep_points = 31 # tau must be divisible by 4
+    ifRandomized = 0; ifLooped = True; normalized_style = Q_FINAL
     tausArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -35; uwFreq = 2.8705e9
+    uwPower = -25; uwFreq = 2.870e9
     if True:
         print(uwFreq)
 
         # Test for pulsed ODMR
         num_loops               = int(1e6)
         laser_init_delay        = 0;        laser_init_duration       = 0
-        laser_to_MWI_delay      = 1000;     piOverTwo_time            = 24
-        laser_to_DAQ_delay      = 900;      read_duration             = 200
+        laser_to_MWI_delay      = 1000;     piOverTwo_time            = i
+        laser_to_DAQ_delay      = 850;      read_duration             = 200
         DAQ_to_laser_off_delay  = 2500;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
         # For NV tracking
         if_tracking = 1
-        xy_scan_read_time      = 5;      xy_scan_settle_time    = 0.2;  
-        xy_scan_resolution_hor = 20;     xy_scan_resolution_ver = 20
-        x_minus_range          = 0.1;    x_plus_range           = 0.1
+        xy_scan_read_time      = 5;      xy_scan_settle_time    = 1;  
+        xy_scan_resolution_hor = 40;     xy_scan_resolution_ver = 20
+        x_minus_range          = 0.07;   x_plus_range           = 0.05
         y_minus_range          = 0.05;   y_plus_range           = 0.05
-        xy_displacement_limit  = 0.02;   num_of_scans           = 5;    tracking_period = 40
+        xy_displacement_limit  = 0.05;   num_of_scans           = 5;    tracking_period = 10
 
         xz_scan_resolution_hor = 20;     xz_scan_resolution_ver = 20
-        x_minus_range          = 0.1;    x_plus_range           = 0.1
+        x_minus_range          = 0.05;   x_plus_range           = 0.05
         z_minus_range          = 0.3;    z_plus_range           = 0.3
-        xz_displacement_limit  = 0.1; 
+        xz_displacement_limit  = 0.25; 
 
         trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_settle_time':    xy_scan_settle_time,
                             'xy_scan_resolution_hor': xy_scan_resolution_hor,'xy_scan_resolution_ver': xy_scan_resolution_ver,
@@ -80,16 +80,19 @@ for i in np.linspace(2.870e9,2.871e9,1):
                     'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
                     'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':          trackingSettings,
                     'MWI_to_switch_delay':    MWI_to_switch_delay,   'ifRandomized':              ifRandomized,
-                    'normalized_style':       normalized_style}
+                    'normalized_style':     normalized_style}
         
 
         start = time.time()
-
-        start = time.time()
-        T2RObject = T2R(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
-        T2RObject.runScan()
+        T2EObject = T2E(settings=settings, ifPlotPulse=not(ifLooped), tausArray=tausArray) # this is implemented as an Instrument
+        T2EObject.runScan()
         print('Total time = ' + str(time.time() - start) + ' s')
 
-        dataFilename = T2RObject.getDataFilename()
+        dataFilename = T2EObject.getDataFilename()
         if not ifLooped: dataReader.readData(dataFilename, typeNorm = normalized_style)
-        T2RObject.close()
+        T2EObject.close()
+
+        # taus1 = np.linspace(20,2020,51)
+    # taus2 = np.linspace(2200,9800,39)
+    # taus3 = np.linspace(10000,60000,26)
+    # tausArray = np.concatenate((taus1, taus2, taus3))

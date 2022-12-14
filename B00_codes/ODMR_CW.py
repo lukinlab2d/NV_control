@@ -34,6 +34,7 @@ from nidaqmx.constants import(
 )
 from PIL import Image
 from PlotPulse import *
+from Confocal import *
 
 
 class ODMR_CW(Instrument):
@@ -46,12 +47,12 @@ class ODMR_CW(Instrument):
         self.clock_speed = 500 # MHz
         self.LaserParam =       {'delay_time': 2, 'channel':3}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
-        self.AFGParam =         {'delay_time': 2, 'channel':1}
+        self.MWIParam =         {'delay_time': 2, 'channel':1}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
         global laserChannel; laserChannel = self.LaserParam['channel']
 
         settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
-                        'AFG': self.AFGParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
+                        'MW_I': self.MWIParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed)}
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
@@ -63,8 +64,8 @@ class ODMR_CW(Instrument):
 
         # Pulse lengths
         num_loops                = self.settings['num_loops'];                wait_btwn_sig_ref          = self.settings['wait_btwn_sig_ref']
-        AFG_delay_in_ns          = self.settings['AFG_delay_in_ns'];          AFG_duration_in_ns         = self.settings['AFG_duration_in_ns'];                             when_AFG_ends         = AFG_delay_in_ns + AFG_duration_in_ns      
-        read_signal_delay_in_ns  = AFG_delay_in_ns;                           read_signal_duration_in_ns = AFG_duration_in_ns + self.settings['AFG_off_to_read_signal_off'];when_read_signal_ends = read_signal_delay_in_ns + read_signal_duration_in_ns 
+        MWI_delay_in_ns          = self.settings['MWI_delay_in_ns'];          MWI_duration_in_ns         = self.settings['MWI_duration_in_ns'];                             when_MWI_ends         = MWI_delay_in_ns + MWI_duration_in_ns      
+        read_signal_delay_in_ns  = MWI_delay_in_ns;                           read_signal_duration_in_ns = MWI_duration_in_ns + self.settings['MWI_off_to_read_signal_off'];when_read_signal_ends = read_signal_delay_in_ns + read_signal_duration_in_ns 
         read_ref_delay_in_ns     = when_read_signal_ends + wait_btwn_sig_ref; read_ref_duration_in_ns    = read_signal_duration_in_ns;                                      when_read_ref_ends    = read_ref_delay_in_ns + read_ref_duration_in_ns
         laser_delay_in_ns        = self.settings['laser_delay_in_ns'];        laser_duration_in_ns       = when_read_ref_ends - laser_delay_in_ns + 100
         
@@ -74,8 +75,7 @@ class ODMR_CW(Instrument):
         # Make pulse sequence (per each freq)
         pulse_sequence = []
         pulse_sequence += [spc.Pulse('Laser',  laser_delay_in_ns,  duration=int(laser_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('AFG', AFG_delay_in_ns, duration=int(AFG_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('MWswitch', AFG_delay_in_ns, duration=int(AFG_duration_in_ns))]
+        pulse_sequence += [spc.Pulse('MWswitch', MWI_delay_in_ns, duration=int(MWI_duration_in_ns))]
         pulse_sequence += [spc.Pulse('Counter', read_signal_delay_in_ns,   duration=int(read_signal_duration_in_ns))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter', read_ref_delay_in_ns,  duration=int(read_ref_duration_in_ns))] # times are in ns
         self.pulse_sequence = pulse_sequence
@@ -176,6 +176,9 @@ class ODMR_CW(Instrument):
             pulsePlotFilename = data.location + "/pulsePlot.png"
             plotPulseObject = PlotPulse(measurementObject=self, plotFilename=pulsePlotFilename, ifShown=True)
             plotPulseObject.makePulsePlot()
+        
+        self.srs.disable_RFOutput()
+        self.srs.disableModulation()
     
     def getDataFilename(self):
         return 'C:/Users/lukin2dmaterials/' + self.data.location + '/ODMRObject_sig_set.dat'
@@ -192,6 +195,7 @@ class Signal(Parameter):
         self.loopCounter = 0
         self.pulse_sequence = pulse_sequence
         self.settings = settings
+        self.trackingSettings = self.settings['trackingSettings']
 
     def get_raw(self):
         self.loopCounter += 1
@@ -217,6 +221,20 @@ class Signal(Parameter):
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
         global sig_avg_over_ref_avg; sig_avg_over_ref_avg = sig_avg/ref_avg
+
+        # NV tracking
+        if self.trackingSettings['if_tracking'] == 1:
+            if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
+                print()
+                cfcObject = Confocal(settings=self.trackingSettings)
+                cfcObject.optimize_xy()
+                time.sleep(1)
+                cfcObject.optimize_xz()
+                time.sleep(1)
+                cfcObject.optimize_xy()
+                time.sleep(1)
+                cfcObject.close()
+
         return sig_avg
     
     def set_raw(self, value):
@@ -227,7 +245,8 @@ class Signal(Parameter):
     def close(self):
         ctrtask.close()
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        pb.turn_on_infinite(channel=laserChannel)
+        channels = np.linspace(laserChannel,laserChannel,1)
+        pb.turn_on_infinite(channels=channels)
 
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):

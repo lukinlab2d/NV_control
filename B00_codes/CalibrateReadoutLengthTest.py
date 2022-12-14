@@ -24,20 +24,16 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PlotPulse import *
-from T2R import *
+from CalibrateReadoutLength import *
 import dataReader
-
-NO_MS_EQUALS_1 = 0
-Q_FINAL = 1
-THREE_PI_HALF_FINAL = 2
 
 ####################################################################################################################
 
 
-for i in np.linspace(2.870e9,2.871e9,1):
-    # T2R
-    start = 6010; stop = 10; num_sweep_points = 101; 
-    ifRandomized = 0; ifLooped = False; normalized_style = Q_FINAL
+for i in np.linspace(1000,2000,1):
+    # CalibrateReadoutLength
+    start = 600; stop = 100; num_sweep_points = 26
+    ifRandomized = 0; ifLooped = 0
     tausArray = np.linspace(start, stop, num_sweep_points)
     uwPower = -35; uwFreq = 2.8705e9
     if True:
@@ -46,22 +42,22 @@ for i in np.linspace(2.870e9,2.871e9,1):
         # Test for pulsed ODMR
         num_loops               = int(1e6)
         laser_init_delay        = 0;        laser_init_duration       = 0
-        laser_to_MWI_delay      = 1000;     piOverTwo_time            = 24
-        laser_to_DAQ_delay      = 900;      read_duration             = 200
+        laser_to_MWI_delay      = 1000;     pi_time                   = 48
+        laser_to_DAQ_delay      = 850;     
         DAQ_to_laser_off_delay  = 2500;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
         # For NV tracking
-        if_tracking = 1
+        if_tracking = 0
         xy_scan_read_time      = 5;      xy_scan_settle_time    = 0.2;  
         xy_scan_resolution_hor = 20;     xy_scan_resolution_ver = 20
         x_minus_range          = 0.1;    x_plus_range           = 0.1
         y_minus_range          = 0.05;   y_plus_range           = 0.05
-        xy_displacement_limit  = 0.02;   num_of_scans           = 5;    tracking_period = 40
+        xy_displacement_limit  = 0.025;  num_of_scans           = 5;    tracking_period = 5
 
         xz_scan_resolution_hor = 20;     xz_scan_resolution_ver = 20
         x_minus_range          = 0.1;    x_plus_range           = 0.1
         z_minus_range          = 0.3;    z_plus_range           = 0.3
-        xz_displacement_limit  = 0.1; 
+        xz_displacement_limit  = 0.15; 
 
         trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_settle_time':    xy_scan_settle_time,
                             'xy_scan_resolution_hor': xy_scan_resolution_hor,'xy_scan_resolution_ver': xy_scan_resolution_ver,
@@ -74,22 +70,25 @@ for i in np.linspace(2.870e9,2.871e9,1):
                             'z_minus_range':          z_minus_range ,        'z_plus_range':           z_plus_range,
                             'xz_displacement_limit':  xz_displacement_limit,}
 
-        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
-                    'laser_init_delay':       laser_init_delay,      'laser_init_duration':       laser_init_duration,
-                    'laser_to_MWI_delay':     laser_to_MWI_delay ,   'piOverTwo_time':            piOverTwo_time,
-                    'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
-                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':          trackingSettings,
-                    'MWI_to_switch_delay':    MWI_to_switch_delay,   'ifRandomized':              ifRandomized,
-                    'normalized_style':       normalized_style}
-        
+        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points,
+                    'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
+                    'laser_init_delay':       laser_init_delay,        'laser_init_duration': laser_init_duration,
+                    'laser_to_MWI_delay':     laser_to_MWI_delay ,     'pi_time':             pi_time,
+                    'laser_to_DAQ_delay':     laser_to_DAQ_delay ,     
+                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,  'MWI_to_switch_delay': MWI_to_switch_delay,
+                    'ifRandomized':           ifRandomized,            
+                    'trackingSettings':    trackingSettings}
 
         start = time.time()
-
-        start = time.time()
-        T2RObject = T2R(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
-        T2RObject.runScan()
+        CalibrateReadoutLengthObject = CalibrateReadoutLength(settings=settings, ifPlotPulse=True) # this is implemented as an Instrument
+        CalibrateReadoutLengthObject.runScan()
         print('Total time = ' + str(time.time() - start) + ' s')
 
-        dataFilename = T2RObject.getDataFilename()
-        if not ifLooped: dataReader.readData(dataFilename, typeNorm = normalized_style)
-        T2RObject.close()
+        dataFilename = CalibrateReadoutLengthObject.getDataFilename()
+        dataReader.readData(dataFilename)
+        CalibrateReadoutLengthObject.close()
+        
+
+
+
+

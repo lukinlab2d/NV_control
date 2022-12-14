@@ -70,7 +70,7 @@ if __name__ == '__main__':
         clock_speed = 500 # MHz
         LaserParam = {'delay_time': 2, 'channel':1}
         CounterParam = {'delay_time': 2, 'channel':2}
-        uwFreq = 80e6; uwPower = -7
+        # uwFreq = 80e6; uwPower = -7
         # srs = SRS()
         # srs.set_freq(uwFreq) #Hz
         # srs.set_RFAmplitude(uwPower) #dBm
@@ -90,4 +90,5 @@ if __name__ == '__main__':
         # time.sleep(3)
         # pb.turn_off()
 
-        pb = TurnOnLaser.turnOnLaser(channel=2)
+        channels = np.linspace(3,0,1)
+        pb = TurnOnLaser.turnOnLaser(channels=channels)

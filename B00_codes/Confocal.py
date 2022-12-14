@@ -44,6 +44,9 @@ class Confocal():
         self.samp_rate = 1e5
         self.isSnake = 0
         self.settings = settings
+        global pb
+        channels = np.linspace(3,3,1)
+        pb = TurnOnLaser.turnOnLaser(channels=channels)
     
     def read_location(self):
         with open('C:/Users/lukin2dmaterials/miniconda3/envs/NV_control/B00_codes/NVlocation.txt', 'r') as f:
@@ -75,8 +78,8 @@ class Confocal():
         self.time_pts_settle = int(self.time_settle*self.samp_rate)
         self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
         self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
-        print('self.time_pts_settle: ' + str(self.time_pts_settle))
-        print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
+        # print('self.time_pts_settle: ' + str(self.time_pts_settle))
+        # print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
 
         # resolution
         self.hor_res = grid_size_x = int(xy_scan_resolution_hor)
@@ -102,7 +105,7 @@ class Confocal():
 
         # make the x-voltage waveform to pass to aotask
         self.x_array = np.array(np.repeat(self.x_array, self.time_pts_per_pixel))
-        print("len(self.x_array): " + str(len(self.x_array)))
+        # print("len(self.x_array): " + str(len(self.x_array)))
 
         # create dataset to populate
         global xy_scan_data_array
@@ -203,8 +206,8 @@ class Confocal():
             else: xy_scan_data_array[f] = normedData
 
             end = time.time() - start0
-            if f == 0 or f == grid_size_y-1 or f == int(grid_size_y/2):
-                print("Time per row: " + str(end) + " s")
+            # if f == 0 or f == grid_size_y-1 or f == int(grid_size_y/2):
+            #     # print("Time per row: " + str(end) + " s")
                 
         clktask.close(); scan_galvo.close() 
 
@@ -214,10 +217,10 @@ class Confocal():
         indices = np.where(most_recent_data_array == most_recent_data_array.max())
         xMax_idx = indices[1][0]; yMax_idx = indices[0][0]
         xMax = self.x_array_original[xMax_idx]; yMax = self.y_array[yMax_idx]
-        print('xMax: ' + str(xMax))
-        print('yMax: ' + str(yMax))
+        # print('xMax: ' + str(xMax))
+        # print('yMax: ' + str(yMax))
         print('XY scan finished')
-        print('------------------------------------------------------------------')
+        # print('------------------------------------------------------------------')
         # plt.imshow(most_recent_data_array)
         # plt.show()
         return xMax, yMax
@@ -236,6 +239,8 @@ class Confocal():
             xMaxAvg = self.oldX; yMaxAvg = self.oldY
 
         self.set_coordinate_fnc(xMaxAvg,yMaxAvg,self.oldZ)
+        self.oldX = xMaxAvg
+        self.oldY = yMaxAvg
 
     def run_xz_scan_fnc(self):
         self.isStopped = 0
@@ -257,8 +262,8 @@ class Confocal():
         self.time_pts_settle = int(self.time_settle*self.samp_rate)
         self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
         self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
-        print('self.time_pts_settle: ' + str(self.time_pts_settle))
-        print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
+        # print('self.time_pts_settle: ' + str(self.time_pts_settle))
+        # print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
         
         # resolution
         self.hor_res = grid_size_x = int(xz_scan_resolution_hor)
@@ -284,7 +289,7 @@ class Confocal():
 
         # make the x-voltage waveform to pass to aotask
         self.x_array = np.array(np.repeat(self.x_array, self.time_pts_per_pixel))
-        print("len(self.x_array): " + str(len(self.x_array)))
+        # print("len(self.x_array): " + str(len(self.x_array)))
 
         # create dataset to populate
         global xz_scan_data_array
@@ -385,8 +390,8 @@ class Confocal():
             else: xz_scan_data_array[f] = normedData
 
             end = time.time() - start0
-            if f == 0 or f == grid_size_z-1 or f == int(grid_size_z/2):
-                print("Time per row: " + str(end) + " s")
+            # if f == 0 or f == grid_size_z-1 or f == int(grid_size_z/2):
+                # print("Time per row: " + str(end) + " s")
 
         clktask.close(); scan_galvo.close() 
 
@@ -397,10 +402,10 @@ class Confocal():
         indices = np.where(most_recent_data_array == most_recent_data_array.max())
         xMax_idx = indices[1][0]; zMax_idx = indices[0][0]
         xMax = self.x_array_original[xMax_idx]; zMax = self.z_array[zMax_idx]
-        print('xMax: ' + str(xMax))
-        print('zMax: ' + str(zMax))
+        # print('xMax: ' + str(xMax))
+        # print('zMax: ' + str(zMax))
         print('XZ scan finished')
-        print('------------------------------------------------------------------')
+        # print('------------------------------------------------------------------')
         # plt.imshow(most_recent_data_array)
         # plt.show()
         return xMax, zMax
@@ -419,6 +424,7 @@ class Confocal():
             xMaxAvg = self.oldX; zMaxAvg = self.oldZ
 
         self.set_coordinate_fnc(self.oldX,self.oldY,zMaxAvg)
+        self.oldZ = zMaxAvg
     
     def set_coordinate_fnc(self, x,y,z):
         # naming the instrument
@@ -443,6 +449,9 @@ class Confocal():
             f.write(str(z))
             f.close()
         scan_galvo.close()  
+
+    def close(self):
+        pb.close()
 
 if __name__ == '__main__':
     print()

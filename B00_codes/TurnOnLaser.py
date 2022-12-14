@@ -20,19 +20,20 @@ import datetime as dt
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 
 
-def turnOnLaser(channel):
+def turnOnLaser(channels):
     print()
     print(dt.datetime.now())
 
     # clock speed is in MHz - is 'status' needed in the dictionary?
-    LaserParam = {'delay_time': 2, 'channel':channel}
+    LaserParam = {'delay_time': 2, 'channel':channels}
     clock_speed = 500 # MHz
     settings = {'clock_speed': clock_speed, 'Laser': LaserParam, 'PB_type': 'USB',
                 'min_pulse_dur': int(5*1e3/clock_speed)}
 
     pb = spc.B00PulseBlaster("SpinCorePB_toTurnOn", settings=settings)
 
-    pb.turn_on_infinite(channel=channel, verbose=False)
+    
+    pb.turn_on_infinite(channels=channels, verbose=False)
 
     print('Laser turned on using PB channel ' + str(LaserParam['channel']))
     return pb

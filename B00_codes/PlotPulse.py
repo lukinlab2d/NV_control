@@ -9,9 +9,13 @@ class PulseTrace:
         self.arr = arr
 
         if "aser" in name: 
-            self.vert_offset = 3; self.color = 'C2'
-        elif "AFG" in name or "MWswitch" in name: 
-            self.vert_offset = 1.5; self.color = 'C0'
+            self.vert_offset = 6; self.color = 'C2'
+        elif "MW_I" in name or "AFG" in name: 
+            self.vert_offset = 4.5; self.color = 'C0'
+        elif "MW_Q" in name: 
+            self.vert_offset = 3; self.color = 'C1'
+        elif "MWswitch" in name: 
+            self.vert_offset = 1.5; self.color = 'C3'
         elif "ounter" in name: 
             self.vert_offset = 0; self.color = 'k'
 
@@ -54,7 +58,8 @@ class PlotPulse():
         for channel_id in self.pulseTrace:
             tr = self.pulseTrace[channel_id]
             x_axis = np.array(range(tr.length))/1e9*1e6
-            if tr.name != "MWswitch": ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
+            # if tr.name != "MWswitch": ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
+            ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
             ax.set_xlabel("Time ($\mu$s)")
             ax.legend(loc='best')
 

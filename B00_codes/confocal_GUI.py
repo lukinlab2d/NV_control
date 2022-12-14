@@ -395,7 +395,7 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
         def toggle_laser_fnc():
             if toggle_laser_checkbox.isChecked():
                 global pb
-                pb = TurnOnLaser.turnOnLaser(channel=3)
+                pb = TurnOnLaser.turnOnLaser(channels=np.linspace(3,3,1))
             else:
                 pb.turn_off()
                 pb.close() # close the instrument
