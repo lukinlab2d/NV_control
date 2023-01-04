@@ -8,12 +8,7 @@ from scipy.optimize import curve_fit
 NO_MS_EQUALS_1 = 0
 Q_FINAL = 1
 THREE_PI_HALF_FINAL = 2
-REF_MINUS_SIG  =3
-
-# read dat file
-# datafile = 'C:/Users/lukin2dmaterials/data/2022-10-26/#014_ODMR_CW_02-57-50/ODMRObject_sig_set.dat'
-# datafile = 'C:/Users/lukin2dmaterials/data/2022-10-26/#020_ODMR_CW_10-32-32/ODMRObject_sig_set.dat'
-# datafile = 'C:/Users/lukin2dmaterials/data/2022-10-26/#024_Rabi_12-32-23/RabiObject_sig_set.dat'
+REF_MINUS_SIG  = 3
 
 def sinusoid(t, A, Tpi, phi,C):
     return A*np.cos(np.pi/Tpi*t + phi) + C
@@ -47,14 +42,16 @@ def readData(datafile, type=None, typeNorm=0, guess=None):
     ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
     sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
 
+    x_s = np.array(x_s)
+    if type == 'XY8': x_s = 8*x_s
+
     fig,ax = plt.subplots()
     ax.plot(x_s, sig, 'o-', label='sig', color='C0')
     ax.plot(x_s, ref, 'o-', label='ref', color = 'C1')
     ax.legend(loc='best')
     ax.set_xlabel(r"$\tau$ (ns)")
 
-    sig = np.array(sig); ref = np.array(ref); sigOverRef = sig/ref; x_s = np.array(x_s)
-    if type == 'XY8': x_s = 8*x_s
+    sig = np.array(sig); ref = np.array(ref); sigOverRef = sig/ref; 
 
     fig2,ax = plt.subplots()
     if typeNorm == NO_MS_EQUALS_1:
@@ -212,11 +209,14 @@ if __name__ == '__main__':
     # datafile = 'C:/Users/lukin2dmaterials/data/2022-12-01/#014_T2R_18-02-17/T2RObject_sig_set.dat'
     # fig2 = readData(datafile, type='None', typeNorm=1)
 
-    datafile = 'C:/Users/lukin2dmaterials/data/2022-12-13/#012_T2E_06-40-26/T2EObject_sig_set.dat'
-    fig2 = readData(datafile, type='None', typeNorm=1)
+    # datafile = 'C:/Users/lukin2dmaterials/data/2022-12-13/#010_T2E_03-56-23/T2EObject_sig_set.dat'
+    # fig2 = readData(datafile, type='None', typeNorm=1)
 
     # datafile = 'C:/Users/lukin2dmaterials/data/2022-12-02/#008_T1_01-45-23/T1Object_sig_set.dat'
     # fig2 = readData(datafile, type='None', typeNorm=0)
+
+    # datafile = 'C:/Users/lukin2dmaterials/data/2022-12-14/#025_XY8_14-16-22/XY8Object_sig_set.dat'
+    # fig2 = readData(datafile, type='XY8', typeNorm=1)
 
     # datafile = 'C:/Users/lukin2dmaterials/data/2022-12-02/#015_CalibrateReadoutLength_12-42-8/CalibrateReadoutLengthObject_sig_set.dat'
     # fig2 = readData(datafile, type='None', typeNorm=0)
@@ -231,13 +231,24 @@ if __name__ == '__main__':
 
     # plt.show()
 
-    # mainFolder = 'C:/Users/lukin2dmaterials/data/2022-12-13/'
+    mainFolder = 'C:/Users/lukin2dmaterials/data/2022-12-19/'
+    for dataFolder in os.listdir(mainFolder):
+        # print(dataFolder)
+        if 'XY8' in dataFolder:
+            idx = int(dataFolder[1:4])
+            if idx >= 0:
+                datafile = mainFolder + dataFolder +'/XY8Object_sig_set.dat'
+                fig = readData(datafile, type='XY8', typeNorm=1)
+
+    # mainFolder = 'C:/Users/lukin2dmaterials/data/2022-12-19/'
     # for dataFolder in os.listdir(mainFolder):
     #     # print(dataFolder)
     #     if 'T2E' in dataFolder:
-    #         datafile = mainFolder + dataFolder +'/T2EObject_sig_set.dat'
-    #         fig = readData(datafile, type='None', typeNorm=1)
-    # plt.show()
+    #         idx = int(dataFolder[1:4])
+    #         if idx >= 0:
+    #             datafile = mainFolder + dataFolder +'/T2EObject_sig_set.dat'
+    #             fig = readData(datafile, type='T2E', typeNorm=1)
+    plt.show()
 
     # #-----------------------------------------------------------------------
     # # Loop

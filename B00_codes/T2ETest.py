@@ -34,10 +34,10 @@ THREE_PI_HALF_FINAL = 2
 ####################################################################################################################
 
 
-for i in np.linspace(24, 18, 4):
+for i in np.linspace(24, 18, 1):
     # T2E
     start = 20; stop = 60020; num_sweep_points = 31 # tau must be divisible by 4
-    ifRandomized = 0; ifLooped = True; normalized_style = Q_FINAL
+    ifRandomized = 0; ifLooped = False; normalized_style = Q_FINAL
     tausArray = np.linspace(start, stop, num_sweep_points)
     uwPower = -25; uwFreq = 2.870e9
     if True:
@@ -46,7 +46,7 @@ for i in np.linspace(24, 18, 4):
         # Test for pulsed ODMR
         num_loops               = int(1e6)
         laser_init_delay        = 0;        laser_init_duration       = 0
-        laser_to_MWI_delay      = 1000;     piOverTwo_time            = i
+        laser_to_MWI_delay      = 1000;     piOverTwo_time            = 24
         laser_to_DAQ_delay      = 850;      read_duration             = 200
         DAQ_to_laser_off_delay  = 2500;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
@@ -62,6 +62,8 @@ for i in np.linspace(24, 18, 4):
         x_minus_range          = 0.05;   x_plus_range           = 0.05
         z_minus_range          = 0.3;    z_plus_range           = 0.3
         xz_displacement_limit  = 0.25; 
+
+        ##### End of user-defined params
 
         trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_settle_time':    xy_scan_settle_time,
                             'xy_scan_resolution_hor': xy_scan_resolution_hor,'xy_scan_resolution_ver': xy_scan_resolution_ver,

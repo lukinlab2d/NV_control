@@ -190,7 +190,7 @@ class Signal(Parameter):
         THREE_PI_HALF_FINAL = 2
         
         # Pulse parameters
-        num_loops               = self.settings['num_loops'];              
+        num_loops               = self.settings['num_loops'];               ifStartInY          = self.settings['ifStartInY']
         laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
         laser_to_MWI1_delay     = self.settings['laser_to_MWI1_delay'];     
         piHalf                  = self.settings['piOverTwo_time'];          pi = 2*piHalf
@@ -233,23 +233,30 @@ class Signal(Parameter):
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")
         
-        MWI_list1 = np.array((2,4,5,7))
+        if ifStartInY:
+            MWI_list1 = np.array((0,2,4,5,7))
+        else: 
+            MWI_list1 = np.array((2,4,5,7))
+
         MWI_list2 = np.array((12,14,15,17))
 
-        # Make pulse sequence XYXYYXYX
+        # Make pulse sequence ?-XYXYYXYX-?
         pulse_sequence = []
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('Laser',    laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',        laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('Laser',    laser_init_delay,        duration=int(laser_init_duration))] 
+        pulse_sequence += [spc.Pulse('Laser',        laser_read_signal_delay, duration=int(laser_read_signal_duration))] 
         pulse_sequence += [spc.Pulse('Laser',        laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
         pulse_sequence += [spc.Pulse('MWswitch',     MW_delays[0],            duration=int(piHalf))]
         for i in range(1,9):
             pulse_sequence += [spc.Pulse('MWswitch', MW_delays[i],            duration=int(pi))]
         pulse_sequence += [spc.Pulse('MWswitch',     MW_delays[9],            duration=int(piHalf))]
         for i in MWI_list1:
-            pulse_sequence += [spc.Pulse('MW_I',     MW_delays[i]-MWI_to_switch_delay, duration=int(pi + 2*MWI_to_switch_delay))]
-        pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
+            if i == 0:
+                pulse_sequence += [spc.Pulse('MW_I',     MW_delays[i]-MWI_to_switch_delay, duration=int(piHalf + 2*MWI_to_switch_delay))]
+            else:
+                pulse_sequence += [spc.Pulse('MW_I',     MW_delays[i]-MWI_to_switch_delay, duration=int(pi + 2*MWI_to_switch_delay))]
+        pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] 
+        pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] 
 
         if not normalized_style == NO_MS_EQUALS_1:
             pulse_sequence += [spc.Pulse('MWswitch', MW_delays[10],           duration=int(piHalf))]
@@ -258,10 +265,12 @@ class Signal(Parameter):
             
             if normalized_style == Q_FINAL:
                 MWI19_duration = piHalf
-                pulse_sequence += [spc.Pulse('MW_I', MW_delays[19]-MWI_to_switch_delay, duration=int(MWI19_duration + 2*MWI_to_switch_delay))]
-                pulse_sequence += [spc.Pulse('MW_Q', MW_delays[19]-MWI_to_switch_delay, duration=int(MWI19_duration + 2*MWI_to_switch_delay))] # times are in ns
+                pulse_sequence += [spc.Pulse('MW_Q', MW_delays[19]-MWI_to_switch_delay, duration=int(MWI19_duration + 2*MWI_to_switch_delay))]
+                if not ifStartInY:
+                    pulse_sequence += [spc.Pulse('MW_I', MW_delays[19]-MWI_to_switch_delay, duration=int(MWI19_duration + 2*MWI_to_switch_delay))]
             elif normalized_style == THREE_PI_HALF_FINAL:
                 MWI19_duration = 3*piHalf
+
             pulse_sequence += [spc.Pulse('MWswitch', MW_delays[19],           duration=int(MWI19_duration))]
             for i in MWI_list2:
                 pulse_sequence += [spc.Pulse('MW_I', MW_delays[i]-MWI_to_switch_delay, duration=int(pi + 2*MWI_to_switch_delay))]
