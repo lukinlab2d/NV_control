@@ -42,8 +42,8 @@ for i in np.linspace(1,2000,2000):
 
         taus1 = np.linspace(20,2020,51)
         taus2 = np.linspace(2200,9800,39)
-        taus3 = np.linspace(10000,30000,41)
-        taus4 = np.linspace(32000,50000,10)
+        taus3 = np.linspace(10000,30000,21)
+        taus4 = np.linspace(32000,48000,5)
         tausArray = np.concatenate((taus1, taus2, taus3, taus4))
         start = tausArray[0]; stop = tausArray[-1]; num_sweep_points = len(tausArray)
 
@@ -51,7 +51,7 @@ for i in np.linspace(1,2000,2000):
             print(uwFreq)
 
             # Test for pulsed ODMR
-            num_loops               = int(1e6)
+            num_loops               = int(7e5)
             laser_init_delay        = 0;        laser_init_duration       = 0
             laser_to_MWI_delay      = 1000;     piOverTwo_time            = 24
             laser_to_DAQ_delay      = 850;      read_duration             = 200
@@ -59,11 +59,11 @@ for i in np.linspace(1,2000,2000):
 
             # For NV tracking
             if_tracking = 1
-            xy_scan_read_time      = 5;      xy_scan_settle_time    = 1;  
+            xy_scan_read_time      = 4;      xy_scan_settle_time    = 1;  
             xy_scan_resolution_hor = 40;     xy_scan_resolution_ver = 20
             x_minus_range          = 0.07;   x_plus_range           = 0.05
             y_minus_range          = 0.05;   y_plus_range           = 0.05
-            xy_displacement_limit  = 0.05;   num_of_scans           = 5;    tracking_period = 10
+            xy_displacement_limit  = 0.05;   num_of_scans           = 3;    tracking_period = 10
 
             xz_scan_resolution_hor = 20;     xz_scan_resolution_ver = 20
             x_minus_range          = 0.05;   x_plus_range           = 0.05
@@ -106,8 +106,8 @@ for i in np.linspace(1,2000,2000):
     ifRandomized = 0; ifLooped = True; normalized_style = Q_FINAL; ifStartInY = 0
     uwPower = -25; uwFreq = 2.870e9
 
-    taus1 = np.linspace(20,4220,71)
-    taus2 = np.linspace(4400,14000,25)
+    taus1 = np.linspace(20,2960,50)
+    taus2 = np.linspace(3000,14000,12)
     tausArray = np.concatenate((taus1, taus2))
     start = tausArray[0]; stop = tausArray[-1]; num_sweep_points = len(tausArray)
 
@@ -123,11 +123,11 @@ for i in np.linspace(1,2000,2000):
 
         # For NV tracking
         if_tracking = 1
-        xy_scan_read_time      = 5;      xy_scan_settle_time    = 1;  
+        xy_scan_read_time      = 4;      xy_scan_settle_time    = 1;  
         xy_scan_resolution_hor = 40;     xy_scan_resolution_ver = 20
         x_minus_range          = 0.07;   x_plus_range           = 0.05
         y_minus_range          = 0.05;   y_plus_range           = 0.05
-        xy_displacement_limit  = 0.05;   num_of_scans           = 5;    tracking_period = 10
+        xy_displacement_limit  = 0.05;   num_of_scans           = 3;    tracking_period = 10
 
         xz_scan_resolution_hor = 20;     xz_scan_resolution_ver = 20
         x_minus_range          = 0.05;   x_plus_range           = 0.05
