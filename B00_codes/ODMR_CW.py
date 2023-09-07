@@ -45,13 +45,15 @@ class ODMR_CW(Instrument):
         # clock speed is in MHz - is 'status' needed in the dictionary?
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
+        self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':1}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
-        global laserChannel; laserChannel = self.LaserParam['channel']
+        global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
 
-        settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
+        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
                         'MW_I': self.MWIParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed)}
         self.settings = {**settings, **settings_extra}
@@ -64,20 +66,20 @@ class ODMR_CW(Instrument):
 
         # Pulse lengths
         num_loops                = self.settings['num_loops'];                wait_btwn_sig_ref          = self.settings['wait_btwn_sig_ref']
-        MWI_delay_in_ns          = self.settings['MWI_delay_in_ns'];          MWI_duration_in_ns         = self.settings['MWI_duration_in_ns'];                             when_MWI_ends         = MWI_delay_in_ns + MWI_duration_in_ns      
-        read_signal_delay_in_ns  = MWI_delay_in_ns;                           read_signal_duration_in_ns = MWI_duration_in_ns + self.settings['MWI_off_to_read_signal_off'];when_read_signal_ends = read_signal_delay_in_ns + read_signal_duration_in_ns 
-        read_ref_delay_in_ns     = when_read_signal_ends + wait_btwn_sig_ref; read_ref_duration_in_ns    = read_signal_duration_in_ns;                                      when_read_ref_ends    = read_ref_delay_in_ns + read_ref_duration_in_ns
-        laser_delay_in_ns        = self.settings['laser_delay_in_ns'];        laser_duration_in_ns       = when_read_ref_ends - laser_delay_in_ns + 100
+        MWI_delay          = self.settings['MWI_delay'];          MWI_duration         = self.settings['MWI_duration'];                             when_MWI_ends         = MWI_delay + MWI_duration      
+        read_signal_delay  = MWI_delay;                           read_signal_duration = MWI_duration + self.settings['MWI_off_to_read_signal_off'];when_read_signal_ends = read_signal_delay + read_signal_duration 
+        read_ref_delay     = when_read_signal_ends + wait_btwn_sig_ref; read_ref_duration    = read_signal_duration;                                      when_read_ref_ends    = read_ref_delay + read_ref_duration
+        laser_delay        = self.settings['laser_delay'];        laser_duration       = when_read_ref_ends - laser_delay + 100
         
-        if read_signal_duration_in_ns != read_ref_duration_in_ns:
+        if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")    
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
-        pulse_sequence += [spc.Pulse('Laser',  laser_delay_in_ns,  duration=int(laser_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('MWswitch', MWI_delay_in_ns, duration=int(MWI_duration_in_ns))]
-        pulse_sequence += [spc.Pulse('Counter', read_signal_delay_in_ns,   duration=int(read_signal_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Counter', read_ref_delay_in_ns,  duration=int(read_ref_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserInit',  laser_delay,  duration=int(laser_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('MWswitch', MWI_delay, duration=int(MWI_duration))]
+        pulse_sequence += [spc.Pulse('Counter', read_signal_delay,   duration=int(read_signal_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('Counter', read_ref_delay,  duration=int(read_ref_duration))] # times are in ns
         self.pulse_sequence = pulse_sequence
         
         # SRS object
@@ -115,7 +117,7 @@ class ODMR_CW(Instrument):
             num_reads = num_reads,
             num_loops = num_loops,
             num_reads_per_iter = num_reads_per_iter,
-            read_duration_in_ns = read_signal_duration_in_ns,
+            read_duration = read_signal_duration,
             pulse_sequence = pulse_sequence,
             settings = self.settings
         )
@@ -186,12 +188,12 @@ class ODMR_CW(Instrument):
     
 class Signal(Parameter):
     def __init__(self, num_reads: int, num_reads_per_iter: int, num_loops: int,
-                 read_duration_in_ns: int, name='sig', pulse_sequence=None, settings=None, **kwargs):
+                 read_duration: int, name='sig', pulse_sequence=None, settings=None, **kwargs):
         super().__init__(name, **kwargs)
         self.num_reads = num_reads
         self.num_reads_per_iter = num_reads_per_iter
         self.num_loops = num_loops
-        self.read_duration_in_ns = read_duration_in_ns
+        self.read_duration = read_duration
         self.loopCounter = 0
         self.pulse_sequence = pulse_sequence
         self.settings = settings
@@ -215,7 +217,7 @@ class Signal(Parameter):
 
         ctrtask.stop()
         
-        rate = xLineData/(self.read_duration_in_ns/1e9)/1e3
+        rate = xLineData/(self.read_duration/1e9)/1e3
         sig = rate[::self.num_reads_per_iter]
         ref = rate[1::self.num_reads_per_iter]
         global sig_avg;  sig_avg = np.average(sig)
@@ -245,7 +247,7 @@ class Signal(Parameter):
     def close(self):
         ctrtask.close()
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        channels = np.linspace(laserChannel,laserChannel,1)
+        channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
 
 class Reference(Parameter):

@@ -20,7 +20,7 @@ import datetime as dt
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 
 
-def turnOnLaser(channels):
+def turnOnLaser(channels, instrument_name):
     print()
     print(dt.datetime.now())
 
@@ -30,7 +30,7 @@ def turnOnLaser(channels):
     settings = {'clock_speed': clock_speed, 'Laser': LaserParam, 'PB_type': 'USB',
                 'min_pulse_dur': int(5*1e3/clock_speed)}
 
-    pb = spc.B00PulseBlaster("SpinCorePB_toTurnOn", settings=settings)
+    pb = spc.B00PulseBlaster(instrument_name, settings=settings)
 
     
     pb.turn_on_infinite(channels=channels, verbose=False)

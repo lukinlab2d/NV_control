@@ -57,13 +57,16 @@ class ODMR(Instrument):
         # clock speed is in MHz - is 'status' needed in the dictionary?
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
+        self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':1}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
-        global laserChannel; laserChannel = self.LaserParam['channel']
+        global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
+    
 
-        settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
+        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
                         'MW_I': self.MWIParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed)}
         self.settings = {**settings, **settings_extra}
@@ -99,9 +102,9 @@ class ODMR(Instrument):
         # Make pulse sequence (per each freq)
         pulse_sequence = []
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('Laser',laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
+            pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
         pulse_sequence += [spc.Pulse('MWswitch', MWI_delay,               duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
@@ -272,7 +275,7 @@ class Signal(Parameter):
     def close(self):
         ctrtask.close()
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        channels = np.linspace(laserChannel,laserChannel,1)
+        channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
 
 class Reference(Parameter):

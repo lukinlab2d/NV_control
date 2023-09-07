@@ -23,8 +23,6 @@ from nidaqmx.constants import(
     AcquisitionType,
     FrequencyUnits
 )
-from PlotPulse import *
-from T2R import *
 import sys
 import os
 import nidaqmx
@@ -39,14 +37,14 @@ from qcodes_contrib_drivers.drivers.NationalInstruments.class_file import *
 
 ####################################################################################################################
 class Confocal():
-    def __init__(self, name='CFCScanObject', settings=None, **kwargs) -> None:
+    def __init__(self, name='CFCScanObject', settings=None, laserChannel=3, **kwargs) -> None:
         self.oldX, self.oldY, self.oldZ = self.read_location()
         self.samp_rate = 1e5
         self.isSnake = 0
         self.settings = settings
         global pb
-        channels = np.linspace(3,3,1)
-        pb = TurnOnLaser.turnOnLaser(channels=channels)
+        channels = np.linspace(laserChannel,laserChannel,1)
+        pb = TurnOnLaser.turnOnLaser(channels=channels, instrument_name="PB_NVtracking")
     
     def read_location(self):
         with open('C:/Users/lukin2dmaterials/miniconda3/envs/NV_control/B00_codes/NVlocation.txt', 'r') as f:
@@ -57,7 +55,7 @@ class Confocal():
             f.close()
         return oldX, oldY, oldZ
 
-    def run_xy_scan_fnc(self):
+    def run_xy_scan_fnc(self, ifSpecifyStartEnd=0):
         self.isStopped = 0
         
         scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
@@ -78,9 +76,7 @@ class Confocal():
         self.time_pts_settle = int(self.time_settle*self.samp_rate)
         self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
         self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
-        # print('self.time_pts_settle: ' + str(self.time_pts_settle))
-        # print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
-
+        
         # resolution
         self.hor_res = grid_size_x = int(xy_scan_resolution_hor)
         self.ver_res = grid_size_y = int(xy_scan_resolution_ver)
@@ -101,6 +97,13 @@ class Confocal():
         # array of x,y voltages
         self.x_array = np.linspace(x_init, x_final, grid_size_x); self.x_array_original = self.x_array
         self.y_array = np.linspace(y_init, y_final, grid_size_y)
+
+        if ifSpecifyStartEnd:
+            x_init = float(self.settings['xmin']); x_final = float(self.settings['xmax'])
+            y_init = float(self.settings['ymin']); y_final = float(self.settings['ymax'])
+            self.x_array = np.linspace(x_init, x_final, grid_size_x); self.x_array_original = self.x_array
+            self.y_array = np.linspace(y_init, y_final, grid_size_y) 
+
         X, Y = np.meshgrid(self.x_array, self.y_array)
 
         # make the x-voltage waveform to pass to aotask
@@ -223,17 +226,18 @@ class Confocal():
         # print('------------------------------------------------------------------')
         # plt.imshow(most_recent_data_array)
         # plt.show()
-        return xMax, yMax
+        return xMax, yMax, most_recent_data_array
 
     def optimize_xy(self):
-        xMaxArr = []; yMaxArr = []
+        xMaxArr = []; yMaxArr = []; cMaxArr = []
         for i in range(self.settings['num_of_scans']):
-            xMax, yMax = self.run_xy_scan_fnc()
-            xMaxArr.append(xMax); yMaxArr.append(yMax)
-        xMaxArr = np.array(xMaxArr); yMaxArr = np.array(yMaxArr)
-        xMaxAvg = np.round(np.average(xMaxArr),3); yMaxAvg = np.round(np.average(yMaxArr),3)
+            xMax, yMax, most_recent_data_array = self.run_xy_scan_fnc()
+            xMaxArr.append(xMax); yMaxArr.append(yMax); cMaxArr.append(most_recent_data_array.max())
+        xMaxArr = np.array(xMaxArr); yMaxArr = np.array(yMaxArr); cMaxArr = np.array(cMaxArr)
+        xMaxAvg = np.round(np.average(xMaxArr),3); yMaxAvg = np.round(np.average(yMaxArr),3); cMaxAvg = np.round(np.average(cMaxArr),3)
         print('xMaxAvg: ' + str(xMaxAvg))
         print('yMaxAvg: ' + str(yMaxAvg))
+        print('cMaxAvg: ' + str(cMaxAvg))
 
         if np.abs(xMaxAvg-self.oldX) > self.settings['xy_displacement_limit'] or np.abs(yMaxAvg-self.oldY) > self.settings['xy_displacement_limit']:
             xMaxAvg = self.oldX; yMaxAvg = self.oldY
@@ -241,6 +245,27 @@ class Confocal():
         self.set_coordinate_fnc(xMaxAvg,yMaxAvg,self.oldZ)
         self.oldX = xMaxAvg
         self.oldY = yMaxAvg
+    
+    def optimize_xy_fast(self):
+        xMaxArr = []; yMaxArr = []; cMaxArr = []
+        for i in range(1):
+            xMax, yMax, most_recent_data_array = self.run_xy_scan_fnc()
+            xMaxArr.append(xMax); yMaxArr.append(yMax); cMaxArr.append(most_recent_data_array.max())
+        xMaxArr = np.array(xMaxArr); yMaxArr = np.array(yMaxArr); cMaxArr = np.array(cMaxArr)
+        xMaxAvg = np.round(np.average(xMaxArr),3); yMaxAvg = np.round(np.average(yMaxArr),3); cMaxAvg = np.round(np.average(cMaxArr),3)
+        print('xMaxAvg: ' + str(xMaxAvg))
+        print('yMaxAvg: ' + str(yMaxAvg))
+        print('cMaxAvg: ' + str(cMaxAvg))
+
+        if np.abs(xMaxAvg-self.oldX) > self.settings['xy_displacement_limit'] or np.abs(yMaxAvg-self.oldY) > self.settings['xy_displacement_limit']:
+            xMaxAvg = self.oldX; yMaxAvg = self.oldY
+
+        self.set_coordinate_fnc(xMaxAvg,yMaxAvg,self.oldZ)
+        self.oldX = xMaxAvg
+        self.oldY = yMaxAvg
+
+
+
 
     def run_xz_scan_fnc(self):
         self.isStopped = 0
@@ -408,12 +433,12 @@ class Confocal():
         # print('------------------------------------------------------------------')
         # plt.imshow(most_recent_data_array)
         # plt.show()
-        return xMax, zMax
+        return xMax, zMax, most_recent_data_array
 
     def optimize_xz(self):
         xMaxArr = []; zMaxArr = []
         for i in range(self.settings['num_of_scans']):
-            xMax, zMax = self.run_xz_scan_fnc()
+            xMax, zMax, most_recent_data_array = self.run_xz_scan_fnc()
             xMaxArr.append(xMax); zMaxArr.append(zMax)
         xMaxArr = np.array(xMaxArr); zMaxArr = np.array(zMaxArr)
         xMaxAvg = np.round(np.average(xMaxArr),3); zMaxAvg = np.round(np.average(zMaxArr),3)

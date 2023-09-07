@@ -43,10 +43,10 @@ class CalibrateReadoutLength(Instrument):
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.LaserParam =       {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':1}
-        self.MWQParam =         {'delay_time': 2, 'channel':1}
+        self.MWQParam =         {'delay_time': 2, 'channel':0}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
         global laserChannel; laserChannel = self.LaserParam['channel']
 
@@ -111,12 +111,6 @@ class CalibrateReadoutLength(Instrument):
             name = 'sig'
             )
         plot.add(data.CalibrateReadoutLengthObject_ref, name='ref')
-        # plot = QtPlot(
-        #     data.CalibrateReadoutLengthObject_sigOverRef, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig/ref'
-        #     )
 
         loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
@@ -264,7 +258,8 @@ class Signal(Parameter):
 
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        pb.turn_on_infinite(channel=laserChannel)
+        channels = np.linspace(laserChannel,laserChannel,1)
+        pb.turn_on_infinite(channels=channels)
 
 
 class Reference(Parameter):

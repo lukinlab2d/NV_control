@@ -17,33 +17,31 @@
 """
 import numpy as np
 from nidaqmx.constants import *
-from nidaqmx.constants import(
-    Edge,
-    CountDirection,
-    AcquisitionType,
-    FrequencyUnits
-)
-from PlotPulse import *
-from Rabi import *
-import dataReader
+from B00_codes.PlotPulse import *
+from B00_codes.Rabi import *
+import B00_codes.dataReader as dataReader
+
+NO_MS_EQUALS_1 = 0
+Q_FINAL = 1
+THREE_PI_HALF_FINAL = 2
+REF_MINUS_SIG  = 3
 
 ####################################################################################################################
 
 
 for i in np.linspace(1000,2000,1):
     # Rabi
-    start = 10; stop = 370; num_sweep_points = 61; ifLooped = False
+    start = 250; stop = 10; num_sweep_points = 61; ifLooped = False
     tausArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -25; uwFreq = 2.870e9
-    if True: #uwFreq != 2.868e9:
+    uwPower = -25; uwFreq = 2870e6
+    if True:
         print(uwFreq)
 
-        # Test for pulsed ODMR
-        num_loops               = int(0.6e6)
+        num_loops               = int(0.7e6)
         laser_init_delay        = 0;        laser_init_duration = 0
         laser_to_MWI_delay      = 1000;       
-        laser_to_DAQ_delay      = 850;      read_duration             = 200
-        DAQ_to_laser_off_delay  = 2500;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
+        laser_to_DAQ_delay      = 850;      read_duration             = 250
+        DAQ_to_laser_off_delay  = 1000;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
                     'laser_init_delay':       laser_init_delay,      'laser_init_duration':       laser_init_duration,
@@ -57,10 +55,13 @@ for i in np.linspace(1000,2000,1):
         print('Total time = ' + str(time.time() - start) + ' s')
 
         if not ifLooped: dataFilename = RabiObject.getDataFilename()
-        guess=(0.2, 50, 0, 0.9)
-        dataReader.readData(dataFilename, type='Rabi', guess=guess)
+        guess=(0.2, 10, 0, 0.9, 600)
+        dataReader.readData(dataFilename, type='RabiDecay', guess=guess, ifFit=1)
         RabiObject.close()
         
+        # guess=(0.3, 250, 0, 0.9)
+        # dataFilename = 'C:/Users/lukin2dmaterials/data/2023-06-14/#008_Rabi_16-57-21/RabiObject_sig_set.dat'
+        # dataReader.readData(dataFilename, type='Rabi', guess=guess, typeNorm=REF_MINUS_SIG)
 
 
 

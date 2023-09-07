@@ -28,60 +28,70 @@ ni_9402_device_name = "cDAQ1Mod1"
 ni_9402_counter_channel = "cDAQ1Mod1/ctr0"
 ni_9402_clock_channel = "cDAQ1Mod1/ctr1"
 ni_9402_source_channel = "/cDAQ1/Ctr1InternalOutput"
-ni_9402_sampling_rate = 1e5 #10
+ni_9402_sampling_rate = 1e6 #Hz? #10
 ni_9402_duty_cycle = 0.5                                  # is this for the clock?
-ni_9402_integration_time = 0.03 # 0.01
-ni_9402_samples_per_channel = int(ni_9402_integration_time * ni_9402_sampling_rate) # 1
-ni_9402_timeout = 60
+ifPlot = 1 #True
 
-ni_9402 = Counter("ni_9402_module", ni_9402_device_name, ni_9402_counter_channel,
-    ni_9402_clock_channel, ni_9402_source_channel, ni_9402_sampling_rate,
-    ni_9402_samples_per_channel, ni_9402_duty_cycle,
-    ni_9402_integration_time, ni_9402_timeout)
+for tau in np.linspace(0.030,0.002,1): #s
+    ni_9402_integration_time = 0.03 #100e-6 #tau #0.03 # 0.01 #s
+    ni_9402_samples_per_channel = int(ni_9402_integration_time * ni_9402_sampling_rate) # 1
+    ni_9402_timeout = 60
 
-############################## main fnc (counting and plotting) ###################################
+    ni_9402 = Counter("ni_9402_module", ni_9402_device_name, ni_9402_counter_channel,
+        ni_9402_clock_channel, ni_9402_source_channel, ni_9402_sampling_rate,
+        ni_9402_samples_per_channel, ni_9402_duty_cycle,
+        ni_9402_integration_time, ni_9402_timeout)
 
-p_measure = qc.ManualParameter(name = "counts_num")
-p_sweep = qc.Parameter(name = "time_s", set_cmd = p_measure.set)
+    ############################## main fnc (counting and plotting) ###################################
 
-fnc_2 = ni_9402.integrateavg
+    p_measure = qc.ManualParameter(name = "counts_num")
+    p_sweep = qc.Parameter(name = "time_s", set_cmd = p_measure.set)
 
-loop = Loop(
-    # p_sweep.sweep(0, 10000, step = 0.01), # .sweep(start, stop, num values to generate)
-    p_sweep.sweep(0, 10000, step = 1), # .sweep(start, stop, num values to generate)
-    delay = 0.0
-    ).each(fnc_2)
+    fnc_2 = ni_9402.integrateavg
 
-data = loop.get_data_set(name='Live_counter')
-# print(dir(data))
+    start = time.time()
+    loop = Loop(
+        p_sweep.sweep(0, 150000, step = 1), # .sweep(start, stop, num values to generate)
+        delay = 0.0
+        ).each(fnc_2)
 
-plot = QtPlot(
-    data.ni_9402_module_integrateavg, # ni_9402_module_integrateavg
-    figsize = (1200, 600),
-    interval = 1,
-    theme = ((255, 255, 255), "black"), # color in quotes is background color
-    )
+    if ifPlot:
+        data = loop.get_data_set(name='Live_counter')
+        plot = QtPlot(
+            data.ni_9402_module_integrateavg, # ni_9402_module_integrateavg
+            figsize = (1200, 600),
+            interval = 1,
+            theme = ((255, 255, 255), "black"), # color in quotes is background color
+            )
 
-loop.with_bg_task(plot.update)
-loop.run()
+        loop.with_bg_task(plot.update)
+
+    loop.run()
+
+    end = time.time()
+    duration = end - start
+    print("Duration = " + str(duration) + " s.")
+
+    data = loop.get_data_set(name='Live_counter')
+    ni_9402.close()
 
 
-# plot = QtPlot(
-#     figsize = (1200, 600),
-#     interval = 1,
-#     theme = ((255, 255, 255), "black"), # color in quotes is background color
-#     )
+    # plot = QtPlot(
+    #     figsize = (1200, 600),
+    #     interval = 1,
+    #     theme = ((255, 255, 255), "black"), # color in quotes is background color
+    #     )
 
-# loop = Loop(
-#     # p_sweep.sweep(0, 10000, step = 0.01), # .sweep(start, stop, num values to generate)
-#     p_sweep.sweep(0, 10000, step = 1), # .sweep(start, stop, num values to generate)
-#     delay = 0.0
-#     ).each(
-#         fnc_2,
-#         print(hasattr(qc.loops.active_data_set, 'data_set')),
-#         plot.add(qc.loops.active_data_set()),
-#         # plot.add_updater(plot_config=qc.config),
-#         plot.update()
-#         )
+    # loop = Loop(
+    #     # p_sweep.sweep(0, 10000, step = 0.01), # .sweep(start, stop, num values to generate)
+    #     p_sweep.sweep(0, 10000, step = 1), # .sweep(start, stop, num values to generate)
+    #     delay = 0.0
+    #     ).each(
+    #         fnc_2,
+    #         print(hasattr(qc.loops.active_data_set, 'data_set')),
+    #         plot.add(qc.loops.active_data_set()),
+    #         # plot.add_updater(plot_config=qc.config),
+    #         plot.update()
+    #         )
 
-# loop.run()
+    # loop.run()

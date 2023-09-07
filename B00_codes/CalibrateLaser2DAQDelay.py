@@ -37,17 +37,19 @@ from PIL import Image
 from PlotPulse import *    
 from Confocal import *
 
-class CalibrateLaser2MWDelay(Instrument):
+class CalibrateLaser2DAQDelay(Instrument):
 
-    def __init__(self, name='CalibrateLaser2MWDelayObject', settings=None, ifPlotPulse=True, ifRandom=False, **kwargs) -> None:
+    def __init__(self, name='CalibrateLaser2DAQDelayObject', settings=None, ifPlotPulse=True, ifRandom=False, 
+                 ifSweepLaserInitDelay=False, **kwargs) -> None:
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.LaserParam =       {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.AFGParam =         {'delay_time': 2, 'channel':1}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
         global laserChannel; laserChannel = self.LaserParam['channel']
+        global ifSweepLaserInitDelayGlobal; ifSweepLaserInitDelayGlobal = ifSweepLaserInitDelay
 
         settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
                         'AFG': self.AFGParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
@@ -55,8 +57,7 @@ class CalibrateLaser2MWDelay(Instrument):
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        self.tausArray = np.linspace(start, stop, num_sweep_points)
+        self.tausArray = self.settings['tausArray']
         if ifRandom: np.random.shuffle(self.tausArray)
 
         self.add_parameter(
@@ -90,12 +91,12 @@ class CalibrateLaser2MWDelay(Instrument):
                                             qctask(sig.plotPulseSequences),
                                             ).then(qctask(sig.turn_on_at_end))
 
-        data = loop.get_data_set(name='CalibrateLaser2MWDelay')
+        data = loop.get_data_set(name='CalibrateLaser2DAQDelay')
         data.add_metadata(self.settings)
         self.data = data
         
         plot = QtPlot(
-            data.CalibrateLaser2MWDelayObject_sig, # this is implemented as a Parameter
+            data.CalibrateLaser2DAQDelayObject_sig, # this is implemented as a Parameter
             figsize = (1200, 600),
             interval = 1,
             name = 'sig'
@@ -117,18 +118,17 @@ class CalibrateLaser2MWDelay(Instrument):
                 fig.savefig(pulsePlotFilename)
 
     def getDataFilename(self):
-        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/CalibrateLaser2MWDelayObject_sig_set.dat'
+        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/CalibrateLaser2DAQDelayObject_sig_set.dat'
     
 class Signal(Parameter):
     def __init__(self, settings=None, name='sig', measurementObject=None, **kwargs):
         super().__init__(name, **kwargs)
         self.settings = settings
         self.trackingSettings = self.settings['trackingSettings']
-        self.CalibrateLaser2MWDelayObject = measurementObject
+        self.CalibrateLaser2DAQDelayObject = measurementObject
         self.loopCounter = 0
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        self.tausArray = np.linspace(start, stop, num_sweep_points)
-
+        self.tausArray = self.settings['tausArray']
+        
     def get_raw(self):
         self.ctrtask.start()
 
@@ -164,17 +164,23 @@ class Signal(Parameter):
         print("Loop " + str(self.loopCounter))
         
         # Pulse parameters
-        num_loops               = self.settings['num_loops']
-        laser_init_delay_in_ns  = self.settings['laser_init_delay_in_ns'];  laser_init_duration_in_ns = self.settings['laser_init_duration_in_ns']
-        read_duration           = self.settings['read_duration']        
+        num_loops         = self.settings['num_loops']
+        laser_init_delay  = self.settings['laser_init_delay'];  laser_init_duration = self.settings['laser_init_duration']
+        read_duration     = self.settings['read_duration']        
        
-        read_signal_delay_in_ns = laser_init_delay_in_ns + tau_ns; read_signal_duration_in_ns = read_duration
-        self.read_duration      = read_signal_duration_in_ns
+        read_signal_delay  = laser_init_delay + tau_ns; read_signal_duration = read_duration
+        self.read_duration = read_signal_duration
+
+        if ifSweepLaserInitDelayGlobal:
+            laser_init_delay     = tau_ns
+            read_signal_delay    = laser_init_delay + self.settings['laser_to_DAQ_delay']
+            read_signal_duration = read_duration
+            self.read_duration   = read_signal_duration
 
         # Make pulse sequence
         pulse_sequence = []
-        pulse_sequence += [spc.Pulse('Laser',    laser_init_delay_in_ns,        duration=int(laser_init_duration_in_ns))] # times are in ns
-        pulse_sequence += [spc.Pulse('Counter',  read_signal_delay_in_ns,       duration=int(read_signal_duration_in_ns))] # times are in ns
+        pulse_sequence += [spc.Pulse('Laser',    laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         self.pulse_sequence = pulse_sequence
         
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
@@ -212,12 +218,13 @@ class Signal(Parameter):
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False)
                 fig = plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.tausArray)-1: # only save first and last pulse sequence
-                self.CalibrateLaser2MWDelayObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
+                self.CalibrateLaser2DAQDelayObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
 
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        pb.turn_on_infinite(channel=laserChannel)
+        channels = np.linspace(laserChannel,laserChannel,1)
+        pb.turn_on_infinite(channels=channels)
 
 
 class Reference(Parameter):

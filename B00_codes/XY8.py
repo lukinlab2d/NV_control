@@ -43,15 +43,17 @@ class XY8(Instrument):
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
+        self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':1}
         self.MWQParam =         {'delay_time': 2, 'channel':0}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
-        global laserChannel; laserChannel = self.LaserParam['channel']
+        global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
         global pb
 
-        settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
+        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
                         'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
         self.settings = {**settings, **settings_extra}
@@ -192,7 +194,7 @@ class Signal(Parameter):
         # Pulse parameters
         num_loops               = self.settings['num_loops'];               ifStartInY          = self.settings['ifStartInY']
         laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
-        laser_to_MWI1_delay     = self.settings['laser_to_MWI1_delay'];     
+        laser_to_MWI_delay     = self.settings['laser_to_MWI_delay'];     
         piHalf                  = self.settings['piOverTwo_time'];          pi = 2*piHalf
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  normalized_style    = self.settings['normalized_style']
@@ -204,7 +206,7 @@ class Signal(Parameter):
         
         when_init_end = laser_init_delay + laser_init_duration
         MW_delays     = []
-        MW_delays.append(when_init_end + laser_to_MWI1_delay)         
+        MW_delays.append(when_init_end + laser_to_MWI_delay)         
         MW_delays.append(MW_delays[0] + piHalf + tau_ns/2)
         for i in range(2,9):
             MW_delays.append(MW_delays[i-1] + pi + tau_ns)
@@ -218,13 +220,13 @@ class Signal(Parameter):
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
 
-        MW_delays.append(when_laser_read_signal_end + laser_to_MWI1_delay)
+        MW_delays.append(when_laser_read_signal_end + laser_to_MWI_delay)
         MW_delays.append(MW_delays[10] + piHalf + tau_ns/2)
         for i in range(12,19):
             MW_delays.append(MW_delays[i-1] + pi + tau_ns)   
         MW_delays.append(MW_delays[18] + pi + tau_ns/2)
         
-        laser_read_ref_delay = when_laser_read_signal_end + laser_to_MWI1_delay + pulse_duration
+        laser_read_ref_delay = when_laser_read_signal_end + laser_to_MWI_delay + pulse_duration
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  
         read_ref_duration    = read_duration; when_read_ref_end = read_ref_delay + read_ref_duration
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
@@ -243,9 +245,9 @@ class Signal(Parameter):
         # Make pulse sequence ?-XYXYYXYX-?
         pulse_sequence = []
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('Laser',    laser_init_delay,        duration=int(laser_init_duration))] 
-        pulse_sequence += [spc.Pulse('Laser',        laser_read_signal_delay, duration=int(laser_read_signal_duration))] 
-        pulse_sequence += [spc.Pulse('Laser',        laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
+            pulse_sequence += [spc.Pulse('LaserInit',    laser_init_delay,        duration=int(laser_init_duration))] 
+        pulse_sequence += [spc.Pulse('LaserRead',        laser_read_signal_delay, duration=int(laser_read_signal_duration))] 
+        pulse_sequence += [spc.Pulse('LaserRead',        laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
         pulse_sequence += [spc.Pulse('MWswitch',     MW_delays[0],            duration=int(piHalf))]
         for i in range(1,9):
             pulse_sequence += [spc.Pulse('MWswitch', MW_delays[i],            duration=int(pi))]
@@ -320,7 +322,7 @@ class Signal(Parameter):
 
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        channels = np.linspace(laserChannel,laserChannel,1)
+        channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
 
 

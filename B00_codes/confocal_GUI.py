@@ -285,6 +285,7 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
     # ?
     def __init__(self, parent = None):#, **kwargs): # kwargs needed?
         super().__init__(parent)
+        global channel_currently_on; channel_currently_on = ()
         hbox = QHBoxLayout(self)
         self.samp_rate = 1e5  # 1e3 (old)
         self.hor_coord = 0; self.ver_coord = 0
@@ -336,13 +337,26 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
                     numpy.save(str(address_to_save_scan_data_at), most_recent_data_array) # saving the correct data array
                     break # data has been successfully save; so exit checking loop
 
+        def read_PL(a, b):
+            # Calculate the distance between each element and the target (a, b)
+            hor_dist = np.abs(self.hor_array - a)
+            ver_dist = np.abs(self.ver_array - b)
+
+            # Find the index of the element with the minimum distance
+            closest_hor_idx = np.argmin(hor_dist)
+            closest_ver_idx = np.argmin(ver_dist)
+
+            # Return the closest element
+            PL = self.result[closest_ver_idx, closest_hor_idx]
+            return PL
+                    
         def mouse_event(event):
             self.hor_coord = np.round(event.xdata,3)
             self.ver_coord = np.round(event.ydata,3)
             self.crosshair.remove()
             self.crosshair, = self.sc.axes.plot(event.xdata, event.ydata, marker="+", markersize=5, markeredgecolor="red", markerfacecolor="red")
             self.sc.draw()
-            print('hor: {} and ver: {}'.format(self.hor_coord, self.ver_coord))
+            # print('hor: {} and ver: {}'.format(self.hor_coord, self.ver_coord))
 
             if self.scanType == 'xy':
                 x_qlineedit.setText(str(self.hor_coord))
@@ -356,6 +370,14 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
                 x_qlineedit.setText(str(self.x))
                 y_qlineedit.setText(str(self.hor_coord))
                 z_qlineedit.setText(str(self.ver_coord))
+            
+            PL = read_PL(self.hor_coord, self.ver_coord)
+            self.parameters_display_text_box.clear()
+            self.parameters_display_text_box.setPlainText(
+                                                        'hor: {} and ver: {}'.format(self.hor_coord, self.ver_coord)  + "\n"
+                                                        "PL count rate = " + str(PL)
+                                                        )
+
 
         def set_coordinate_fnc():
             # naming the instrument
@@ -392,14 +414,107 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
         def snake_fnc():
             self.isSnake = int(snake_checkbox.isChecked())
         
-        def toggle_laser_fnc():
-            if toggle_laser_checkbox.isChecked():
-                global pb
-                pb = TurnOnLaser.turnOnLaser(channels=np.linspace(3,3,1))
+        def toggle_laser_fnc_532():
+            if toggle_laser_checkbox_532.isChecked():
+                global pb_532; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(3,)))
+                pb_532 = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_532")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
             else:
-                pb.turn_off()
-                pb.close() # close the instrument
-                print('Laser turned off')
+                channel_off_idx = np.where(channel_currently_on==3)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_532.close()
+                pb_532_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_532_off")
+                pb_532_off.close() # close the instrument
+                print('532 nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+
+        def toggle_laser_fnc_589():
+            if toggle_laser_checkbox_589.isChecked():
+                global pb_589; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(6,)))
+                pb_589 = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_589")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+            else:
+                channel_off_idx = np.where(channel_currently_on==6)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_589.close()
+                pb_589_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_589_off")
+                pb_589_off.close() # close the instrument
+                print('589 nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+        
+        def toggle_laser_fnc_589w():
+            if toggle_laser_checkbox_589w.isChecked():
+                global pb_589w; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(9,)))
+                pb_589w = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_589w")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+            else:
+                channel_off_idx = np.where(channel_currently_on==9)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_589w.close()
+                pb_589w_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_589w_off")
+                pb_589w_off.close() # close the instrument
+                print('589w nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+
+        def toggle_laser_fnc_vel():
+            if toggle_laser_checkbox_vel.isChecked():
+                global pb_vel; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(5,)))
+                pb_vel = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_vel")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+            else:
+                channel_off_idx = np.where(channel_currently_on==5)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_vel.close()
+                pb_vel_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_vel_off")
+                pb_vel_off.close() # close the instrument
+                print('vel nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+        
+        def toggle_laser_fnc_pt637():
+            if toggle_laser_checkbox_pt637.isChecked():
+                global pb_pt637; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(8,)))
+                pb_pt637 = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt637")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+            else:
+                channel_off_idx = np.where(channel_currently_on==8)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_pt637.close()
+                pb_pt637_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt637_off")
+                pb_pt637_off.close() # close the instrument
+                print('pt637 nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+        
+        def toggle_laser_fnc_pt520():
+            if toggle_laser_checkbox_pt520.isChecked():
+                global pb_pt520; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(7,)))
+                pb_pt520 = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt520")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+            else:
+                channel_off_idx = np.where(channel_currently_on==7)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_pt520.close()
+                pb_pt520_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt520_off")
+                pb_pt520_off.close() # close the instrument
+                print('pt520 nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
                 
         ########### XY scanning #############
         # print/display XY scan parameters fnc
@@ -434,187 +549,196 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
 
             ############################################################### begin scanning script #############################################################################################
             ################################################################################## card 2 (AO) ########################################################################
-            
-            scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
-            scan_galvo_ao_channels = {f'{scan_galvo_card_name}/ao{i}': i for i in range(4)} # dictionary of analog output channels
-            scan_galvo = DAQAnalogOutputs("name_two", scan_galvo_card_name, scan_galvo_ao_channels) # defining the instrument (ni_9263)
+            try:
+                scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
+                scan_galvo_ao_channels = {f'{scan_galvo_card_name}/ao{i}': i for i in range(4)} # dictionary of analog output channels
+                scan_galvo = DAQAnalogOutputs("name_two", scan_galvo_card_name, scan_galvo_ao_channels) # defining the instrument (ni_9263)
 
-            get_todays_date = date.today() # this is used for creating the final plot's plot labels
-            todays_date = get_todays_date.strftime("%m%d%Y") # this is used for creating the final plot's plot labels
-            self.scanType = 'xy'
+                get_todays_date = date.today() # this is used for creating the final plot's plot labels
+                todays_date = get_todays_date.strftime("%m%d%Y") # this is used for creating the final plot's plot labels
+                self.scanType = 'xy'
 
-            ############################################################################### def other variables #####################################################################
-            ################### setting variales and array ####################
+                ############################################################################### def other variables #####################################################################
+                ################### setting variales and array ####################
 
-            # acquisition and settling time:
-            self.time_acquire = np.round(float(xy_scan_read_time_qlineedit.text())/1e3, 4)
-            self.time_settle = np.round(float(xy_scan_settle_time_qlineedit.text())/1e3, 5)
-            self.time_pts_settle = int(self.time_settle*self.samp_rate)
-            self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
-            self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
-            print('self.time_pts_settle: ' + str(self.time_pts_settle))
-            print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
+                # acquisition and settling time:
+                self.time_acquire = np.round(float(xy_scan_read_time_qlineedit.text())/1e3, 4)
+                self.time_settle = np.round(float(xy_scan_settle_time_qlineedit.text())/1e3, 5)
+                self.time_pts_settle = int(self.time_settle*self.samp_rate)
+                self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
+                self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
+                print('self.time_pts_settle: ' + str(self.time_pts_settle))
+                print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
 
-            # resolution
-            self.hor_res = grid_size_x = int(xy_scan_resolution_hor_qlineedit.text())
-            self.ver_res = grid_size_y = int(xy_scan_resolution_ver_qlineedit.text())
+                # resolution
+                self.hor_res = grid_size_x = int(xy_scan_resolution_hor_qlineedit.text())
+                self.ver_res = grid_size_y = int(xy_scan_resolution_ver_qlineedit.text())
 
-            # initial driving voltages for the x,y-mirror and z piezo stage
-            self.hor_init = x_init = round(float(xy_scan_x_voltage_min_qlineedit.text()), 3)
-            self.ver_init = y_init = round(float(xy_scan_y_voltage_min_qlineedit.text()), 3)
-            self.z = z_init = round(float(xy_scan_z_voltage_qlineedit.text()), 3)
+                # initial driving voltages for the x,y-mirror and z piezo stage
+                self.hor_init = x_init = round(float(xy_scan_x_voltage_min_qlineedit.text()), 3)
+                self.ver_init = y_init = round(float(xy_scan_y_voltage_min_qlineedit.text()), 3)
+                self.z = z_init = round(float(xy_scan_z_voltage_qlineedit.text()), 3)
 
-            # final driving voltages for the x,y-mirror
-            x_final = round(float(xy_scan_x_voltage_max_qlineedit.text()), 3)
-            y_final = round(float(xy_scan_y_voltage_max_qlineedit.text()), 3)
+                # final driving voltages for the x,y-mirror
+                x_final = round(float(xy_scan_x_voltage_max_qlineedit.text()), 3)
+                y_final = round(float(xy_scan_y_voltage_max_qlineedit.text()), 3)
 
-            # range of voltage
-            self.hor_range = x_final - x_init
-            self.ver_range = y_final - y_init
+                # range of voltage
+                self.hor_range = x_final - x_init
+                self.ver_range = y_final - y_init
 
-            # array of x,y voltages
-            self.x_array = np.linspace(x_init, x_final, grid_size_x)
-            self.y_array = np.linspace(y_init, y_final, grid_size_y)
-            X, Y = np.meshgrid(self.x_array, self.y_array)
+                # array of x,y voltages
+                self.x_array = np.linspace(x_init, x_final, grid_size_x)
+                self.y_array = np.linspace(y_init, y_final, grid_size_y)
+                X, Y = np.meshgrid(self.x_array, self.y_array)
 
-            # make the x-voltage waveform to pass to aotask
-            self.x_array = np.array(np.repeat(self.x_array, self.time_pts_per_pixel))
-            print("len(self.x_array): " + str(len(self.x_array)))
+                self.hor_array = self.x_array
+                self.ver_array = self.y_array
 
-            # create dataset to populate
-            global xy_scan_data_array
-            xy_scan_data_array = np.zeros((grid_size_y, grid_size_x))
-            global most_recent_data_array
-            most_recent_data_array = np.zeros((grid_size_y, grid_size_x))
+                # make the x-voltage waveform to pass to aotask
+                self.x_array = np.array(np.repeat(self.x_array, self.time_pts_per_pixel))
+                print("len(self.x_array): " + str(len(self.x_array)))
 
-            ################### resetting position of mirrors ####################
+                # create dataset to populate
+                global xy_scan_data_array
+                xy_scan_data_array = np.zeros((grid_size_y, grid_size_x))
+                global most_recent_data_array
+                most_recent_data_array = np.zeros((grid_size_y, grid_size_x))
 
-            scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
-            scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
-            scan_galvo.voltage_cdaq1mod2ao2(z_init) # z-stage
-            
-            # the clock to sync AO and counter
-            clktask = nidaqmx.Task() 
-            clktask.co_channels.add_co_pulse_chan_freq(  # adding dig pulse train chan
-                counter = "cDAQ1Mod1/ctr1",
-                name_to_assign_to_channel = "",
-                units = nidaqmx.constants.FrequencyUnits.HZ,
-                idle_state = nidaqmx.constants.Level.LOW,
-                initial_delay = 0.0,
-                freq = self.samp_rate,
-                duty_cycle = 0.5
-                )
-            clktask.timing.cfg_implicit_timing( # implicit timing by the hardware
-                sample_mode = AcquisitionType.CONTINUOUS, # the clock should run continuously in principle
-                samps_per_chan = int(len(self.x_array) + 1) # does this matter?
-                )
-                    
-            ######################################################################## X and Y scanning #########################################################################
-            print('----------------------------------------------------------------')
-            print('XY scan started')
-            for f in range(grid_size_y): # this loops for each row (y)
-                if self.isStopped == 1: break
-                start0 = time.time()
+                ################### resetting position of mirrors ####################
 
-                # set initial y location
-                scan_galvo.voltage_cdaq1mod2ao1(self.y_array[f])
-                time.sleep(self.time_settle)
+                scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
+                scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
+                scan_galvo.voltage_cdaq1mod2ao2(z_init) # z-stage
                 
-                # snake pattern: scanning right to left
-                if self.isSnake == 1 and f % 2 == 1: self.x_array_write = np.ascontiguousarray(self.x_array[::-1])
-                else: self.x_array_write = self.x_array
-
-                ##############################################################
-                # counter task
-                ctrtask = nidaqmx.Task()
-                ctrtask.ci_channels.add_ci_count_edges_chan( # define the counter
-                    counter = "cDAQ1Mod1/ctr0",
+                # the clock to sync AO and counter
+                clktask = nidaqmx.Task() 
+                clktask.co_channels.add_co_pulse_chan_freq(  # adding dig pulse train chan
+                    counter = "cDAQ1Mod1/ctr1",
                     name_to_assign_to_channel = "",
-                    edge = nidaqmx.constants.Edge.RISING,
-                    initial_count = 0,
-                    count_direction = nidaqmx.constants.CountDirection.COUNT_UP
+                    units = nidaqmx.constants.FrequencyUnits.HZ,
+                    idle_state = nidaqmx.constants.Level.LOW,
+                    initial_delay = 0.0,
+                    freq = self.samp_rate,
+                    duty_cycle = 0.5
                     )
-                ctrtask.timing.cfg_samp_clk_timing( # cfg sample clk timing
-                    rate = self.samp_rate,
-                    source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
-                    active_edge = nidaqmx.constants.Edge.RISING,
-                    sample_mode = AcquisitionType.FINITE,
-                    samps_per_chan = int(len(self.x_array) + 1) 
+                clktask.timing.cfg_implicit_timing( # implicit timing by the hardware
+                    sample_mode = AcquisitionType.CONTINUOUS, # the clock should run continuously in principle
+                    samps_per_chan = int(len(self.x_array) + 1) # does this matter?
                     )
+                        
+                ######################################################################## X and Y scanning #########################################################################
+                print('----------------------------------------------------------------')
+                print('XY scan started')
+                for f in range(grid_size_y): # this loops for each row (y)
+                    if self.isStopped == 1: break
+                    start0 = time.time()
 
-                ##############################################################
-                # AO task for the x-galvo
-                aotask = nidaqmx.Task() 
-                channel_galvo_x = f'{scan_galvo_card_name}/ao{0}'
-                aotask.ao_channels.add_ao_voltage_chan(channel_galvo_x)
-                aotask.timing.cfg_samp_clk_timing(
-                    rate = self.samp_rate,
-                    source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
-                    active_edge = nidaqmx.constants.Edge.RISING,
-                    sample_mode = AcquisitionType.FINITE,
-                    samps_per_chan = len(self.x_array)
-                    )
-                aotask.write(self.x_array_write, auto_start=False) # assign the x-waveform to aotask, but not start yet
+                    # set initial y location
+                    scan_galvo.voltage_cdaq1mod2ao1(self.y_array[f])
+                    time.sleep(self.time_settle)
+                    
+                    # snake pattern: scanning right to left
+                    if self.isSnake == 1 and f % 2 == 1: self.x_array_write = np.ascontiguousarray(self.x_array[::-1])
+                    else: self.x_array_write = self.x_array
 
-                # start galvo X scan, counter, and clock
-                aotask.start()
-                ctrtask.start()
-                clktask.start() # the clock MUST START AFTER aotask.start() and ctrtask.start()
-                
-                aotask.wait_until_done()
-                xLineData = ctrtask.read(len(self.x_array) + 1)  # +1 is to take the difference later
-                # print("len(xLineData): " + str(len(xLineData)))
-                
-                aotask.stop(); aotask.close()
-                ctrtask.stop(); ctrtask.close()
-                clktask.stop() 
-                diffData = np.diff(xLineData)
+                    ##############################################################
+                    # counter task
+                    ctrtask = nidaqmx.Task()
+                    ctrtask.ci_channels.add_ci_count_edges_chan( # define the counter
+                        counter = "cDAQ1Mod1/ctr0",
+                        name_to_assign_to_channel = "",
+                        edge = nidaqmx.constants.Edge.RISING,
+                        initial_count = 0,
+                        count_direction = nidaqmx.constants.CountDirection.COUNT_UP
+                        )
+                    ctrtask.timing.cfg_samp_clk_timing( # cfg sample clk timing
+                        rate = self.samp_rate,
+                        source = "/cDAQ1/Ctr1InternalOutput", # the clktask clock defined above
+                        active_edge = nidaqmx.constants.Edge.RISING,
+                        sample_mode = AcquisitionType.FINITE,
+                        samps_per_chan = int(len(self.x_array) + 1) 
+                        )
 
-                summedData = np.zeros(grid_size_x)
-                for i in range(0, grid_size_x):
-                    summedData[i] = np.sum(
-                        diffData[(i*self.time_pts_per_pixel + self.time_pts_settle):(i*self.time_pts_per_pixel + self.time_pts_per_pixel - 1)])
-                normedData = summedData * (.001 / self.time_acquire) # normalize to kcounts/sec
+                    ##############################################################
+                    # AO task for the x-galvo
+                    aotask = nidaqmx.Task() 
+                    channel_galvo_x = f'{scan_galvo_card_name}/ao{0}'
+                    aotask.ao_channels.add_ao_voltage_chan(channel_galvo_x)
+                    aotask.timing.cfg_samp_clk_timing(
+                        rate = self.samp_rate,
+                        source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
+                        active_edge = nidaqmx.constants.Edge.RISING,
+                        sample_mode = AcquisitionType.FINITE,
+                        samps_per_chan = len(self.x_array)
+                        )
+                    aotask.write(self.x_array_write, auto_start=False) # assign the x-waveform to aotask, but not start yet
 
-                if self.isSnake == 1 and f % 2 == 1: xy_scan_data_array[f] = np.flip(normedData)
-                else: xy_scan_data_array[f] = normedData
+                    # start galvo X scan, counter, and clock
+                    aotask.start()
+                    ctrtask.start()
+                    clktask.start() # the clock MUST START AFTER aotask.start() and ctrtask.start()
+                    
+                    aotask.wait_until_done()
+                    xLineData = ctrtask.read(len(self.x_array) + 1)  # +1 is to take the difference later
+                    # print("len(xLineData): " + str(len(xLineData)))
+                    
+                    aotask.stop(); aotask.close()
+                    ctrtask.stop(); ctrtask.close()
+                    clktask.stop() 
+                    diffData = np.diff(xLineData)
 
-                end = time.time() - start0
-                if f == 0 or f == grid_size_y-1 or f == int(grid_size_y/2):
-                    print("Time per row: " + str(end) + " s")
-                
-                self.sc.axes.pcolormesh(X, Y, xy_scan_data_array, cmap = "inferno")
+                    summedData = np.zeros(grid_size_x)
+                    for i in range(0, grid_size_x):
+                        summedData[i] = np.sum(
+                            diffData[(i*self.time_pts_per_pixel + self.time_pts_settle):(i*self.time_pts_per_pixel + self.time_pts_per_pixel - 1)])
+                    normedData = summedData * (.001 / self.time_acquire) # normalize to kcounts/sec
+
+                    if self.isSnake == 1 and f % 2 == 1: xy_scan_data_array[f] = np.flip(normedData)
+                    else: xy_scan_data_array[f] = normedData
+
+                    end = time.time() - start0
+                    if f == 0 or f == grid_size_y-1 or f == int(grid_size_y/2):
+                        print("Time per row: " + str(end) + " s")
+                    
+                    self.sc.axes.pcolormesh(X, Y, xy_scan_data_array, cmap = "inferno")
+                    self.sc.axes.xaxis.set_tick_params(labelsize = 8)
+                    self.sc.axes.yaxis.set_tick_params(labelsize = 8)
+                    self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
+                    self.sc.axes.set_ylabel("y_mirror_driving_voltage_(V)", fontsize = 8, labelpad = -9)
+                    self.sc.fig.canvas.draw()
+                    self.sc.fig.canvas.flush_events() # this line is very important
+                        
+                clktask.close(); scan_galvo.close() 
+
+                ############################################################### end scanning script #############################################################################################
+                ############################################### plotting XY scan data in plot ###################################################
+                self.sc.axes.cla()
+                self.result = xy_scan_data_array
+
+                plot = self.sc.axes.pcolormesh(X, Y, xy_scan_data_array, cmap = "inferno")
+                self.xy_scan_plot_colorbar = self.sc.fig.colorbar(plot, ax = self.sc.axes, pad = 0.02, aspect = 15)
+                self.xy_scan_plot_colorbar.formatter.set_powerlimits((0, 0))
                 self.sc.axes.xaxis.set_tick_params(labelsize = 8)
                 self.sc.axes.yaxis.set_tick_params(labelsize = 8)
+                self.xy_scan_plot_colorbar.ax.tick_params(labelsize = 7)
                 self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
                 self.sc.axes.set_ylabel("y_mirror_driving_voltage_(V)", fontsize = 8, labelpad = -9)
-                self.sc.fig.canvas.draw()
-                self.sc.fig.canvas.flush_events() # this line is very important
-                    
-            clktask.close(); scan_galvo.close() 
+                self.sc.axes.set_title("XY_scan_%s_z-piezo@%d_microns" % (todays_date, int((z_init * 10))), fontsize = 8)
+                self.crosshair, = self.sc.axes.plot(self.x_array[0], self.y_array[0], marker="+", markersize=5, markeredgecolor="red", markerfacecolor="red")
+                self.sc.draw()
 
-            ############################################################### end scanning script #############################################################################################
-            ############################################### plotting XY scan data in plot ###################################################
-            self.sc.axes.cla()
+                cid = self.sc.mpl_connect('button_press_event', mouse_event)
+                most_recent_data_array = xy_scan_data_array # make temp holding global data_array the same as xy_scan_data_array
 
-            plot = self.sc.axes.pcolormesh(X, Y, xy_scan_data_array, cmap = "inferno")
-            self.xy_scan_plot_colorbar = self.sc.fig.colorbar(plot, ax = self.sc.axes, pad = 0.02, aspect = 15)
-            self.xy_scan_plot_colorbar.formatter.set_powerlimits((0, 0))
-            self.sc.axes.xaxis.set_tick_params(labelsize = 8)
-            self.sc.axes.yaxis.set_tick_params(labelsize = 8)
-            self.xy_scan_plot_colorbar.ax.tick_params(labelsize = 7)
-            self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
-            self.sc.axes.set_ylabel("y_mirror_driving_voltage_(V)", fontsize = 8, labelpad = -9)
-            self.sc.axes.set_title("XY_scan_%s_z-piezo@%d_microns" % (todays_date, int((z_init * 10))), fontsize = 8)
-            self.crosshair, = self.sc.axes.plot(self.x_array[0], self.y_array[0], marker="+", markersize=5, markeredgecolor="red", markerfacecolor="red")
-            self.sc.draw()
-
-            cid = self.sc.mpl_connect('button_press_event', mouse_event)
-            most_recent_data_array = xy_scan_data_array # make temp holding global data_array the same as xy_scan_data_array
-
-            print('XY scan finished')
-            print('----------------------------------------------------------------')
-            
+                print('XY scan finished')
+                print('----------------------------------------------------------------')
+            except nidaqmx.errors.DaqError:
+                print('aaaaaa')
+                scan_galvo.close()
+                aotask.stop(); aotask.close()
+                ctrtask.stop(); ctrtask.close()
+                clktask.stop(); clktask.close()  
 
         # xy_scan resolution check then run fnc
         def xy_scan_resolution_validation_fnc():
@@ -704,187 +828,198 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
 
             ################################################################################## card 2 (AO) ########################################################################
 
-            
-            scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
-            scan_galvo_ao_channels = {f'{scan_galvo_card_name}/ao{i}': i for i in range(4)} # dictionary of analog output channels
-            scan_galvo = DAQAnalogOutputs("name_two", scan_galvo_card_name, scan_galvo_ao_channels) # defining the instrument (ni_9263)
+            try: 
+                scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
+                scan_galvo_ao_channels = {f'{scan_galvo_card_name}/ao{i}': i for i in range(4)} # dictionary of analog output channels
+                scan_galvo = DAQAnalogOutputs("name_two", scan_galvo_card_name, scan_galvo_ao_channels) # defining the instrument (ni_9263)
 
-            get_todays_date = date.today() # this is used for creating the final plot's plot labels
-            todays_date = get_todays_date.strftime("%m%d%Y") # this is used for creating the final plot's plot labels
-            self.scanType = 'xz'
+                get_todays_date = date.today() # this is used for creating the final plot's plot labels
+                todays_date = get_todays_date.strftime("%m%d%Y") # this is used for creating the final plot's plot labels
+                self.scanType = 'xz'
 
-            ############################################################################### def other variables #####################################################################
-            ################### setting variales and array ####################
+                ############################################################################### def other variables #####################################################################
+                ################### setting variales and array ####################
 
-            # acquisition and settling time:
-            self.time_acquire = np.round(float(xz_scan_read_time_qlineedit.text())/1e3, 4)
-            self.time_settle = np.round(float(xz_scan_settle_time_qlineedit.text())/1e3, 5)
-            self.time_pts_settle = int(self.time_settle*self.samp_rate)
-            self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
-            self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
-            print('self.time_pts_settle: ' + str(self.time_pts_settle))
-            print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
-            
-            # resolution
-            self.hor_res = grid_size_x = int(xz_scan_resolution_hor_qlineedit.text())
-            self.ver_res = grid_size_z = int(xz_scan_resolution_ver_qlineedit.text())
-
-            # initial driving voltages for the x,y-mirror and z piezo stage
-            self.hor_init = x_init = round(float(xz_scan_x_voltage_min_qlineedit.text()),3)
-            self.y = y_init = round(float(xz_scan_y_voltage_qlineedit.text()),3)
-            self.ver_init = z_init = round(float(xz_scan_z_voltage_min_qlineedit.text()),3)
-
-            # final driving voltages
-            x_final = round(float(xz_scan_x_voltage_max_qlineedit.text()),3)
-            z_final = round(float(xz_scan_z_voltage_max_qlineedit.text()),3)
-
-            # range of voltage
-            self.hor_range = x_final - x_init
-            self.ver_range = z_final - z_init
-
-            # array of x,z voltages
-            self.x_array = np.linspace(x_init, x_final, grid_size_x)
-            self.z_array = np.linspace(z_init, z_final, grid_size_z)
-            X, Z = np.meshgrid(self.x_array, self.z_array)
-
-            # make the x-voltage waveform to pass to aotask
-            self.x_array = np.array(np.repeat(self.x_array, self.time_pts_per_pixel))
-            print("len(self.x_array): " + str(len(self.x_array)))
-
-            # create dataset to populate
-            global xz_scan_data_array
-            xz_scan_data_array = np.zeros((grid_size_z, grid_size_x))
-            global most_recent_data_array
-            most_recent_data_array = np.zeros((grid_size_z, grid_size_x))
-
-            print('XZ scan finished')
-            print('----------------------------------------------------------------')
-
-            ################### resetting position of mirrors ####################
-            scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
-            scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
-            scan_galvo.voltage_cdaq1mod2ao2(z_init) # z-stage
-
-           # the clock to sync AO and counter
-            clktask = nidaqmx.Task() 
-            clktask.co_channels.add_co_pulse_chan_freq(  # adding dig pulse train chan
-                counter = "cDAQ1Mod1/ctr1",
-                name_to_assign_to_channel = "",
-                units = nidaqmx.constants.FrequencyUnits.HZ,
-                idle_state = nidaqmx.constants.Level.LOW,
-                initial_delay = 0.0,
-                freq = self.samp_rate,
-                duty_cycle = 0.5
-                )
-            clktask.timing.cfg_implicit_timing( # implicit timing by the hardware
-                sample_mode = AcquisitionType.CONTINUOUS, # the clock should run continuously in principle
-                samps_per_chan = int(len(self.x_array) + 1) # does this matter?
-                ) 
-           
-                        
-            ####################################################################### x and z scanning #########################################################################
-            print('----------------------------------------------------------------')
-            print('XZ scan started')
-            for f in range(grid_size_z): # this loops for each row z
-                if self.isStopped == 1: break
-                start0 = time.time()
-
-                # set initial z location
-                scan_galvo.voltage_cdaq1mod2ao2(self.z_array[f])
-                time.sleep(100*self.time_settle)
+                # acquisition and settling time:
+                self.time_acquire = np.round(float(xz_scan_read_time_qlineedit.text())/1e3, 4)
+                self.time_settle = np.round(float(xz_scan_settle_time_qlineedit.text())/1e3, 5)
+                self.time_pts_settle = int(self.time_settle*self.samp_rate)
+                self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
+                self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
+                print('self.time_pts_settle: ' + str(self.time_pts_settle))
+                print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
                 
-                # snake pattern: scanning right to left
-                if self.isSnake == 1 and f % 2 == 1: self.x_array_write = np.ascontiguousarray(self.x_array[::-1])
-                else: self.x_array_write = self.x_array
+                # resolution
+                self.hor_res = grid_size_x = int(xz_scan_resolution_hor_qlineedit.text())
+                self.ver_res = grid_size_z = int(xz_scan_resolution_ver_qlineedit.text())
 
-                ##############################################################
-                # counter task
-                ctrtask = nidaqmx.Task()
-                ctrtask.ci_channels.add_ci_count_edges_chan( # define the counter
-                    counter = "cDAQ1Mod1/ctr0",
+                # initial driving voltages for the x,y-mirror and z piezo stage
+                self.hor_init = x_init = round(float(xz_scan_x_voltage_min_qlineedit.text()),3)
+                self.y = y_init = round(float(xz_scan_y_voltage_qlineedit.text()),3)
+                self.ver_init = z_init = round(float(xz_scan_z_voltage_min_qlineedit.text()),3)
+
+                # final driving voltages
+                x_final = round(float(xz_scan_x_voltage_max_qlineedit.text()),3)
+                z_final = round(float(xz_scan_z_voltage_max_qlineedit.text()),3)
+
+                # range of voltage
+                self.hor_range = x_final - x_init
+                self.ver_range = z_final - z_init
+
+                # array of x,z voltages
+                self.x_array = np.linspace(x_init, x_final, grid_size_x)
+                self.z_array = np.linspace(z_init, z_final, grid_size_z)
+                X, Z = np.meshgrid(self.x_array, self.z_array)
+
+                self.hor_array = self.x_array
+                self.ver_array = self.z_array
+
+                # make the x-voltage waveform to pass to aotask
+                self.x_array = np.array(np.repeat(self.x_array, self.time_pts_per_pixel))
+                print("len(self.x_array): " + str(len(self.x_array)))
+
+                # create dataset to populate
+                global xz_scan_data_array
+                xz_scan_data_array = np.zeros((grid_size_z, grid_size_x))
+                global most_recent_data_array
+                most_recent_data_array = np.zeros((grid_size_z, grid_size_x))
+
+                print('XZ scan finished')
+                print('----------------------------------------------------------------')
+
+                ################### resetting position of mirrors ####################
+                scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
+                scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
+                scan_galvo.voltage_cdaq1mod2ao2(z_init) # z-stage
+
+            # the clock to sync AO and counter
+                clktask = nidaqmx.Task() 
+                clktask.co_channels.add_co_pulse_chan_freq(  # adding dig pulse train chan
+                    counter = "cDAQ1Mod1/ctr1",
                     name_to_assign_to_channel = "",
-                    edge = nidaqmx.constants.Edge.RISING,
-                    initial_count = 0,
-                    count_direction = nidaqmx.constants.CountDirection.COUNT_UP
+                    units = nidaqmx.constants.FrequencyUnits.HZ,
+                    idle_state = nidaqmx.constants.Level.LOW,
+                    initial_delay = 0.0,
+                    freq = self.samp_rate,
+                    duty_cycle = 0.5
                     )
-                ctrtask.timing.cfg_samp_clk_timing( # cfg sample clk timing
-                    rate = self.samp_rate,
-                    source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
-                    active_edge = nidaqmx.constants.Edge.RISING,
-                    sample_mode = AcquisitionType.FINITE,
-                    samps_per_chan = int(len(self.x_array) + 1) 
-                    )
+                clktask.timing.cfg_implicit_timing( # implicit timing by the hardware
+                    sample_mode = AcquisitionType.CONTINUOUS, # the clock should run continuously in principle
+                    samps_per_chan = int(len(self.x_array) + 1) # does this matter?
+                    ) 
+            
+                            
+                ####################################################################### x and z scanning #########################################################################
+                print('----------------------------------------------------------------')
+                print('XZ scan started')
+                for f in range(grid_size_z): # this loops for each row z
+                    if self.isStopped == 1: break
+                    start0 = time.time()
 
-                ##############################################################
-                # AO task for the x-galvo
-                aotask = nidaqmx.Task() 
-                channel_galvo_x = f'{scan_galvo_card_name}/ao{0}'
-                aotask.ao_channels.add_ao_voltage_chan(channel_galvo_x)
-                aotask.timing.cfg_samp_clk_timing(
-                    rate = self.samp_rate,
-                    source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
-                    active_edge = nidaqmx.constants.Edge.RISING,
-                    sample_mode = AcquisitionType.FINITE,
-                    samps_per_chan = len(self.x_array)
-                    )
-                aotask.write(self.x_array_write, auto_start=False) # assign the x-waveform to aotask, but not start yet
+                    # set initial z location
+                    scan_galvo.voltage_cdaq1mod2ao2(self.z_array[f])
+                    time.sleep(100*self.time_settle)
+                    
+                    # snake pattern: scanning right to left
+                    if self.isSnake == 1 and f % 2 == 1: self.x_array_write = np.ascontiguousarray(self.x_array[::-1])
+                    else: self.x_array_write = self.x_array
 
-                # start galvo X scan, counter, and clock
-                aotask.start()
-                ctrtask.start()
-                clktask.start() # the clock MUST START AFTER aotask.start() and ctrtask.start()
-                
-                aotask.wait_until_done()
-                xLineData = ctrtask.read(len(self.x_array) + 1)  # +1 is to take the difference later
-                # print("len(xLineData): " + str(len(xLineData)))
+                    ##############################################################
+                    # counter task
+                    ctrtask = nidaqmx.Task()
+                    ctrtask.ci_channels.add_ci_count_edges_chan( # define the counter
+                        counter = "cDAQ1Mod1/ctr0",
+                        name_to_assign_to_channel = "",
+                        edge = nidaqmx.constants.Edge.RISING,
+                        initial_count = 0,
+                        count_direction = nidaqmx.constants.CountDirection.COUNT_UP
+                        )
+                    ctrtask.timing.cfg_samp_clk_timing( # cfg sample clk timing
+                        rate = self.samp_rate,
+                        source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
+                        active_edge = nidaqmx.constants.Edge.RISING,
+                        sample_mode = AcquisitionType.FINITE,
+                        samps_per_chan = int(len(self.x_array) + 1) 
+                        )
 
-                aotask.stop(); aotask.close()
-                ctrtask.stop(); ctrtask.close()
-                clktask.stop() 
-                diffData = np.diff(xLineData)
+                    ##############################################################
+                    # AO task for the x-galvo
+                    aotask = nidaqmx.Task() 
+                    channel_galvo_x = f'{scan_galvo_card_name}/ao{0}'
+                    aotask.ao_channels.add_ao_voltage_chan(channel_galvo_x)
+                    aotask.timing.cfg_samp_clk_timing(
+                        rate = self.samp_rate,
+                        source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
+                        active_edge = nidaqmx.constants.Edge.RISING,
+                        sample_mode = AcquisitionType.FINITE,
+                        samps_per_chan = len(self.x_array)
+                        )
+                    aotask.write(self.x_array_write, auto_start=False) # assign the x-waveform to aotask, but not start yet
 
-                summedData = np.zeros(grid_size_x)
-                for i in range(0, grid_size_x):
-                    summedData[i] = np.sum(
-                        diffData[(i*self.time_pts_per_pixel + self.time_pts_settle):(i*self.time_pts_per_pixel + self.time_pts_per_pixel - 1)])
-                normedData = summedData * (.001 / self.time_acquire) # normalize to kcounts/sec
+                    # start galvo X scan, counter, and clock
+                    aotask.start()
+                    ctrtask.start()
+                    clktask.start() # the clock MUST START AFTER aotask.start() and ctrtask.start()
+                    
+                    aotask.wait_until_done()
+                    xLineData = ctrtask.read(len(self.x_array) + 1)  # +1 is to take the difference later
+                    # print("len(xLineData): " + str(len(xLineData)))
 
-                if self.isSnake == 1 and f % 2 == 1: xz_scan_data_array[f] = np.flip(normedData)
-                else: xz_scan_data_array[f] = normedData
+                    aotask.stop(); aotask.close()
+                    ctrtask.stop(); ctrtask.close()
+                    clktask.stop() 
+                    diffData = np.diff(xLineData)
 
-                end = time.time() - start0
-                if f == 0 or f == grid_size_z-1 or f == int(grid_size_z/2):
-                    print(end)
+                    summedData = np.zeros(grid_size_x)
+                    for i in range(0, grid_size_x):
+                        summedData[i] = np.sum(
+                            diffData[(i*self.time_pts_per_pixel + self.time_pts_settle):(i*self.time_pts_per_pixel + self.time_pts_per_pixel - 1)])
+                    normedData = summedData * (.001 / self.time_acquire) # normalize to kcounts/sec
 
-                ##################### updating plot section ####################
-                self.sc.axes.pcolormesh(X, Z, xz_scan_data_array, cmap = "inferno")
+                    if self.isSnake == 1 and f % 2 == 1: xz_scan_data_array[f] = np.flip(normedData)
+                    else: xz_scan_data_array[f] = normedData
+
+                    end = time.time() - start0
+                    if f == 0 or f == grid_size_z-1 or f == int(grid_size_z/2):
+                        print(end)
+
+                    ##################### updating plot section ####################
+                    self.sc.axes.pcolormesh(X, Z, xz_scan_data_array, cmap = "inferno")
+                    self.sc.axes.xaxis.set_tick_params(labelsize = 8)
+                    self.sc.axes.yaxis.set_tick_params(labelsize = 8)
+                    self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
+                    self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8)
+                    self.sc.fig.canvas.draw()
+                    self.sc.fig.canvas.flush_events()
+
+                clktask.close(); scan_galvo.close() 
+
+                ############################################ end XZ scanning script #################################################
+                ############################################### plotting XZ scan data in plot ####################################################
+                self.sc.axes.cla()
+                self.result = xz_scan_data_array
+
+                plot = self.sc.axes.pcolormesh(X, Z, xz_scan_data_array, cmap = "inferno")
+                self.xz_scan_plot_colorbar = self.sc.fig.colorbar(plot, ax = self.sc.axes, pad = 0.02, aspect = 15)
+                self.xz_scan_plot_colorbar.formatter.set_powerlimits((0, 0))
                 self.sc.axes.xaxis.set_tick_params(labelsize = 8)
                 self.sc.axes.yaxis.set_tick_params(labelsize = 8)
+                self.xz_scan_plot_colorbar.ax.tick_params(labelsize = 7)
                 self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
-                self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8)
-                self.sc.fig.canvas.draw()
-                self.sc.fig.canvas.flush_events()
+                self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8, labelpad = -10)
+                self.sc.axes.set_title("XZ_scan_%s_y_voltage=%f_V" % (todays_date, y_init), fontsize = 8)
+                self.crosshair, = self.sc.axes.plot(self.x_array[0], self.z_array[0], marker="+", markersize=5, markeredgecolor="red", markerfacecolor="red")
+                self.sc.draw()
 
-            clktask.close(); scan_galvo.close() 
+                cid = self.sc.mpl_connect('button_press_event', mouse_event)
+                most_recent_data_array = xz_scan_data_array
 
-            ############################################ end XZ scanning script #################################################
-            ############################################### plotting XZ scan data in plot ####################################################
-            self.sc.axes.cla()
-
-            plot = self.sc.axes.pcolormesh(X, Z, xz_scan_data_array, cmap = "inferno")
-            self.xz_scan_plot_colorbar = self.sc.fig.colorbar(plot, ax = self.sc.axes, pad = 0.02, aspect = 15)
-            self.xz_scan_plot_colorbar.formatter.set_powerlimits((0, 0))
-            self.sc.axes.xaxis.set_tick_params(labelsize = 8)
-            self.sc.axes.yaxis.set_tick_params(labelsize = 8)
-            self.xz_scan_plot_colorbar.ax.tick_params(labelsize = 7)
-            self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
-            self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8, labelpad = -10)
-            self.sc.axes.set_title("XZ_scan_%s_y_voltage=%f_V" % (todays_date, y_init), fontsize = 8)
-            self.crosshair, = self.sc.axes.plot(self.x_array[0], self.z_array[0], marker="+", markersize=5, markeredgecolor="red", markerfacecolor="red")
-            self.sc.draw()
-
-            cid = self.sc.mpl_connect('button_press_event', mouse_event)
-            most_recent_data_array = xz_scan_data_array
+            except nidaqmx.errors.DaqError:
+                print('aaaaaa')
+                scan_galvo.close()
+                aotask.stop(); aotask.close()
+                ctrtask.stop(); ctrtask.close()
+                clktask.stop(); clktask.close() 
 
         # xz_scan resolution check then run fnc
         def xz_scan_resolution_validation_fnc():
@@ -964,184 +1099,195 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             """
 
             ################################################################################## card 2 (AO) ########################################################################
+            try: 
+                scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
+                scan_galvo_ao_channels = {f'{scan_galvo_card_name}/ao{i}': i for i in range(4)} # dictionary of analog output channels
+                scan_galvo = DAQAnalogOutputs("name_two", scan_galvo_card_name, scan_galvo_ao_channels) # defining the instrument (ni_9263)
 
-            scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
-            scan_galvo_ao_channels = {f'{scan_galvo_card_name}/ao{i}': i for i in range(4)} # dictionary of analog output channels
-            scan_galvo = DAQAnalogOutputs("name_two", scan_galvo_card_name, scan_galvo_ao_channels) # defining the instrument (ni_9263)
+                get_todays_date = date.today() # this is used for creating the final plot's plot labels
+                todays_date = get_todays_date.strftime("%m%d%Y") # this is used for creating the final plot's plot labels
+                self.scanType = 'yz'
 
-            get_todays_date = date.today() # this is used for creating the final plot's plot labels
-            todays_date = get_todays_date.strftime("%m%d%Y") # this is used for creating the final plot's plot labels
-            self.scanType = 'yz'
+                ############################################################################### def other variables #####################################################################
+                ################### setting variales and array ####################
+                
+                # acquisition and settling time:
+                self.time_acquire = np.round(float(yz_scan_read_time_qlineedit.text())/1e3, 4)
+                self.time_settle = np.round(float(yz_scan_settle_time_qlineedit.text())/1e3, 5)
+                self.time_pts_settle = int(self.time_settle*self.samp_rate)
+                self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
+                self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
+                print('self.time_pts_settle: ' + str(self.time_pts_settle))
+                print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
 
-            ############################################################################### def other variables #####################################################################
-            ################### setting variales and array ####################
+                # resolution
+                self.hor_res = grid_size_y = int(yz_scan_resolution_hor_qlineedit.text())
+                self.ver_res = grid_size_z = int(yz_scan_resolution_ver_qlineedit.text())
+
+                # initial driving voltages for the x,y-mirror and z piezo stage
+                self.x = x_init = round(float(yz_scan_x_voltage_qlineedit.text()), 3)
+                self.hor_init = y_init = round(float(yz_scan_y_voltage_min_qlineedit.text()),3)
+                self.ver_init = z_init = round(float(yz_scan_z_voltage_min_qlineedit.text()),3)
+
+                # final driving voltages
+                y_final = round(float(yz_scan_y_voltage_max_qlineedit.text()),3)
+                z_final = round(float(yz_scan_z_voltage_max_qlineedit.text()),3)
+
+                # range of voltage
+                self.hor_range = y_final - y_init
+                self.ver_range = z_final - z_init
+
+                # array of y, z voltages
+                self.y_array = np.linspace(y_init, y_final, grid_size_y)
+                self.z_array = np.linspace(z_init, z_final, grid_size_z)
+                Y, Z = np.meshgrid(self.y_array, self.z_array)
+
+                self.hor_array = self.y_array
+                self.ver_array = self.z_array
+
+                # make the y-voltage waveform to pass to aotask
+                self.y_array = np.array(np.repeat(self.y_array, self.time_pts_per_pixel))
+                print("len(self.y_array): " + str(len(self.y_array)))
             
-            # acquisition and settling time:
-            self.time_acquire = np.round(float(yz_scan_read_time_qlineedit.text())/1e3, 4)
-            self.time_settle = np.round(float(yz_scan_settle_time_qlineedit.text())/1e3, 5)
-            self.time_pts_settle = int(self.time_settle*self.samp_rate)
-            self.time_pts_acquire = int(self.time_acquire*self.samp_rate)
-            self.time_pts_per_pixel = self.time_pts_acquire  + self.time_pts_settle
-            print('self.time_pts_settle: ' + str(self.time_pts_settle))
-            print('self.time_pts_acquire: ' + str(self.time_pts_acquire))
+                # create dataset to populate
+                global yz_scan_data_array
+                yz_scan_data_array = np.zeros((grid_size_z, grid_size_y))
+                global most_recent_data_array
+                most_recent_data_array = np.zeros((grid_size_z, grid_size_y))
 
-            # resolution
-            self.hor_res = grid_size_y = int(yz_scan_resolution_hor_qlineedit.text())
-            self.ver_res = grid_size_z = int(yz_scan_resolution_ver_qlineedit.text())
+                print('YZ scan finished')
+                print('----------------------------------------------------------------')
 
-            # initial driving voltages for the x,y-mirror and z piezo stage
-            self.x = x_init = round(float(yz_scan_x_voltage_qlineedit.text()), 3)
-            self.hor_init = y_init = round(float(yz_scan_y_voltage_min_qlineedit.text()),3)
-            self.ver_init = z_init = round(float(yz_scan_z_voltage_min_qlineedit.text()),3)
+                ################### resetting position of mirrors ####################
+                scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
+                scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
+                scan_galvo.voltage_cdaq1mod2ao2(z_init) # z-stage
 
-            # final driving voltages
-            y_final = round(float(yz_scan_y_voltage_max_qlineedit.text()),3)
-            z_final = round(float(yz_scan_z_voltage_max_qlineedit.text()),3)
-
-            # range of voltage
-            self.hor_range = y_final - y_init
-            self.ver_range = z_final - z_init
-
-            # array of y, z voltages
-            self.y_array = np.linspace(y_init, y_final, grid_size_y)
-            self.z_array = np.linspace(z_init, z_final, grid_size_z)
-            Y, Z = np.meshgrid(self.y_array, self.z_array)
-
-            # make the y-voltage waveform to pass to aotask
-            self.y_array = np.array(np.repeat(self.y_array, self.time_pts_per_pixel))
-            print("len(self.y_array): " + str(len(self.y_array)))
-           
-            # create dataset to populate
-            global yz_scan_data_array
-            yz_scan_data_array = np.zeros((grid_size_z, grid_size_y))
-            global most_recent_data_array
-            most_recent_data_array = np.zeros((grid_size_z, grid_size_y))
-
-            print('YZ scan finished')
-            print('----------------------------------------------------------------')
-
-            ################### resetting position of mirrors ####################
-            scan_galvo.voltage_cdaq1mod2ao0(x_init) # x-mirror
-            scan_galvo.voltage_cdaq1mod2ao1(y_init) # y-mirror
-            scan_galvo.voltage_cdaq1mod2ao2(z_init) # z-stage
-
-            # the clock to sync AO and counter
-            clktask = nidaqmx.Task() 
-            clktask.co_channels.add_co_pulse_chan_freq(  # adding dig pulse train chan
-                counter = "cDAQ1Mod1/ctr1",
-                name_to_assign_to_channel = "",
-                units = nidaqmx.constants.FrequencyUnits.HZ,
-                idle_state = nidaqmx.constants.Level.LOW,
-                initial_delay = 0.0,
-                freq = self.samp_rate,
-                duty_cycle = 0.5
-                )
-            clktask.timing.cfg_implicit_timing( # implicit timing by the hardware
-                sample_mode = AcquisitionType.CONTINUOUS, # the clock should run continuously in principle
-                samps_per_chan = int(len(self.y_array) + 1) # does this matter?
-                )
-
-            ######################################################################## Y and Z scanning #########################################################################
-            print('----------------------------------------------------------------')
-            print('YZ scan started')
-            for f in range(grid_size_z): # this loops for each row z
-                if self.isStopped == 1: break
-                start0 = time.time()
-
-                # set initial z location
-                scan_galvo.voltage_cdaq1mod2ao2(self.z_array[f])
-                time.sleep(100*self.time_settle)
-                
-                # snake pattern: scanning right to left
-                if self.isSnake == 1 and f % 2 == 1: self.y_array_write = np.ascontiguousarray(self.y_array[::-1])
-                else: self.y_array_write = self.y_array
-
-                ##############################################################
-                # counter task
-                ctrtask = nidaqmx.Task()
-                ctrtask.ci_channels.add_ci_count_edges_chan( # define the counter
-                    counter = "cDAQ1Mod1/ctr0",
+                # the clock to sync AO and counter
+                clktask = nidaqmx.Task() 
+                clktask.co_channels.add_co_pulse_chan_freq(  # adding dig pulse train chan
+                    counter = "cDAQ1Mod1/ctr1",
                     name_to_assign_to_channel = "",
-                    edge = nidaqmx.constants.Edge.RISING,
-                    initial_count = 0,
-                    count_direction = nidaqmx.constants.CountDirection.COUNT_UP
+                    units = nidaqmx.constants.FrequencyUnits.HZ,
+                    idle_state = nidaqmx.constants.Level.LOW,
+                    initial_delay = 0.0,
+                    freq = self.samp_rate,
+                    duty_cycle = 0.5
                     )
-                ctrtask.timing.cfg_samp_clk_timing( # cfg sample clk timing
-                    rate = self.samp_rate,
-                    source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
-                    active_edge = nidaqmx.constants.Edge.RISING,
-                    sample_mode = AcquisitionType.FINITE,
-                    samps_per_chan = int(len(self.y_array) + 1) 
+                clktask.timing.cfg_implicit_timing( # implicit timing by the hardware
+                    sample_mode = AcquisitionType.CONTINUOUS, # the clock should run continuously in principle
+                    samps_per_chan = int(len(self.y_array) + 1) # does this matter?
                     )
 
-                ##############################################################
-                # AO task for the y-galvo
-                aotask = nidaqmx.Task() 
-                channel_galvo_y = f'{scan_galvo_card_name}/ao{1}'
-                aotask.ao_channels.add_ao_voltage_chan(channel_galvo_y)
-                aotask.timing.cfg_samp_clk_timing(
-                    rate = self.samp_rate,
-                    source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
-                    active_edge = nidaqmx.constants.Edge.RISING,
-                    sample_mode = AcquisitionType.FINITE,
-                    samps_per_chan = len(self.y_array)
-                    )
-                aotask.write(self.y_array_write, auto_start=False) # assign the x-waveform to aotask, but not start yet
+                ######################################################################## Y and Z scanning #########################################################################
+                print('----------------------------------------------------------------')
+                print('YZ scan started')
+                for f in range(grid_size_z): # this loops for each row z
+                    if self.isStopped == 1: break
+                    start0 = time.time()
 
-                # start galvo Y scan, counter, and clock
-                aotask.start()
-                ctrtask.start()
-                clktask.start() # the clock MUST START AFTER aotask.start() and ctrtask.start()
-                
-                aotask.wait_until_done()
-                yLineData = ctrtask.read(len(self.y_array) + 1)  # +1 is to take the difference later
-                # print("len(yLineData): " + str(len(yLineData)))
-                
-                aotask.stop(); aotask.close()
-                ctrtask.stop(); ctrtask.close()
-                clktask.stop() 
-                diffData = np.diff(yLineData)
+                    # set initial z location
+                    scan_galvo.voltage_cdaq1mod2ao2(self.z_array[f])
+                    time.sleep(100*self.time_settle)
+                    
+                    # snake pattern: scanning right to left
+                    if self.isSnake == 1 and f % 2 == 1: self.y_array_write = np.ascontiguousarray(self.y_array[::-1])
+                    else: self.y_array_write = self.y_array
 
-                summedData = np.zeros(grid_size_y)
-                for i in range(0, grid_size_y):
-                    summedData[i] = np.sum(
-                        diffData[(i*self.time_pts_per_pixel + self.time_pts_settle):(i*self.time_pts_per_pixel + self.time_pts_per_pixel - 1)])
-                normedData = summedData * (.001 / self.time_acquire) # normalize to kcounts/sec
+                    ##############################################################
+                    # counter task
+                    ctrtask = nidaqmx.Task()
+                    ctrtask.ci_channels.add_ci_count_edges_chan( # define the counter
+                        counter = "cDAQ1Mod1/ctr0",
+                        name_to_assign_to_channel = "",
+                        edge = nidaqmx.constants.Edge.RISING,
+                        initial_count = 0,
+                        count_direction = nidaqmx.constants.CountDirection.COUNT_UP
+                        )
+                    ctrtask.timing.cfg_samp_clk_timing( # cfg sample clk timing
+                        rate = self.samp_rate,
+                        source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
+                        active_edge = nidaqmx.constants.Edge.RISING,
+                        sample_mode = AcquisitionType.FINITE,
+                        samps_per_chan = int(len(self.y_array) + 1) 
+                        )
 
-                if self.isSnake == 1 and f % 2 == 1: yz_scan_data_array[f] = np.flip(normedData)
-                else: yz_scan_data_array[f] = normedData
+                    ##############################################################
+                    # AO task for the y-galvo
+                    aotask = nidaqmx.Task() 
+                    channel_galvo_y = f'{scan_galvo_card_name}/ao{1}'
+                    aotask.ao_channels.add_ao_voltage_chan(channel_galvo_y)
+                    aotask.timing.cfg_samp_clk_timing(
+                        rate = self.samp_rate,
+                        source = "/cDAQ1/Ctr1InternalOutput", # the clock defined above
+                        active_edge = nidaqmx.constants.Edge.RISING,
+                        sample_mode = AcquisitionType.FINITE,
+                        samps_per_chan = len(self.y_array)
+                        )
+                    aotask.write(self.y_array_write, auto_start=False) # assign the x-waveform to aotask, but not start yet
 
-                end = time.time() - start0
-                if f == 0 or f == grid_size_z-1 or f == int(grid_size_z/2):
-                    print(end)
-                
-                self.sc.axes.pcolormesh(Y, Z, yz_scan_data_array, cmap = "inferno")
+                    # start galvo Y scan, counter, and clock
+                    aotask.start()
+                    ctrtask.start()
+                    clktask.start() # the clock MUST START AFTER aotask.start() and ctrtask.start()
+                    
+                    aotask.wait_until_done()
+                    yLineData = ctrtask.read(len(self.y_array) + 1)  # +1 is to take the difference later
+                    # print("len(yLineData): " + str(len(yLineData)))
+                    
+                    aotask.stop(); aotask.close()
+                    ctrtask.stop(); ctrtask.close()
+                    clktask.stop() 
+                    diffData = np.diff(yLineData)
+
+                    summedData = np.zeros(grid_size_y)
+                    for i in range(0, grid_size_y):
+                        summedData[i] = np.sum(
+                            diffData[(i*self.time_pts_per_pixel + self.time_pts_settle):(i*self.time_pts_per_pixel + self.time_pts_per_pixel - 1)])
+                    normedData = summedData * (.001 / self.time_acquire) # normalize to kcounts/sec
+
+                    if self.isSnake == 1 and f % 2 == 1: yz_scan_data_array[f] = np.flip(normedData)
+                    else: yz_scan_data_array[f] = normedData
+
+                    end = time.time() - start0
+                    if f == 0 or f == grid_size_z-1 or f == int(grid_size_z/2):
+                        print(end)
+                    
+                    self.sc.axes.pcolormesh(Y, Z, yz_scan_data_array, cmap = "inferno")
+                    self.sc.axes.xaxis.set_tick_params(labelsize = 8)
+                    self.sc.axes.yaxis.set_tick_params(labelsize = 8)
+                    self.sc.axes.set_xlabel("y_mirror_driving_voltage_(V)", fontsize = 8)
+                    self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8, labelpad = -9)
+                    self.sc.fig.canvas.draw()
+                    self.sc.fig.canvas.flush_events() # this line is very important
+                        
+                clktask.close(); scan_galvo.close()
+
+                ############################################### plotting YZ scan data in plot ####################################################
+                self.sc.axes.cla()
+                self.result = yz_scan_data_array
+
+                yz_scan_plot = self.sc.axes.pcolormesh(Y, Z, yz_scan_data_array, cmap = "inferno")
+                self.yz_scan_plot_colorbar = self.sc.fig.colorbar(yz_scan_plot, ax = self.sc.axes, pad = 0.02, aspect = 15)
+                self.yz_scan_plot_colorbar.formatter.set_powerlimits((0, 0))
                 self.sc.axes.xaxis.set_tick_params(labelsize = 8)
                 self.sc.axes.yaxis.set_tick_params(labelsize = 8)
+                self.yz_scan_plot_colorbar.ax.tick_params(labelsize = 7)
                 self.sc.axes.set_xlabel("y_mirror_driving_voltage_(V)", fontsize = 8)
-                self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8, labelpad = -9)
-                self.sc.fig.canvas.draw()
-                self.sc.fig.canvas.flush_events() # this line is very important
-                    
-            clktask.close(); scan_galvo.close()
+                self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8, labelpad=-10)
+                self.sc.axes.set_title("YZ_scan_%s_x_voltage=%f_V" % (todays_date, x_init), fontsize = 8)
+                self.crosshair, = self.sc.axes.plot(self.y_array[0], self.z_array[0], marker="+", markersize=5, markeredgecolor="red", markerfacecolor="red")
+                self.sc.draw()
 
-            ############################################### plotting YZ scan data in plot ####################################################
-            self.sc.axes.cla()
+                cid = self.sc.mpl_connect('button_press_event', mouse_event)
+                most_recent_data_array = yz_scan_data_array
 
-            yz_scan_plot = self.sc.axes.pcolormesh(Y, Z, yz_scan_data_array, cmap = "inferno")
-            self.yz_scan_plot_colorbar = self.sc.fig.colorbar(yz_scan_plot, ax = self.sc.axes, pad = 0.02, aspect = 15)
-            self.yz_scan_plot_colorbar.formatter.set_powerlimits((0, 0))
-            self.sc.axes.xaxis.set_tick_params(labelsize = 8)
-            self.sc.axes.yaxis.set_tick_params(labelsize = 8)
-            self.yz_scan_plot_colorbar.ax.tick_params(labelsize = 7)
-            self.sc.axes.set_xlabel("y_mirror_driving_voltage_(V)", fontsize = 8)
-            self.sc.axes.set_ylabel("z_stage_driving_voltage_(V)", fontsize = 8, labelpad=-10)
-            self.sc.axes.set_title("YZ_scan_%s_x_voltage=%f_V" % (todays_date, x_init), fontsize = 8)
-            self.crosshair, = self.sc.axes.plot(self.y_array[0], self.z_array[0], marker="+", markersize=5, markeredgecolor="red", markerfacecolor="red")
-            self.sc.draw()
-
-            cid = self.sc.mpl_connect('button_press_event', mouse_event)
-            most_recent_data_array = yz_scan_data_array
+            except nidaqmx.errors.DaqError:
+                print('aaaaaa')
+                scan_galvo.close()
+                aotask.stop(); aotask.close()
+                ctrtask.stop(); ctrtask.close()
+                clktask.stop(); clktask.close() 
     
         # yz_scan resolution check then run fnc
         def yz_scan_resolution_validation_fnc():
@@ -1661,15 +1807,49 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
         snake_checkbox = QCheckBox("Snake", self) # button
         snake_checkbox.setParent(left_window)
         snake_checkbox.resize(60,20)
-        snake_checkbox.move(210, 250)
+        snake_checkbox.move(210, 25)
         snake_checkbox.clicked.connect(snake_fnc) 
 
         # toggle_laser checkbox
-        toggle_laser_checkbox = QCheckBox("Laser", self) # button
-        toggle_laser_checkbox.setParent(left_window)
-        toggle_laser_checkbox.resize(60,20)
-        toggle_laser_checkbox.move(75, 250)
-        toggle_laser_checkbox.clicked.connect(toggle_laser_fnc)
+        toggle_laser_checkbox_532 = QCheckBox("532", self) # button
+        toggle_laser_checkbox_532.setParent(left_window)
+        toggle_laser_checkbox_532.resize(60,20)
+        toggle_laser_checkbox_532.move(75, 220)
+        toggle_laser_checkbox_532.clicked.connect(toggle_laser_fnc_532)
+
+        # toggle_laser checkbox
+        toggle_laser_checkbox_589 = QCheckBox("", self) # button
+        toggle_laser_checkbox_589.setParent(left_window)
+        toggle_laser_checkbox_589.resize(60,20)
+        toggle_laser_checkbox_589.move(75-7, 233)
+        toggle_laser_checkbox_589.clicked.connect(toggle_laser_fnc_589)
+        # toggle_laser checkbox
+        toggle_laser_checkbox_589w = QCheckBox("589 S/W", self) # button
+        toggle_laser_checkbox_589w.setParent(left_window)
+        toggle_laser_checkbox_589w.resize(60,20)
+        toggle_laser_checkbox_589w.move(88-7, 233)
+        toggle_laser_checkbox_589w.clicked.connect(toggle_laser_fnc_589w)
+
+        # toggle_laser checkbox
+        toggle_laser_checkbox_vel = QCheckBox("Velocity", self) # button
+        toggle_laser_checkbox_vel.setParent(left_window)
+        toggle_laser_checkbox_vel.resize(60,20)
+        toggle_laser_checkbox_vel.move(75, 246)
+        toggle_laser_checkbox_vel.clicked.connect(toggle_laser_fnc_vel)
+
+        # toggle_laser checkbox
+        toggle_laser_checkbox_pt637 = QCheckBox("PT 637", self) # button
+        toggle_laser_checkbox_pt637.setParent(left_window)
+        toggle_laser_checkbox_pt637.resize(60,20)
+        toggle_laser_checkbox_pt637.move(75, 259)
+        toggle_laser_checkbox_pt637.clicked.connect(toggle_laser_fnc_pt637)
+
+        # toggle_laser checkbox
+        toggle_laser_checkbox_pt520 = QCheckBox("PT 520", self) # button
+        toggle_laser_checkbox_pt520.setParent(left_window)
+        toggle_laser_checkbox_pt520.resize(60,20)
+        toggle_laser_checkbox_pt520.move(210, 220)
+        toggle_laser_checkbox_pt520.clicked.connect(toggle_laser_fnc_pt520)
 ####################################################################### context menu ######################################################################
 
     def contextMenuEvent(self, event): # context (right-click) menu

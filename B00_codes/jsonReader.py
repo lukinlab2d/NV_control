@@ -5,7 +5,9 @@
 import json
   
 # Opening JSON file
-filename = 'C:/Users/lukin2dmaterials/data/2022-12-13/#008_T2E_02-26-33/snapshot.json'
+# C:\Users\lukin2dmaterials\data\2023-04-07\#020_ODMR_CW_19-45-29
+# filename = 'C:/Users/lukin2dmaterials/data/2023-04-12/#055_T2E_17-52-52/snapshot.json'
+filename = 'C:/Users/lukin2dmaterials/data/2023-06-08/#043_CalibReadoutPhotonStat_18-15-15/snapshot.json'
 f = open(filename)
   
 # returns JSON object as 

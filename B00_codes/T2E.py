@@ -34,34 +34,32 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PIL import Image
-from PlotPulse import *    
-from Confocal import *
+from B00_codes.PlotPulse import *    
+from B00_codes.Confocal import *
 
 class T2E(Instrument):
 
-    def __init__(self, name='T2EObject', settings=None, ifPlotPulse=True, tausArray=None, **kwargs) -> None:
+    def __init__(self, name='T2EObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
+        self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':1}
         self.MWQParam =         {'delay_time': 2, 'channel':0}
         self.MWswitchParam =    {'delay_time': 2, 'channel':2}
-        global laserChannel; laserChannel = self.LaserParam['channel']
+        global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
         global pb
 
-        settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
+        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
                         'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        if not tausArray.any():
-            self.tausArray = np.linspace(start, stop, num_sweep_points)
-        else:
-            self.tausArray = tausArray
+        self.tausArray = self.settings['tausArray']
 
         ifRandomized = self.settings['ifRandomized']
         if ifRandomized: np.random.shuffle(self.tausArray)
@@ -99,7 +97,6 @@ class T2E(Instrument):
         # For each iteration, sweep tau (sig.sweep calls set_raw() method of Parameter sig)
         # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
-            # sig.sweep(self.tausArray[0], self.tausArray[-1], num=len(self.tausArray)),
             sig.sweep(keys=self.tausArray),
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig, ref, sigOverRef,
@@ -152,8 +149,8 @@ class Signal(Parameter):
         self.trackingSettings = self.settings['trackingSettings']
         self.T2EObject = measurementObject
         self.loopCounter = 0
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        self.tausArray = np.linspace(start, stop, num_sweep_points)
+        self.timeLastTracking = time.time()
+        self.tausArray = self.settings['tausArray']
 
     def get_raw(self):
         self.ctrtask.start()
@@ -175,16 +172,18 @@ class Signal(Parameter):
 
         # NV tracking
         if self.trackingSettings['if_tracking'] == 1:
-            if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
+            # if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
+            if time.time() - self.timeLastTracking > self.trackingSettings['time_btwn_trackings']: 
                 print()
                 cfcObject = Confocal(settings=self.trackingSettings)
-                cfcObject.optimize_xy()
-                time.sleep(1)
+                # cfcObject.optimize_xy()
+                # time.sleep(1)
                 cfcObject.optimize_xz()
                 time.sleep(1)
                 cfcObject.optimize_xy()
                 time.sleep(1)
                 cfcObject.close()
+                self.timeLastTracking = time.time()
                 
         return sig_avg
 
@@ -199,7 +198,7 @@ class Signal(Parameter):
         # Pulse parameters
         num_loops               = self.settings['num_loops'];              
         laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
-        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];      MWI_duration        = self.settings['piOverTwo_time']
+        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];      MWI_duration        = self.settings['pi_half']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  normalized_style    = self.settings['normalized_style']
 
@@ -214,7 +213,7 @@ class Signal(Parameter):
         MWI3_delay    = MWI2_delay + MWI2_duration + tau_ns/2;  MWI3_duration = MWI_duration    
         when_pulse_end= MWI3_delay + MWI3_duration;             pulse_duration= tau_ns + 4*MWI_duration
 
-        laser_read_signal_delay    = when_pulse_end
+        laser_read_signal_delay    = when_pulse_end # should we wait a bit before read out
         read_signal_delay          = when_pulse_end + laser_to_DAQ_delay;   read_signal_duration = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
@@ -237,9 +236,9 @@ class Signal(Parameter):
         # Make pulse sequence
         pulse_sequence = []
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('Laser',    laser_init_delay,             duration=int(laser_init_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
+            pulse_sequence += [spc.Pulse('LaserInit',    laser_init_delay,             duration=int(laser_init_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
         pulse_sequence += [spc.Pulse('MWswitch', MWI_delay,                     duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('MWswitch', MWI2_delay,                    duration=int(MWI2_duration))]
         pulse_sequence += [spc.Pulse('MWswitch', MWI3_delay,                    duration=int(MWI3_duration))]
@@ -303,7 +302,7 @@ class Signal(Parameter):
 
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        channels = np.linspace(laserChannel,laserChannel,1)
+        channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
 
 

@@ -94,7 +94,4 @@ for i in np.linspace(24, 18, 1):
         if not ifLooped: dataReader.readData(dataFilename, typeNorm = normalized_style)
         T2EObject.close()
 
-        # taus1 = np.linspace(20,2020,51)
-    # taus2 = np.linspace(2200,9800,39)
-    # taus3 = np.linspace(10000,60000,26)
-    # tausArray = np.concatenate((taus1, taus2, taus3))
+   

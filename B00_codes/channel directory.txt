@@ -1,0 +1,10 @@
+0: MW Q
+1: MW I
+2: MW switch
+3: 532
+4: Counter
+5: 635 velocity
+6: strong 589
+7: pigtail 520
+8: pigtail 637
+9: weak 589

@@ -50,7 +50,7 @@ for i in np.linspace(1,5,5):
         # Test for pulsed ODMR
         num_loops               = int(1e6)
         laser_init_delay        = 0;        laser_init_duration       = 0
-        laser_to_MWI1_delay     = 1000;     piOverTwo_time            = 24
+        laser_to_MWI_delay     = 1000;     piOverTwo_time            = 24
         laser_to_DAQ_delay      = 850;      read_duration             = 200
         DAQ_to_laser_off_delay  = 2500;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
@@ -80,7 +80,7 @@ for i in np.linspace(1,5,5):
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
                     'laser_init_delay':       laser_init_delay,      'laser_init_duration':       laser_init_duration,
-                    'laser_to_MWI1_delay':    laser_to_MWI1_delay ,  'piOverTwo_time':            piOverTwo_time,
+                    'laser_to_MWI_delay':     laser_to_MWI_delay ,   'piOverTwo_time':            piOverTwo_time,
                     'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
                     'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':          trackingSettings,
                     'MWI_to_switch_delay':    MWI_to_switch_delay,   'ifRandomized':              ifRandomized,

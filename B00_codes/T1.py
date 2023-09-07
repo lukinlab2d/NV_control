@@ -56,8 +56,7 @@ class T1(Instrument):
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        self.tausArray = np.linspace(start, stop, num_sweep_points)
+        self.tausArray = self.settings['tausArray']
         self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
 
         ifRandomized = self.settings['ifRandomized']
@@ -146,8 +145,8 @@ class Signal(Parameter):
         self.trackingSettings = self.settings['trackingSettings']
         self.T1Object = measurementObject
         self.loopCounter = 0
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        self.tausArray = np.linspace(start, stop, num_sweep_points)
+        self.timeLastTracking = time.time()
+        self.tausArray = self.settings['tausArray']
 
     def get_raw(self):
         self.ctrtask.start()
@@ -169,16 +168,16 @@ class Signal(Parameter):
 
         # NV tracking
         if self.trackingSettings['if_tracking'] == 1:
-            if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
+            # if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
+            if time.time() - self.timeLastTracking > self.trackingSettings['time_btwn_trackings']:    
                 print()
-                cfcObject = Confocal(settings=self.trackingSettings)
-                cfcObject.optimize_xy()
-                time.sleep(1)
+                cfcObject = Confocal(settings=self.trackingSettings, laserChannel=self.settings['laserTrack_channel'])
                 cfcObject.optimize_xz()
                 time.sleep(1)
                 cfcObject.optimize_xy()
                 time.sleep(1)
                 cfcObject.close()
+                self.timeLastTracking = time.time()
 
         return sig_avg
 
