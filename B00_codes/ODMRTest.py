@@ -60,21 +60,22 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
 
 ifCW = 1
 
-if ifCW != 1:
-    for i in np.linspace(1,50,1):
+if ifCW == 0:
+    reps = 5
+    for i in range(reps):
         # Test for Pulsed ODMR
-        start = 2.85e9; stop = 2.89e9; num_sweep_points = 51
+        start = 2742.5e6; stop = 2752.5e6; num_sweep_points = 201
         freqsArray = np.linspace(start, stop, num_sweep_points)
-        uwPower = -25; ifLooped = False
-        laserInit_channel = 3; laserRead_channel = 3 # 532 is 3, 589 is 6
+        uwPower = -52.5; ifLooped = (reps != 1)
+        laserInit_channel = 7; laserRead_channel = 7 # 532 is 3, 589 is 6
 
-        num_loops               = int(0.5e6)
-        laser_init_delay        = 0;          laser_init_duration    = 0*1000
-        MWI_duration            = 36 #52 #420
-        if laserRead_channel == 3:            laser_to_DAQ_delay     = 850  
-        elif laserRead_channel == 6:          laser_to_DAQ_delay     = 1150 
-        laser_to_MWI_delay      = laser_to_DAQ_delay + 150
-        read_duration           = 200;        DAQ_to_laser_off_delay = 1000
+        num_loops                    = int(0.5e6)
+        laser_init_delay             = 0;          laser_init_duration    = 0*1000
+        MWI_duration                 = 2600
+        laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
+        laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
+        laser_to_MWI_delay           = laser_to_DAQ_delay + 150
+        read_duration                = 250;        DAQ_to_laser_off_delay = 1000
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
                     'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,
@@ -89,7 +90,8 @@ if ifCW != 1:
         print('Total time = ' + str(time.time() - start) + ' s')
 
         dataFilename = ODMRObject.getDataFilename()
-        if not ifLooped: dataReader.readData(dataFilename)
+        guess=(-2e6, 2.87e9, 0.02e9, 1)
+        if not ifLooped: dataReader.readData(dataFilename, type='ODMR', ifFit=1, guess=guess)
         ODMRObject.close()
 
         # dataFilename = 'C:/Users/lukin2dmaterials/data/2023-05-25/#007_ODMR_15-31-25/ODMRObject_sig_set.dat'
@@ -97,13 +99,14 @@ if ifCW != 1:
 
 else:
     # Test for CW ODMR
-    for i in range(1):
-        start = 2.83e9; stop = 2.91e9; num_sweep_points = 101
+    reps = 4
+    for i in range(reps):
+        start = 2700e6; stop = 3060e6; num_sweep_points = 91
         freqsArray = np.linspace(start, stop, num_sweep_points)
-        uwPower = -20
-        laserInit_channel = 3; laserRead_channel = 3 # 532 is 3, 589 is 6
+        uwPower = -15; ifLooped = (reps != 1)
+        laserInit_channel = 7; laserRead_channel = 7 # 532 is 3, 589 is 6, 2nd 532 is 7
 
-        num_loops = int(0.2e6); wait_btwn_sig_ref = 1e3
+        num_loops = int(100e3); wait_btwn_sig_ref = 1e3
         MWI_delay = 3e3; MWI_duration = 1e3
         laser_delay = 10; MWI_off_to_read_signal_off = 0
 
@@ -116,13 +119,13 @@ else:
                     }
 
         start = time.time()
-        ODMRObject = ODMR_CW(settings=settings, ifPlotPulse=1) # implemented as Instrument. Turn of plot if pulse length > 1e5 ns
+        ODMRObject = ODMR_CW(settings=settings, ifPlotPulse=not(ifLooped)) # implemented as Instrument. Turn of plot if pulse length > 1e5 ns
         ODMRObject.runScan()
         print('Total time = ' + str(time.time() - start) + ' s')
 
         dataFilename = ODMRObject.getDataFilename()
         guess=(-2e6, 2.87e9, 0.02e9, 1)
-        dataReader.readData(dataFilename, type='ODMR', ifFit=1, guess=guess);
+        if not ifLooped: dataReader.readData(dataFilename, type='ODMR', ifFit=1, guess=guess)
         ODMRObject.close()
 
         # dataFilename = 'C:/Users/lukin2dmaterials/data/2023-05-17/#036_ODMR_22-34-35/ODMRObject_sig_set.dat'

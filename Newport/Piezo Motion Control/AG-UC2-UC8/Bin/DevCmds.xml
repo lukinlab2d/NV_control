@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DevCmds>
+	<!--Command cmd="CmdString" tip="CmdDescription"></Command-->
+	<Command cmd="ML" tip="Set To Local Mode"></Command>
+	<Command cmd="MR" tip="Set To Remote Mode"></Command>
+	<Command cmd="PH" tip="Tell Limit Status"></Command>
+	<Command cmd="RS" tip="Reset the Controller"></Command>
+	<Command cmd="VE" tip="Get the Firmware Version of the Controller"></Command>
+	<Command cmd="TE" tip="Get the Error Code of the previous command"></Command>
+	<Command cmd="CC " tip="Set the Current Channel (CC {channel})"></Command>
+	<Command cmd="CC?" tip="Get the Current Channel"></Command>
+	<Command cmd="1DL " tip="Set the Step Delay ({axis} DL {int StepDelay (0 to 200000)})"></Command>
+	<Command cmd="1DL?" tip="Get the Step Delay ({axis} DL?)"></Command>
+	<Command cmd="1JA " tip="Start Jogging ({axis} JA {int Jog Mode (-4 to +4)})"></Command>
+	<Command cmd="1JA?" tip="Get the Jog Mode ({axis} JA?)"></Command>
+	<Command cmd="1MA " tip="Measure Current Position ({axis} MA)"></Command>
+	<Command cmd="1MV " tip="Move To Limit ({axis} MV {int Jog Mode (-4 to +4)})"></Command>
+	<Command cmd="1MV?" tip="Get the Jog Mode ({axis} MV?)"></Command>
+	<Command cmd="1PA " tip="Perform an Absolute Move ({axis} PA {int TargetPosition (0 to 1000)})"></Command>
+	<Command cmd="1PA?" tip="Get the Current Target Position ({axis} PA?)"></Command>
+	<Command cmd="1PR " tip="Perform a Relative Move ({axis} PR {int TargetPosition})"></Command>
+	<Command cmd="1PR?" tip="Get the Current Target Position ({axis} PR?)"></Command>
+	<Command cmd="1ST " tip="Perform a Stop Motion ({axis} ST)"></Command>
+	<Command cmd="1SU " tip="Set the Step Amplitude ({axis} SU {int StepAmplitude (-50 to 50)})"></Command>
+	<Command cmd="1SU+?" tip="Get the Step Amplitude in the positive direction ({axis} SU+?)"></Command>
+	<Command cmd="1SU-?" tip="Get the Step Amplitude in the negative direction ({axis} SU-?)"></Command>
+	<Command cmd="1TP " tip="Tell Number of Steps ({axis} TP)"></Command>
+	<Command cmd="1TS " tip="Get Axis Status ({axis} TS)"></Command>
+	<Command cmd="1ZP " tip="Reset the Step Counter to the Zero Position ({axis} ZP)"></Command>
+	<Command cmd="2DL " tip="Set the Step Delay ({axis} DL {int StepDelay (0 to 200000)})"></Command>
+	<Command cmd="2DL?" tip="Get the Step Delay ({axis} DL?)"></Command>
+	<Command cmd="2JA " tip="Start Jogging ({axis} JA {int Jog Mode (-4 to +4)})"></Command>
+	<Command cmd="2JA?" tip="Get the Jog Mode ({axis} JA?)"></Command>
+	<Command cmd="2MA " tip="Measure Current Position ({axis} MA)"></Command>
+	<Command cmd="2MV " tip="Move To Limit ({axis} MV {int Jog Mode (-4 to +4)})"></Command>
+	<Command cmd="2MV?" tip="Get the Jog Mode ({axis} MV?)"></Command>
+	<Command cmd="2PA " tip="Perform an Absolute Move ({axis} PA {int TargetPosition (0 to 1000)})"></Command>
+	<Command cmd="2PA?" tip="Get the Current Target Position ({axis} PA?)"></Command>
+	<Command cmd="2PR " tip="Perform a Relative Move ({axis} PR {int TargetPosition})"></Command>
+	<Command cmd="2PR?" tip="Get the Current Target Position ({axis} PR?)"></Command>
+	<Command cmd="2ST " tip="Perform a Stop Motion ({axis} ST)"></Command>
+	<Command cmd="2SU " tip="Set the Step Amplitude ({axis} SU {int StepAmplitude (-50 to 50)})"></Command>
+	<Command cmd="2SU+?" tip="Get the Step Amplitude in the positive direction ({axis} SU+?)"></Command>
+	<Command cmd="2SU-?" tip="Get the Step Amplitude in the negative direction ({axis} SU-?)"></Command>
+	<Command cmd="2TP " tip="Tell Number of Steps ({axis} TP)"></Command>
+	<Command cmd="2TS " tip="Get Axis Status ({axis} TS)"></Command>
+	<Command cmd="2ZP " tip="Reset the Step Counter to the Zero Position ({axis} ZP)"></Command>
+	<!--Command cmd="CmdString" tip="CmdDescription"></Command-->
+</DevCmds>

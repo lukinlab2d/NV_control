@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29911.84
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenMultipleDevices", "OpenMultipleDevices\OpenMultipleDevices.csproj", "{72811254-D8DC-4193-8E3F-4680E3FBE0E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepAmplitude", "StepAmplitude\StepAmplitude.csproj", "{DF7C4ED7-6F95-4398-8A8F-C7B004DB1BCA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{72811254-D8DC-4193-8E3F-4680E3FBE0E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72811254-D8DC-4193-8E3F-4680E3FBE0E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72811254-D8DC-4193-8E3F-4680E3FBE0E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72811254-D8DC-4193-8E3F-4680E3FBE0E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF7C4ED7-6F95-4398-8A8F-C7B004DB1BCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF7C4ED7-6F95-4398-8A8F-C7B004DB1BCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF7C4ED7-6F95-4398-8A8F-C7B004DB1BCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF7C4ED7-6F95-4398-8A8F-C7B004DB1BCA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E20429F4-151C-4667-AB39-031C113B5A19}
+	EndGlobalSection
+EndGlobal

@@ -27,36 +27,45 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 
 ####################################################################################################################
-
-
-for i in np.linspace(1000,2000,1):
+reps = 2
+for i in range(reps):
     # Rabi
-    start = 250; stop = 10; num_sweep_points = 61; ifLooped = False
+    start = 12; stop = 132; num_sweep_points = 31; ifLooped = (reps != 1)
     tausArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -25; uwFreq = 2870e6
+    SRSnum=2; uwPower = -17; uwFreq = 2838.26e6
+    laserInit_channel = 7; laserRead_channel = 7
+    MWswitch_channel = 11; MWI_channel = 12; MWQ_channel = 13
+    
     if True:
         print(uwFreq)
 
-        num_loops               = int(0.7e6)
+        num_loops               = int(1e6)
         laser_init_delay        = 0;        laser_init_duration = 0
         laser_to_MWI_delay      = 1000;       
-        laser_to_DAQ_delay      = 850;      read_duration             = 250
+        laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
+        laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)  
+        read_duration           = 250
         DAQ_to_laser_off_delay  = 1000;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
-        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower, 'uwFreq': uwFreq,
+        settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 
+                    'SRSnum':SRSnum, 'uwPower':uwPower, 'uwFreq': uwFreq,
                     'laser_init_delay':       laser_init_delay,      'laser_init_duration':       laser_init_duration,
                     'laser_to_MWI_delay':     laser_to_MWI_delay ,   
                     'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':             read_duration,
-                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'MWI_to_switch_delay':       MWI_to_switch_delay}
+                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'MWI_to_switch_delay':       MWI_to_switch_delay,
+                    'laserInit_channel':      laserInit_channel,     'laserRead_channel':         laserRead_channel,
+                    'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel
+                    }
 
         start = time.time()
         RabiObject = Rabi(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
         RabiObject.runScan()
         print('Total time = ' + str(time.time() - start) + ' s')
 
-        if not ifLooped: dataFilename = RabiObject.getDataFilename()
-        guess=(0.2, 10, 0, 0.9, 600)
-        dataReader.readData(dataFilename, type='RabiDecay', guess=guess, ifFit=1)
+        if not ifLooped: 
+            dataFilename = RabiObject.getDataFilename()
+            guess=(0.2, 1000, 0, 0.9, 600)
+            dataReader.readData(dataFilename, type='RabiDecay', guess=guess, ifFit=1)
         RabiObject.close()
         
         # guess=(0.3, 250, 0, 0.9)

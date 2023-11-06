@@ -34,7 +34,9 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PIL import Image
-from PlotPulse import *    
+from B00_codes.PlotPulse import *    
+from B00_codes.ScanROFreq import *  
+from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
 
 class Rabi(Instrument):
 
@@ -42,22 +44,24 @@ class Rabi(Instrument):
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
-        self.LaserParam =       {'delay_time': 2, 'channel':3}
+        self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
+        self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
-        self.MWIParam =         {'delay_time': 2, 'channel':1}
-        self.MWQParam =         {'delay_time': 2, 'channel':0}
-        self.MWswitchParam =    {'delay_time': 2, 'channel':2}
-        global laserChannel; laserChannel = self.LaserParam['channel']
+        self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
+        self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
+        self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
+        global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
 
-        settings_extra = {'clock_speed': self.clock_speed, 'Laser': self.LaserParam, 'Counter': self.CounterParam, 
-                        'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
-                        'min_pulse_dur': int(1*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
+        settings_extra = {'clock_speed': self.clock_speed, 'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
+                          'Counter': self.CounterParam, 
+                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
+                           'min_pulse_dur': int(1*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.tausArray = np.linspace(start, stop, num_sweep_points)
-        self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
+        self.SRSnum=self.settings['SRSnum']; self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
 
         self.add_parameter(
             name = "sig",
@@ -76,7 +80,7 @@ class Rabi(Instrument):
         self.savedPulseSequencePlots = {}
 
         # SRS object
-        self.srs = SRS()
+        self.srs = SRS(SRSnum=self.SRSnum)
         self.srs.set_freq(self.uwFreq) #Hz
         self.srs.set_RFAmplitude(self.uwPower) #dBm
         self.srs.enableIQmodulation()
@@ -94,7 +98,7 @@ class Rabi(Instrument):
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig, ref, sigOverRef,
                                             qctask(sig.plotPulseSequences),
-                                            ).then(qctask(sig.turn_on_at_end))
+                                            )#.then(qctask(sig.turn_on_at_end))
 
         data = loop.get_data_set(name='Rabi')
         data.add_metadata(self.settings)
@@ -165,7 +169,6 @@ class Signal(Parameter):
 
     def set_raw(self, tau_ns):
         # Make pulses, program Pulse Blaster
-
         print("Loop " + str(self.loopCounter))
         
         # Pulse parameters
@@ -188,16 +191,15 @@ class Signal(Parameter):
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
         self.read_duration = read_signal_duration
 
-
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")
 
         # Make pulse sequence
         pulse_sequence = []
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('Laser',laser_init_delay,             duration=int(laser_init_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay,      duration=int(laser_read_signal_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay,         duration=int(laser_read_ref_duration))]
+            pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,             duration=int(laser_init_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,      duration=int(laser_read_signal_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,         duration=int(laser_read_ref_duration))]
         pulse_sequence += [spc.Pulse('MWswitch', MWI_delay,                    duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,            duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,               duration=int(read_ref_duration))] # times are in ns
@@ -243,7 +245,7 @@ class Signal(Parameter):
 
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        channels = np.linspace(laserChannel,laserChannel,1)
+        channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
 
 

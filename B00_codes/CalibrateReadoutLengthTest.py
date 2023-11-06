@@ -40,21 +40,17 @@ for i in np.linspace(1000,2000,1):
     start = 1010; stop = 20; num_sweep_points = 100
     ifRandomized = 0; ifLooped = 0; ifPlotPulse = True
     tausArray = np.linspace(start, stop, num_sweep_points)
-    uwPower = -20; uwFreq = 2.870e9
-    laserRead_channel = 3 # 532 is 3, 589 is 6
+    uwPower = -7; uwFreq = 2.870e9
+    laserRead_channel = 5 # 532 is 3, 589 is 6
+
+    num_loops               = int(5e5)
+    laser_init_delay        = 0;        laser_init_duration       = 0
+    laser_to_MWI_delay      = 1000;     pi_time                   = 96 # dummy
+    laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
+    laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
+    DAQ_to_laser_off_delay  = 1000;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
+    
     if True:
-        print(uwFreq)
-
-        # Test for pulsed ODMR
-        num_loops               = int(5e5)
-        laser_init_delay        = 0;        laser_init_duration       = 0
-        laser_to_MWI_delay      = 1000;     pi_time                   = 112
-        if laserRead_channel == 3:          
-            laser_to_DAQ_delay  = 850  
-        elif laserRead_channel == 6 or laserRead_channel == 9:   
-            laser_to_DAQ_delay  = 1150          
-        DAQ_to_laser_off_delay  = 1000;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
-
         # For NV tracking
         if_tracking = 0
         xy_scan_read_time      = 5;      xy_scan_settle_time    = 0.2;  
@@ -94,10 +90,10 @@ for i in np.linspace(1000,2000,1):
         # print('Total time = ' + str(time.time() - start) + ' s')
         
         # dataFilename = CalibrateReadoutLengthObject.getDataFilename()
-        # dataReader.readData(dataFilename, typeNorm == REF_MINUS_SIG)
+        # dataReader.readData(dataFilename, typeNorm=REF_MINUS_SIG)
         # CalibrateReadoutLengthObject.close()
 
-        dataFilename = 'C:/Users/lukin2dmaterials/data/2023-06-14/#011_CalibrateReadoutLength_17-11-46/CalibrateReadoutLengthObject_sig_set.dat'
+        dataFilename = 'C:/Users/lukin2dmaterials/data/2023-10-07/#025_CalibrateReadoutLength_23-43-43/CalibrateReadoutLengthObject_sig_set.dat'
         dataReader.readData(dataFilename, typeNorm=REF_MINUS_SIG)
         
 

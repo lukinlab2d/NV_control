@@ -19,6 +19,10 @@ REF_MINUS_SIG  = 3
 
 def sinusoid(t, A, Tpi, phi,C):
     return A*np.cos(np.pi/Tpi*t + phi) + C
+def cosThree(t, A, f1, p1, B,f2,p2, C, f3,p3,D):
+    return A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2) + C*np.cos(2*np.pi*f3*t + p3) + D
+def cosFour(t, A, f1, p1, B,f2,p2, C, f3,p3, D,f4,p4, E):
+    return A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2) + C*np.cos(2*np.pi*f3*t + p3) + D*np.cos(2*np.pi*f4*t + p4) + E
 def linear(x, a,b):
     return a*x+b
 def sinusoidDecay(t, A, Tpi, phi,C, T2):
@@ -31,8 +35,14 @@ def decay(t, A ,C, T2):
     return A*np.exp(-t/T2) + C
 def strDecay(t, A, T2, n, C):
     return A*np.exp(-(t/T2)**n) + C
+def strDecaySinusoid(t, A, T2, n, Tosc, phi, B, C):
+    return A*np.exp(-(t/T2)**n)*np.cos(2*np.pi/Tosc*t + phi) + B*np.exp(-(t/T2)**n) + C
 def lor(f, A, f0, g, C):
-    return A*g/((f-f0)**2 + g**2) + C
+    return A*g/((f-f0)**2 + (g/2)**2) + C
+def lorThree(f, A0, f0, g0, A1, f1, g1, A2, f2, g2, C):
+    return A0*g0/((f-f0)**2 + (g0/2)**2) + A1*g1/((f-f1)**2 + (g1/2)**2) + A2*g2/((f-f2)**2 + (g2/2)**2) + C
+def lorFour(f, A0, f0, g0, A1, f1, g1, A2, f2, g2, A3, f3, g3, C):
+    return A0*g0/((f-f0)**2 + (g0/2)**2) + A1*g1/((f-f1)**2 + (g1/2)**2) + A2*g2/((f-f2)**2 + (g2/2)**2) + A3*g3/((f-f3)**2 + (g3/2)**2) + C
 def twoPois(x,A,mu,B,nu):
     if x <= 170:
         return A*np.exp(-mu)*mu**x/scipy.special.factorial(x) + B*np.exp(-nu)*nu**x/scipy.special.factorial(x)
@@ -115,6 +125,24 @@ def fitSinusoid(xdata, ydata, guess=None):
     yfit = sinusoid(xfit, *popt)
     return xfit, yfit, popt, perr
 
+def fitCosThree(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0, 0,-np.pi, 0, 0,-np.pi, 0, 0,-np.pi, -np.inf)
+    if upperBounds is None: upperBounds = (1, np.inf, np.pi, 1, np.inf, np.pi, 1, np.inf, np.pi, np.inf)
+    popt, pcov = curve_fit(cosThree, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = cosThree(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitCosFour(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0, 0,-np.pi, 0, 0,-np.pi, 0, 0,-np.pi, 0, 0,-np.pi,-np.inf)
+    if upperBounds is None: upperBounds = (1, np.inf, np.pi, 1, np.inf, np.pi, 1, np.inf, np.pi, 1, np.inf, np.pi, np.inf)
+    popt, pcov = curve_fit(cosFour, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = cosFour(xfit, *popt)
+    return xfit, yfit, popt, perr
+
 def fitSinusoidDecay(xdata, ydata, guess=None):
     lowerBounds = (0,0,-np.pi, -np.inf,0)
     upperBounds = (np.inf, np.inf, np.pi, np.inf, np.inf)
@@ -167,6 +195,17 @@ def fitStrDecay(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = strDecay(xfit, *popt)
     return xfit, yfit, popt, perr
+
+def fitStrDecaySinusoid(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.pi, 0, 0,      0,      -np.inf, -np.inf, -np.inf)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, 5, np.inf, np.inf,  np.inf, np.inf)
+    popt, pcov = curve_fit(strDecaySinusoid, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = strDecaySinusoid(xfit, *popt)
+    return xfit, yfit, popt, perr
+
 def fitLor(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     if lowerBounds is None: lowerBounds = (-np.inf,0,0,0)
     if upperBounds is None: upperBounds = (0, np.inf, np.inf, np.inf)
@@ -175,6 +214,26 @@ def fitLor(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
 
     xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = lor(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitLorThree(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.inf,0,0,-np.inf,0,0,-np.inf,0,0,0)
+    if upperBounds is None: upperBounds = (0, np.inf, np.inf, 0, np.inf, np.inf,0, np.inf, np.inf,np.inf)
+    popt, pcov = curve_fit(lorThree, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = lorThree(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitLorFour(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.inf,0,0,  -np.inf,0,0,  -np.inf,0,0,  0)
+    if upperBounds is None: upperBounds = (0, np.inf, np.inf,   0, np.inf, np.inf,  0, np.inf, np.inf,  0, np.inf, np.inf,  np.inf)
+    popt, pcov = curve_fit(lorFour, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = lorFour(xfit, *popt)
     return xfit, yfit, popt, perr
 
 def fitBlinkTwoPois(xdata, ydata, guess=None):
@@ -309,7 +368,7 @@ def readDataLiveCounter(datafile, acqTimeMs=1, figsize=(4,4),
 
     return iter, sig
 
-def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=True,
+def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=True, ifSinusoid=False,
              ifFit=False, upperBounds=None, lowerBounds=None, endDataPoint=None, startDataPoint=None):
     readfile = np.loadtxt(datafile)
     x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
@@ -364,7 +423,8 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
             axs[1].set_title('$\pi$-pulse = %.2f $\pm$ %.2f ns' % (popt[1], perr[1]))
         
     if type in ['T2E'] and ifFit:
-        fitFunc = fitStrDecay
+        if ifSinusoid: fitFunc = fitStrDecaySinusoid
+        else: fitFunc = fitStrDecay
 
         if typeNorm == NO_MS_EQUALS_1: y = sigOverRef
         else: y = np.abs((sig-ref)/(sig+ref))
@@ -386,6 +446,8 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
         if ifPlot:
             axs[1].plot(xfit, yfit, color='C1')
             axs[1].set_title("$f$ = %.2f $\pm$ %.2f MHz" % (popt[1]/1e6, perr[1]/1e6))
+            axs[0].set_xlabel('f (GHz)')
+            axs[1].set_xlabel('f (GHz)')
 
     if type in ['T1'] and ifFit:
         fitFunc = fitDecay

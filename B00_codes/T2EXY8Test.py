@@ -32,7 +32,7 @@ THREE_PI_HALF_FINAL = 2
 
 if True:
     # For NV tracking
-    if_tracking = 1
+    if_tracking = 1 # 2 is for the monty setup
     xy_scan_read_time      = 5;      xy_scan_settle_time    = 3;  
     xy_scan_resolution_hor = 20;     xy_scan_resolution_ver = 20
     x_minus_range          = 0.02;   x_plus_range           = 0.02
@@ -57,17 +57,17 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
                     'xz_displacement_limit':  xz_displacement_limit, 'time_btwn_trackings':    time_btwn_trackings}
 
 # Params
-laserInit_channel       = 3;        laserRead_channel = 3 # 532 is 3, 589 is 6
+laserInit_channel       = 7;        laserRead_channel = 7 # 532 is 3, 589 is 6
 num_loops               = int(0.3e6)
 laser_init_delay        = 0;        laser_init_duration       = 0
-pi_half                 = 22;       read_duration             = 200
-if laserRead_channel == 3:          laser_to_DAQ_delay        = 850  
-elif laserRead_channel == 6:        laser_to_DAQ_delay        = 1150 
+pi_half                 = 48;       read_duration             = 200
+laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
+laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
 laser_to_MWI_delay      = laser_to_DAQ_delay + 150   
 DAQ_to_laser_off_delay  = 1000;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
 ifRandomized = 0; ifLooped = True; normalized_style = Q_FINAL; 
-uwPower = -25; uwFreq = 2870e6
+uwPower = -7; uwFreq = 2870e6
 
 for i in np.linspace(1,5,5):
     for j in np.linspace(1,300,300):

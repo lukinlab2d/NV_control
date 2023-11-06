@@ -279,7 +279,7 @@ class Parent(QtWidgets.QMainWindow):
         hep_menu_about.triggered.connect(display_about_window) # this connects clicking the "About" to "..."
         help_menu.addAction(hep_menu_about) # adding "About" sub_option to the "Help" menu option
 
-############################################################################# "Chid" class #######################################################################
+############################################################################# "Child" class #######################################################################
 class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
 
     # ?
@@ -377,7 +377,6 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
                                                         'hor: {} and ver: {}'.format(self.hor_coord, self.ver_coord)  + "\n"
                                                         "PL count rate = " + str(PL)
                                                         )
-
 
         def set_coordinate_fnc():
             # naming the instrument
@@ -499,20 +498,54 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
                 print("Channels currently on: " + str(channel_currently_on))
                 print("-------------------------------------")
         
-        def toggle_laser_fnc_pt520():
-            if toggle_laser_checkbox_pt520.isChecked():
-                global pb_pt520; global channel_currently_on
+        def toggle_laser_fnc_532b():
+            if toggle_laser_checkbox_532b.isChecked():
+                global pb_532b; global channel_currently_on
                 channel_currently_on = np.concatenate((channel_currently_on,(7,)))
-                pb_pt520 = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt520")
+                pb_532b = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_532b")
                 print("Channels currently on: " + str(channel_currently_on))
                 print("-------------------------------------")
             else:
                 channel_off_idx = np.where(channel_currently_on==7)[0][0]
                 channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
-                pb_pt520.close()
-                pb_pt520_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt520_off")
-                pb_pt520_off.close() # close the instrument
-                print('pt520 nm laser turned off')
+                pb_532b.close()
+                pb_532b_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_532b_off")
+                pb_532b_off.close() # close the instrument
+                print('532b nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+        
+        def toggle_laser_fnc_pt637b():
+            if toggle_laser_checkbox_pt637b.isChecked():
+                global pb_pt637b; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(10,)))
+                pb_pt637b = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt637b")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+            else:
+                channel_off_idx = np.where(channel_currently_on==10)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_pt637b.close()
+                pb_pt637b_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_pt637b_off")
+                pb_pt637b_off.close() # close the instrument
+                print('pt637b nm laser turned off')
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+
+        def toggle_laser_fnc_velb():
+            if toggle_laser_checkbox_velb.isChecked():
+                global pb_velb; global channel_currently_on
+                channel_currently_on = np.concatenate((channel_currently_on,(14,)))
+                pb_velb = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_velb")
+                print("Channels currently on: " + str(channel_currently_on))
+                print("-------------------------------------")
+            else:
+                channel_off_idx = np.where(channel_currently_on==14)[0][0]
+                channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
+                pb_velb.close()
+                pb_velb_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_velb_off")
+                pb_velb_off.close() # close the instrument
+                print('velb nm laser turned off')
                 print("Channels currently on: " + str(channel_currently_on))
                 print("-------------------------------------")
                 
@@ -590,10 +623,16 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
                 # array of x,y voltages
                 self.x_array = np.linspace(x_init, x_final, grid_size_x)
                 self.y_array = np.linspace(y_init, y_final, grid_size_y)
-                X, Y = np.meshgrid(self.x_array, self.y_array)
+                
+                # correct for snake shift
+                if snake_shift_qlineedit.text() == '': snake_shift = 0
+                else: snake_shift = float(snake_shift_qlineedit.text())
+                self.x_array_plot = np.linspace(x_init + snake_shift, x_final + snake_shift, grid_size_x)
+                self.y_array_plot = np.linspace(y_init, y_final, grid_size_y)
+                X_plot, Y_plot = np.meshgrid(self.x_array_plot, self.y_array_plot)
 
-                self.hor_array = self.x_array
-                self.ver_array = self.y_array
+                self.hor_array = self.x_array_plot
+                self.ver_array = self.y_array_plot
 
                 # make the x-voltage waveform to pass to aotask
                 self.x_array = np.array(np.repeat(self.x_array, self.time_pts_per_pixel))
@@ -700,8 +739,8 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
                     end = time.time() - start0
                     if f == 0 or f == grid_size_y-1 or f == int(grid_size_y/2):
                         print("Time per row: " + str(end) + " s")
-                    
-                    self.sc.axes.pcolormesh(X, Y, xy_scan_data_array, cmap = "inferno")
+
+                    self.sc.axes.pcolormesh(X_plot, Y_plot, xy_scan_data_array, cmap = "inferno")
                     self.sc.axes.xaxis.set_tick_params(labelsize = 8)
                     self.sc.axes.yaxis.set_tick_params(labelsize = 8)
                     self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
@@ -716,7 +755,7 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
                 self.sc.axes.cla()
                 self.result = xy_scan_data_array
 
-                plot = self.sc.axes.pcolormesh(X, Y, xy_scan_data_array, cmap = "inferno")
+                plot = self.sc.axes.pcolormesh(X_plot, Y_plot, xy_scan_data_array, cmap = "inferno")
                 self.xy_scan_plot_colorbar = self.sc.fig.colorbar(plot, ax = self.sc.axes, pad = 0.02, aspect = 15)
                 self.xy_scan_plot_colorbar.formatter.set_powerlimits((0, 0))
                 self.sc.axes.xaxis.set_tick_params(labelsize = 8)
@@ -1810,6 +1849,13 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
         snake_checkbox.move(210, 25)
         snake_checkbox.clicked.connect(snake_fnc) 
 
+        # snake_shift
+        snake_shift_qlineedit = QLineEdit(self) # qclineedit
+        snake_shift_qlineedit.setParent(left_window)
+        snake_shift_qlineedit.move(210, 45)
+        snake_shift_qlineedit.resize(40, 15)
+        snake_shift_qlineedit.setAlignment(PyQt5.QtCore.Qt.AlignRight)
+
         # toggle_laser checkbox
         toggle_laser_checkbox_532 = QCheckBox("532", self) # button
         toggle_laser_checkbox_532.setParent(left_window)
@@ -1845,11 +1891,25 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
         toggle_laser_checkbox_pt637.clicked.connect(toggle_laser_fnc_pt637)
 
         # toggle_laser checkbox
-        toggle_laser_checkbox_pt520 = QCheckBox("PT 520", self) # button
-        toggle_laser_checkbox_pt520.setParent(left_window)
-        toggle_laser_checkbox_pt520.resize(60,20)
-        toggle_laser_checkbox_pt520.move(210, 220)
-        toggle_laser_checkbox_pt520.clicked.connect(toggle_laser_fnc_pt520)
+        toggle_laser_checkbox_532b = QCheckBox("532b", self) # button
+        toggle_laser_checkbox_532b.setParent(left_window)
+        toggle_laser_checkbox_532b.resize(60,20)
+        toggle_laser_checkbox_532b.move(210, 220)
+        toggle_laser_checkbox_532b.clicked.connect(toggle_laser_fnc_532b)
+
+        # toggle_laser checkbox
+        toggle_laser_checkbox_pt637b = QCheckBox("PT 637b", self) # button
+        toggle_laser_checkbox_pt637b.setParent(left_window)
+        toggle_laser_checkbox_pt637b.resize(60,20)
+        toggle_laser_checkbox_pt637b.move(210, 233)
+        toggle_laser_checkbox_pt637b.clicked.connect(toggle_laser_fnc_pt637b)
+
+        # toggle_laser checkbox
+        toggle_laser_checkbox_velb = QCheckBox("Vel 2", self) # button
+        toggle_laser_checkbox_velb.setParent(left_window)
+        toggle_laser_checkbox_velb.resize(60,20)
+        toggle_laser_checkbox_velb.move(210, 246)
+        toggle_laser_checkbox_velb.clicked.connect(toggle_laser_fnc_velb)
 ####################################################################### context menu ######################################################################
 
     def contextMenuEvent(self, event): # context (right-click) menu

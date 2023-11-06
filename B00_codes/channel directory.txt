@@ -5,6 +5,11 @@
 4: Counter
 5: 635 velocity
 6: strong 589
-7: pigtail 520
+7: 532 2nd
 8: pigtail 637
 9: weak 589
+10: pigtail 637 2nd
+11: 2nd MW switch
+12: 2nd MW I
+13: 2nd MW Q 
+14: 2nd velocity

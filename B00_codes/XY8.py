@@ -59,11 +59,7 @@ class XY8(Instrument):
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        if not tausArray.any():
-            self.tausArray = np.linspace(start, stop, num_sweep_points)
-        else:
-            self.tausArray = tausArray
+        self.tausArray = self.settings['tausArray']
 
         ifRandomized = self.settings['ifRandomized']
         if ifRandomized: np.random.shuffle(self.tausArray)
@@ -147,8 +143,8 @@ class Signal(Parameter):
         self.trackingSettings = self.settings['trackingSettings']
         self.XY8Object = measurementObject
         self.loopCounter = 0
-        start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
-        self.tausArray = np.linspace(start, stop, num_sweep_points)
+        self.timeLastTracking = time.time()
+        self.tausArray = self.settings['tausArray']
 
     def get_raw(self):
         self.ctrtask.start()
@@ -170,16 +166,29 @@ class Signal(Parameter):
 
         # NV tracking
         if self.trackingSettings['if_tracking'] == 1:
-            if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
+            # if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
+            if time.time() - self.timeLastTracking > self.trackingSettings['time_btwn_trackings']: 
                 print()
-                cfcObject = Confocal(settings=self.trackingSettings)
-                cfcObject.optimize_xy()
-                time.sleep(1)
+                cfcObject = Confocal(settings=self.trackingSettings, laserChannel=self.settings['laserRead_channel'])
+                # cfcObject.optimize_xy()
+                # time.sleep(1)
                 cfcObject.optimize_xz()
                 time.sleep(1)
                 cfcObject.optimize_xy()
                 time.sleep(1)
                 cfcObject.close()
+                self.timeLastTracking = time.time()
+        elif self.trackingSettings['if_tracking'] == 2:
+            if time.time() - self.timeLastTracking > self.trackingSettings['time_btwn_trackings']: 
+                print()
+                cfcObject = Confocal(settings=self.trackingSettings, laserChannel=self.settings['laserRead_channel'])
+                x1, y1, z = cfcObject.optimize_xy(direction=1)
+                time.sleep(1)
+                x2, y2, z = cfcObject.optimize_xy(direction=-1)
+                time.sleep(1)
+                cfcObject.set_coordinate_fnc((x1+x2)/2, (y1+y2)/2, z)
+                cfcObject.close()
+                self.timeLastTracking = time.time()
                 
         return sig_avg
 
@@ -195,7 +204,7 @@ class Signal(Parameter):
         num_loops               = self.settings['num_loops'];               ifStartInY          = self.settings['ifStartInY']
         laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
         laser_to_MWI_delay     = self.settings['laser_to_MWI_delay'];     
-        piHalf                  = self.settings['piOverTwo_time'];          pi = 2*piHalf
+        piHalf                  = self.settings['pi_half'];                 pi = 2*piHalf
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  normalized_style    = self.settings['normalized_style']
 
@@ -278,6 +287,7 @@ class Signal(Parameter):
                 pulse_sequence += [spc.Pulse('MW_I', MW_delays[i]-MWI_to_switch_delay, duration=int(pi + 2*MWI_to_switch_delay))]
         
         self.pulse_sequence = pulse_sequence
+        # print(pulse_sequence)
         
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
         self.pb.program_pb(pulse_sequence, num_loops=num_loops)

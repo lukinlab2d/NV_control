@@ -55,7 +55,7 @@ class Confocal():
             f.close()
         return oldX, oldY, oldZ
 
-    def run_xy_scan_fnc(self, ifSpecifyStartEnd=0):
+    def run_xy_scan_fnc(self, ifSpecifyStartEnd=0, direction=1):
         self.isStopped = 0
         
         scan_galvo_card_name = "cDAQ1Mod2" # naming the instrument
@@ -82,17 +82,17 @@ class Confocal():
         self.ver_res = grid_size_y = int(xy_scan_resolution_ver)
 
         # initial driving voltages for the x,y-mirror and z piezo stage
-        self.hor_init = x_init = self.oldX - self.settings['x_minus_range']
-        self.ver_init = y_init = self.oldY - self.settings['y_minus_range']
+        self.hor_init = x_init = self.oldX - self.settings['x_minus_range']*(direction)
+        self.ver_init = y_init = self.oldY - self.settings['y_minus_range']*(direction)
         self.z = z_init = self.oldZ
 
         # final driving voltages for the x,y-mirror
-        x_final = self.oldX + self.settings['x_plus_range']
-        y_final = self.oldY + self.settings['y_plus_range']
+        x_final = self.oldX + self.settings['x_plus_range']*(direction)
+        y_final = self.oldY + self.settings['y_plus_range']*(direction)
 
         # range of voltage
-        self.hor_range = x_final - x_init
-        self.ver_range = y_final - y_init
+        self.hor_range = (x_final - x_init)*(direction)
+        self.ver_range = (y_final - y_init)*(direction)
 
         # array of x,y voltages
         self.x_array = np.linspace(x_init, x_final, grid_size_x); self.x_array_original = self.x_array
@@ -228,10 +228,10 @@ class Confocal():
         # plt.show()
         return xMax, yMax, most_recent_data_array
 
-    def optimize_xy(self):
+    def optimize_xy(self, direction=1):
         xMaxArr = []; yMaxArr = []; cMaxArr = []
         for i in range(self.settings['num_of_scans']):
-            xMax, yMax, most_recent_data_array = self.run_xy_scan_fnc()
+            xMax, yMax, most_recent_data_array = self.run_xy_scan_fnc(direction=direction)
             xMaxArr.append(xMax); yMaxArr.append(yMax); cMaxArr.append(most_recent_data_array.max())
         xMaxArr = np.array(xMaxArr); yMaxArr = np.array(yMaxArr); cMaxArr = np.array(cMaxArr)
         xMaxAvg = np.round(np.average(xMaxArr),3); yMaxAvg = np.round(np.average(yMaxArr),3); cMaxAvg = np.round(np.average(cMaxArr),3)
@@ -245,6 +245,7 @@ class Confocal():
         self.set_coordinate_fnc(xMaxAvg,yMaxAvg,self.oldZ)
         self.oldX = xMaxAvg
         self.oldY = yMaxAvg
+        return xMaxAvg, yMaxAvg, self.oldZ
     
     def optimize_xy_fast(self):
         xMaxArr = []; yMaxArr = []; cMaxArr = []

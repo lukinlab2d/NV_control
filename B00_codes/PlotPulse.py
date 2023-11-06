@@ -15,6 +15,7 @@ class PulseTrace:
         elif "aserRead" in name:
             self.vert_offset = 6
             if readColor == 6 or readColor == 9: self.color = 'C1'
+            elif readColor == 5: self.color = 'r'
             else: self.color = 'C2'
         elif "aserIon" in name:
             self.vert_offset = 6

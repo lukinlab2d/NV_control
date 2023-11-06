@@ -23,8 +23,8 @@ import B00_codes.dataReader as dataReader
 
 ####################################################################################################################
 i=0
-for tsh in np.array((100,120,140,160,80)):
-    for reps in np.linspace(1,5,5):
+for rep in np.linspace(1,25,25):
+    for reps in np.linspace(1,25,25):
         # T1SCC
         ifRandomized = 0; ifPlotPulse = False; ifMeaningfulRef=True
         laserInit_channel = 3; laserRead_channel   = 6; laserTrack_channel = 3 # 532 is 3, S589 is 6, W589 is 9
@@ -36,7 +36,7 @@ for tsh in np.array((100,120,140,160,80)):
         num_loops               = int(5e3)
         laser_init_delay        = 5e3;      laser_init_duration       = 30e3
         laser_to_MWI_delay      = 5e3;      pi_time                   = 42
-        MWI_to_shelve_delay     = -1;       shelve_duration           = tsh    # both tweakable
+        MWI_to_shelve_delay     = -1;       shelve_duration           = 120    # both tweakable
         shelve_to_ion_delay     = 600;      ion_duration              = 100  # tweakable
         ion_to_laserRead_delay  = 0.5e6;    tr                        = 1e6                                 
         if laserRead_channel == 3:          

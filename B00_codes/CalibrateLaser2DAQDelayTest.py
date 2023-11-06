@@ -23,9 +23,9 @@ from nidaqmx.constants import(
     AcquisitionType,
     FrequencyUnits
 )
-from PlotPulse import *
-from CalibrateLaser2DAQDelay import *
-import dataReader
+from B00_codes.PlotPulse import *
+from B00_codes.CalibrateLaser2DAQDelay import *
+import B00_codes.dataReader as dataReader
 
 ####################################################################################################################
  # For NV tracking
@@ -55,16 +55,15 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
 
 for i in np.linspace(1000,2000,1):
     # CalibrateLaser2DAQDelay
-    start = 0; stop = 2000; num_sweep_points = 51
+    start = 1200; stop = 3000; num_sweep_points = 31
     tausArray = np.linspace(start, stop, num_sweep_points)
-    # tausArray = np.ones(3)*4e3
 
-    laserRead_channel = 9 # 532 is 3, 589 is 6
+    laserRead_channel = 5 # 532 is 3, 589 is 6
     
     if True:
         num_loops        = int(0.2e6)
-        laser_init_delay = 2e3;     laser_init_duration = 200
-        read_duration    = 200;      #laser_to_DAQ_delay = 260
+        laser_init_delay = 5e3;     laser_init_duration = 1000
+        read_duration    = 300;      #laser_to_DAQ_delay = 260
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops,
                     'tausArray': tausArray,

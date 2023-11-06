@@ -36,6 +36,8 @@ from nidaqmx.constants import(
 from PIL import Image
 from B00_codes.PlotPulse import *    
 from B00_codes.Confocal import *
+from B00_codes.ScanROFreq import *  
+from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
 
 class T2E(Instrument):
 
@@ -65,6 +67,10 @@ class T2E(Instrument):
         if ifRandomized: np.random.shuffle(self.tausArray)
 
         self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
+        if settings['laserRead_channel'] == 5:
+            self.vel_wvl = self.settings['vel_wvl']
+            self.vel_current = self.settings['vel_current']
+            self.vel_vpz = self.settings['vel_vpz']
 
         self.add_parameter(
             name = "sig",
@@ -88,6 +94,19 @@ class T2E(Instrument):
         self.srs.set_RFAmplitude(self.uwPower) #dBm
         self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
+
+        # Velocity object
+        if settings['laserRead_channel'] == 5:
+            self.vel = Velocity()
+            self.vel.set_track()
+            time.sleep(0.5)
+            self.vel.set_wvl(self.vel_wvl)
+            time.sleep(1)
+            self.vel.set_ready()
+            self.vel.set_current(self.vel_current)
+            self.vel.set_vpiezo(self.vel_vpz)
+            self.vel.set_ready()
+            global vel; vel = self.vel
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
@@ -114,12 +133,6 @@ class T2E(Instrument):
             name = 'sig'
             )
         plot.add(data.T2EObject_ref, name='ref')
-        # plot = QtPlot(
-        #     data.T2EObject_sigOverRef, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig/ref'
-        #     )
 
         loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
@@ -147,9 +160,11 @@ class Signal(Parameter):
         super().__init__(name, **kwargs)
         self.settings = settings
         self.trackingSettings = self.settings['trackingSettings']
+        if self.settings['laserRead_channel'] == 5: self.ROtrackingSettings = self.settings['ROtrackingSettings']
         self.T2EObject = measurementObject
         self.loopCounter = 0
         self.timeLastTracking = time.time()
+        self.timeLastROTracking = time.time()
         self.tausArray = self.settings['tausArray']
 
     def get_raw(self):
@@ -175,7 +190,7 @@ class Signal(Parameter):
             # if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
             if time.time() - self.timeLastTracking > self.trackingSettings['time_btwn_trackings']: 
                 print()
-                cfcObject = Confocal(settings=self.trackingSettings)
+                cfcObject = Confocal(settings=self.trackingSettings, laserChannel=self.settings['laserRead_channel'])
                 # cfcObject.optimize_xy()
                 # time.sleep(1)
                 cfcObject.optimize_xz()
@@ -184,7 +199,32 @@ class Signal(Parameter):
                 time.sleep(1)
                 cfcObject.close()
                 self.timeLastTracking = time.time()
-                
+        elif self.trackingSettings['if_tracking'] == 2:
+            if time.time() - self.timeLastTracking > self.trackingSettings['time_btwn_trackings']: 
+                print()
+                cfcObject = Confocal(settings=self.trackingSettings, laserChannel=self.settings['laserRead_channel'])
+                x1, y1, z = cfcObject.optimize_xy(direction=1)
+                time.sleep(1)
+                x2, y2, z = cfcObject.optimize_xy(direction=-1)
+                time.sleep(1)
+                cfcObject.set_coordinate_fnc((x1+x2)/2, (y1+y2)/2, z)
+                cfcObject.close()
+                self.timeLastTracking = time.time()
+
+        # Line tracking for RO
+        if self.settings['laserRead_channel'] == 5:
+            if self.ROtrackingSettings['if_tracking'] == 1:
+                if time.time() - self.timeLastROTracking > self.ROtrackingSettings['time_btwn_trackings']: 
+                    print()
+                    print('--------------------------------------------------------------------------')
+                    ScanROFreqObject = ScanROFreq(settings=self.ROtrackingSettings, ifPlotPulse=0)
+                    vpz = ScanROFreqObject.runScanInPulseSequence()
+                    vel.set_vpiezo(vpz)
+                    vel.set_ready()
+                    print("Set Vpiezo to " + str(np.round(vpz,1)) + ' %') # set the Velocity's piezo voltage
+                    print('--------------------------------------------------------------------------')
+                    self.timeLastROTracking = time.time()
+
         return sig_avg
 
     def set_raw(self, tau_ns):
