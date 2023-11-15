@@ -89,7 +89,7 @@ class CalibrateLaser2DAQDelay(Instrument):
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig,
                                             qctask(sig.plotPulseSequences),
-                                            ).then(qctask(sig.turn_on_at_end))
+                                            )#.then(qctask(sig.turn_on_at_end))
 
         data = loop.get_data_set(name='CalibrateLaser2DAQDelay')
         data.add_metadata(self.settings)

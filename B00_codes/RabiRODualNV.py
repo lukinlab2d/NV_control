@@ -44,40 +44,54 @@ def ns2cycles(time, samp_rate=1e7):
         return int(time/1e9*samp_rate)
     
 
-class RabiRO(Instrument):
+class RabiRODualNV(Instrument):
 
-    def __init__(self, name='RabiROObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
+    def __init__(self, name='RabiRODualNVObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
 
         # clock speed is in MHz - is 'status' needed in the dictionary?
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
         self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
         self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
+        self.LaserRead2Param =   {'delay_time': 2, 'channel':settings['laserRead2_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
         self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
         self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
+        self.MWI2Param =         {'delay_time': 2, 'channel':settings['MWI2_channel']}
+        self.MWQ2Param =         {'delay_time': 2, 'channel':settings['MWQ2_channel']}
+        self.MWswitch2Param =    {'delay_time': 2, 'channel':settings['MWswitch2_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
                           'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
+                          'LaserRead2': self.LaserRead2Param, 'LaserInit': self.LaserInitParam,
+                          'MW_I2': self.MWI2Param, 'MW_Q2': self.MWQ2Param, 'MWswitch2': self.MWswitch2Param,
                           'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
-        self.settings = {**settings, **settings_extra}; self.ROtrackingSettings = self.settings['ROtrackingSettings']
+        self.settings = {**settings, **settings_extra}; self.ROtrackingSettings = self.settings['ROtrackingSettings']; self.ROtrackingSettings2 = self.settings['ROtrackingSettings2']
         self.metadata.update(self.settings)
 
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
 
-        # Vpiezos, MW power, and MW frequency
+        ############################################################################################
+        # Microwave and velocity 1
         self.tausArray = self.settings['tausArray']
-        self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
+        self.SRSnum = self.settings['SRSnum']; MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
         
         self.velNum = self.settings['velNum']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
-        self.vel_vpz_start = self.settings['vel_vpz_start']; self.vel_vpz_step = self.settings['vel_vpz_step']
-        self.vel_vpz_step_time = self.settings['vel_vpz_step_time']; self.vel_vpz_target = self.settings['vel_vpz_target']
-        self.ifScanVpz = self.settings['ifScanVpz']; self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
+        self.vel_vpz_target = self.settings['vel_vpz_target']
+        self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
+
+        # Microwave and velocity 2
+        self.SRSnum2 = self.settings['SRSnum2']; MWPower2 = self.settings['MWPower2']; MWFreq2 = self.settings['MWFreq2']
+        
+        self.velNum2 = self.settings['velNum2']
+        vel_current2 = self.settings['vel_current2']; vel_wvl2 = self.settings['vel_wvl2']; 
+        self.vel_vpz_target2 = self.settings['vel_vpz_target2']
+        ###########################################################################################
 
         self.add_parameter(
             name = "sig",
@@ -90,9 +104,14 @@ class RabiRO(Instrument):
             parameter_class = Reference,
         )
         self.add_parameter(
-            name = "sigOverRef",
-            parameter_class = SigOverRef,
+            name = "sig2",
+            parameter_class = Signal2,
         )
+        self.add_parameter(
+            name = "ref2",
+            parameter_class = Reference2,
+        )
+        
         self.savedPulseSequencePlots = {}
 
         # SRS object
@@ -101,6 +120,13 @@ class RabiRO(Instrument):
         self.srs.set_RFAmplitude(MWPower) #dBm
         self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
+
+        # SRS object 2
+        self.srs2 = SRS(SRSnum=self.SRSnum2)
+        self.srs2.set_freq(MWFreq2) #Hz
+        self.srs2.set_RFAmplitude(MWPower2) #dBm
+        self.srs2.enableIQmodulation()
+        self.srs2.enable_RFOutput()
 
         # Velocity object
         self.vel = Velocity(velNum=self.velNum, 
@@ -122,62 +148,75 @@ class RabiRO(Instrument):
             self.vel.set_ready()
             time.sleep(0.7)
 
-
         self.vel.set_current(vel_current)
         
-        if self.ifScanVpz:
-            self.vel.set_vpiezo(self.vel_vpz_start)
+        for i in range(1):
+            self.vel.set_vpiezo(self.vel_vpz_target)
             self.vel.waitUntilComplete()
             self.vel.set_ready()
             time.sleep(0.7)
 
-            self.set_vpz()
+        # Velocity object 2
+        self.vel2 = Velocity(velNum=self.velNum2, 
+                            ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
+                            initWvl=vel_wvl2)
+        if self.ifInitWvl: 
+            self.vel2.set_track()
+            time.sleep(0.5)
+            self.vel2.set_wvl(vel_wvl2)
+            time.sleep(1)
+            self.vel2.set_ready()
+            self.vel2.set_vpiezo(2)
+            self.vel2.waitUntilComplete()
+            self.vel2.set_ready()
             time.sleep(0.7)
-        else:
-            for i in range(2):
-                self.vel.set_vpiezo(self.vel_vpz_target)
-                self.vel.waitUntilComplete()
-                self.vel.set_ready()
-                time.sleep(0.7)
+        if self.ifInitVpz:
+            self.vel2.set_vpiezo(2)
+            self.vel2.waitUntilComplete()
+            self.vel2.set_ready()
+            time.sleep(0.7)
+
+        self.vel2.set_current(vel_current2)
+        
+        for i in range(1):
+            self.vel2.set_vpiezo(self.vel_vpz_target2)
+            self.vel2.waitUntilComplete()
+            self.vel2.set_ready()
+            time.sleep(0.7)
 
         # Make Pulse Blaster, Counter, SRS global objects
         global pb
-        global srs; srs = self.srs
-        global vel; vel = self.vel
-    
-    def set_vpz(self):
-        nstep = int((self.vel_vpz_target-self.vel_vpz_start)/self.vel_vpz_step + 1)
-        for vpz in np.linspace(self.vel_vpz_start, self.vel_vpz_target, nstep):
-            self.vel.set_vpiezo(vpz)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(self.vel_vpz_step_time)
+        global srs; srs = self.srs; global srs2; srs2 = self.srs2
+        global vel; vel = self.vel; global vel2; vel2 = self.vel2
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
-        ref = self.ref # this is implemented as a Parameter
-        sigOverRef = self.sigOverRef
+        ref = self.ref
+        sig2 = self.sig2
+        ref2 = self.ref2
 
         # For each iteration, sweep frequency (sig.sweep calls set_raw() method of Parameter sig)
         # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
             sig.sweep(keys=self.tausArray),
             delay = 0,
-            sleepTimeAfterFinishing=0).each(sig,ref,sigOverRef,
+            sleepTimeAfterFinishing=0).each(sig,ref,sig2,ref2,
                                             qctask(sig.plotPulseSequences),
-                                            ).then(qctask(sig.sweepVelToEnd))
+                                            )
 
-        data = loop.get_data_set(name='RabiRO')
+        data = loop.get_data_set(name='RabiRODualNV')
         data.add_metadata(self.settings)
         self.data = data
         
         plot = QtPlot(
-            data.RabiROObject_sig, # this is implemented as a Parameter
+            data.RabiRODualNVObject_sig, # this is implemented as a Parameter
             figsize = (1200, 600),
             interval = 1,
             name = 'sig'
             )
-        plot.add(data.RabiROObject_ref, name='ref')
+        plot.add(data.RabiRODualNVObject_ref, name='ref')
+        plot.add(data.RabiRODualNVObject_sig2, name='sig2')
+        plot.add(data.RabiRODualNVObject_ref2, name='ref2')
 
         loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
@@ -194,36 +233,50 @@ class RabiRO(Instrument):
                 pulsePlotFilename = data.location + "/pulsePlot_" + str(index) + ".png"
                 fig.savefig(pulsePlotFilename)
 
-        # tracking at the end if needed
-        self.hasTracked = 0
+        # Tracking NV
+        self.hasTracked1 = 0; self.hasTracked2 = 0
         if self.settings['laserRead_channel'] == 5 or self.settings['laserRead_channel'] == 14:
-            if self.ROtrackingSettings['if_tracking'] == 1:
                 threshold_scanVpz = self.ROtrackingSettings['threshold_scanVpz']
+                threshold_scanVpz2 = self.ROtrackingSettings2['threshold_scanVpz']
                 
                 datafile = self.getDataFilename()
-                x_s, sig, ref = dr.readDataNoPlot(datafile)
-                sig = np.array(sig); ref = np.array(ref)
-                contrast = sig/ref; contrast_avg = np.average(contrast)
-                self.vpz = self.vel_vpz_target
+                x_s, sig, ref, sig2, ref2 = dr.readDataNoPlotDual(datafile)
+                ref = np.array(ref); ref2 = np.array(ref2)
+                
+                self.vpz = self.vel_vpz_target; self.vpz2 = self.vel_vpz_target2
 
-                if np.max(ref) < threshold_scanVpz: 
+                if self.ROtrackingSettings['if_tracking'] == 1 and np.max(ref) < threshold_scanVpz: 
                     print()
-                    print('-----------------Start line tracking---------------------------')
+                    print('-----------------Start line tracking for NV1---------------------------')
                     ScanROFreqObject = ScanROFreq(settings=self.ROtrackingSettings, ifPlotPulse=0)
                     self.vpz = ScanROFreqObject.runScanInPulseSequence()
                     vel.set_vpiezo(self.vpz)
                     vel.set_ready()
-                    print("Set Vpiezo to " + str(np.round(self.vpz,1)) + ' %') # set the Velocity's piezo voltage
-                    print('-----------------End line tracking---------------------------')
+                    print("Set Vpiezo 1 to " + str(np.round(self.vpz,1)) + ' %') # set the Velocity's piezo voltage
+                    print('-----------------End line tracking for NV1---------------------------')
                     print()
                     self.timeLastROTracking = time.time()
-                    self.hasTracked = 1
-        
+                    self.hasTracked1 = 1
+                if self.ROtrackingSettings2['if_tracking'] == 1 and np.max(ref2) < threshold_scanVpz2: 
+                    print()
+                    print('-----------------Start line tracking for NV2---------------------------')
+                    ScanROFreqObject = ScanROFreq(settings=self.ROtrackingSettings2, ifPlotPulse=0)
+                    self.vpz2 = ScanROFreqObject.runScanInPulseSequence()
+                    vel2.set_vpiezo(self.vpz2)
+                    vel2.set_ready()
+                    print("Set Vpiezo 2 to " + str(np.round(self.vpz2,1)) + ' %') # set the Velocity's piezo voltage
+                    print('-----------------End line tracking for NV2---------------------------')
+                    print()
+                    self.timeLastROTracking = time.time()
+                    self.hasTracked2 = 1
+    
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
+        self.srs2.disable_RFOutput()
+        self.srs2.disableModulation()
     
     def getDataFilename(self):
-        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/RabiROObject_sig_set.dat'
+        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/RabiRODualNVObject_sig_set.dat'
 
     
 class Signal(Parameter):
@@ -231,17 +284,19 @@ class Signal(Parameter):
         super().__init__(name, **kwargs)
         self.loopCounter = 0
         self.numOfRepumpVpz = 0
+        self.numOfRepumpVpz2 = 0
         self.settings = settings
         self.tausArray = self.settings['tausArray']
-        self.RabiROObject = measurementObject
+        self.RabiRODualNVObject = measurementObject
         self.ROtrackingSettings = self.settings['ROtrackingSettings']
+        self.ROtrackingSettings2 = self.settings['ROtrackingSettings2']
         self.timeLastROTracking = time.time()
 
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
 
-        self.vel_vpz_start = self.settings['vel_vpz_start']; self.vel_vpz_step = self.settings['vel_vpz_step']; self.vel_vpz_end = self.settings['vel_vpz_end']
-        self.vel_vpz_step_time = self.settings['vel_vpz_step_time']; self.vel_vpz_target = self.settings['vel_vpz_target']
+        self.vel_vpz_target = self.settings['vel_vpz_target']
+        self.vel_vpz_target2 = self.settings['vel_vpz_target2']
 
     def get_raw(self):
         self.ctrtask.start()
@@ -257,18 +312,21 @@ class Signal(Parameter):
         rate = xLineData/(self.read_duration/1e9)/1e3
         sig = rate[::self.num_reads_per_iter]
         ref = rate[1::self.num_reads_per_iter]
+        sig2 = rate[2::self.num_reads_per_iter]
+        ref2 = rate[3::self.num_reads_per_iter]
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
-        global sig_avg_over_ref_avg; sig_avg_over_ref_avg = sig_avg/ref_avg
+        global sig_avg2;  sig_avg2 = np.average(sig2)
+        global ref_avg2;  ref_avg2 = np.average(ref2)
 
-        # Line tracking or piezo repumping for RO
+        # Piezo repumping for RO NV 1
         if self.settings['laserRead_channel'] == 5 or self.settings['laserRead_channel'] == 14:
             if self.ROtrackingSettings['if_tracking'] == 1:
                 threshold_repumpVpz = self.ROtrackingSettings['threshold_repumpVpz']
                 if ref_avg < threshold_repumpVpz:
                     if np.mod(self.numOfRepumpVpz,5) == 0:
                         print()
-                        print('-----------------Start resetting Vpiezo---------------------------')
+                        print('-----------------Start resetting Vpiezo for NV1---------------------------')
                         vel.set_vpiezo(50)
                         vel.waitUntilComplete()
                         vel.set_ready()
@@ -282,10 +340,36 @@ class Signal(Parameter):
                             vel.waitUntilComplete()
                             vel.set_ready()
                             time.sleep(0.7)
-                        print('-----------------End resetting Vpiezo---------------------------')
+                        print('-----------------End resetting Vpiezo for NV1---------------------------')
                         print()
                         self.timeLastROTracking = time.time()
                     self.numOfRepumpVpz += 1
+        
+        # Piezo repumping for RO NV 2
+        if self.settings['laserRead2_channel'] == 5 or self.settings['laserRead2_channel'] == 14:
+            if self.ROtrackingSettings2['if_tracking'] == 1:
+                threshold_repumpVpz2 = self.ROtrackingSettings2['threshold_repumpVpz']
+                if ref_avg2 < threshold_repumpVpz2:
+                    if np.mod(self.numOfRepumpVpz2,5) == 0:
+                        print()
+                        print('-----------------Start resetting Vpiezo for NV2---------------------------')
+                        vel2.set_vpiezo(50)
+                        vel2.waitUntilComplete()
+                        vel2.set_ready()
+                        time.sleep(0.7)
+                        vel2.set_vpiezo(2)
+                        vel2.waitUntilComplete()
+                        vel2.set_ready()
+                        time.sleep(0.7)
+                        for i in range(1):
+                            vel2.set_vpiezo(self.vel_vpz_target2)
+                            vel2.waitUntilComplete()
+                            vel2.set_ready()
+                            time.sleep(0.7)
+                        print('-----------------End resetting Vpiezo for NV2---------------------------')
+                        print()
+                        self.timeLastROTracking = time.time()
+                    self.numOfRepumpVpz2 += 1
                     
         return sig_avg
     
@@ -299,7 +383,9 @@ class Signal(Parameter):
         laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  MWI_duration        = tau_ns
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];  read_duration       = self.settings['read_duration']   
         read_laser_duration     = self.settings['read_laser_duration']; MW_to_read_delay    = self.settings['MW_to_read_delay']
-        
+        shift_btwn_2NV_MW       = self.settings['shift_btwn_2NV_MW'];   shift_btwn_2NV_read = self.settings['shift_btwn_2NV_read']
+        laser_to_DAQ_delay2      = self.settings['laser_to_DAQ_delay2']
+
         when_init_end              = laser_init_delay + laser_init_duration
         MWI_delay                  = when_init_end    + laser_to_MWI_delay;  when_pulse_end = MWI_delay + MWI_duration
         
@@ -329,6 +415,13 @@ class Signal(Parameter):
         pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,               duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
+        
+        pulse_sequence += [spc.Pulse('LaserRead2',    laser_read_signal_delay + shift_btwn_2NV_read,                                            duration=int(laser_read_signal_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead2',    laser_read_ref_delay    + shift_btwn_2NV_read,                                            duration=int(laser_read_ref_duration))]
+        pulse_sequence += [spc.Pulse('MWswitch2',     MWI_delay               + shift_btwn_2NV_MW,                                              duration=int(MWI_duration))]
+        pulse_sequence += [spc.Pulse('Counter',       read_signal_delay       + shift_btwn_2NV_read + (laser_to_DAQ_delay2-laser_to_DAQ_delay), duration=int(read_signal_duration))] 
+        pulse_sequence += [spc.Pulse('Counter',       read_ref_delay          + shift_btwn_2NV_read + (laser_to_DAQ_delay2-laser_to_DAQ_delay), duration=int(read_ref_duration))] 
+        
         self.pulse_sequence = pulse_sequence
 
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
@@ -368,7 +461,7 @@ class Signal(Parameter):
                                             initColor=self.initColor)
                 fig = plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.tausArray)-1: # only save first and last pulse sequence
-                self.RabiROObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
+                self.RabiRODualNVObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
 
     def close_turnOnAtEnd(self):
@@ -376,16 +469,6 @@ class Signal(Parameter):
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
     
-    def sweepVelToEnd(self):
-        if (self.settings['ifScanVpz']):
-            nstep = int((self.vel_vpz_end-self.vel_vpz_target)/self.vel_vpz_step + 1)
-            for vpz in np.linspace(self.vel_vpz_target, self.vel_vpz_end, nstep):
-                vel.set_vpiezo(vpz)
-                vel.waitUntilComplete()
-                vel.set_ready()
-                time.sleep(self.vel_vpz_step_time)
-        else:
-            return
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):
         super().__init__(name, **kwargs)
@@ -393,9 +476,16 @@ class Reference(Parameter):
     def get_raw(self):
         return ref_avg
 
-class SigOverRef(Parameter):
-    def __init__(self, name='sigOverRef',**kwargs):
+class Signal2(Parameter):
+    def __init__(self, name='sig2',**kwargs):
         super().__init__(name, **kwargs)
 
     def get_raw(self):
-        return sig_avg_over_ref_avg
+        return sig_avg2
+
+class Reference2(Parameter):
+    def __init__(self, name='ref2',**kwargs):
+        super().__init__(name, **kwargs)
+
+    def get_raw(self):
+        return ref_avg2

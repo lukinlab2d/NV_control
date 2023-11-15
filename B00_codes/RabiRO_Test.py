@@ -27,35 +27,44 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 
 ####################################################################################################################
-reps = 200000
-for i in np.linspace(82, 82.4, reps):
-    # RabiRO
-    start = 12; stop = 132; num_sweep_points = 31; ifLooped = (reps != 1)
-    tausArray = np.linspace(start, stop, num_sweep_points)
-    velNum        = 1;   vel_current       = 55;  vel_wvl     = 637.26;    
-    vel_vpz_start = 82;  vel_vpz_target    = 83;  vel_vpz_end = 84
-    vel_vpz_step  = 0.1; vel_vpz_step_time = 0.3; ifScanVpz   = 0
-    laserInit_channel = 7; laserRead_channel = 5
+reps = 100000;  ifLooped = (reps != 1); laserInit_channel = 7; ifInitWvl = 0
+vel_vpz_start = 57;  vel_vpz_end       = 62
+vel_vpz_step  = 0.1; vel_vpz_step_time = 0.3; ifScanVpz   = 0; ifInitVpz = 1
 
-    # SRSnum = 1; MWPower = -20; MWI_duration = 72; MWFreq  = 2747.88e6   #NV D1
-    # MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
-    SRSnum = 2; MWPower = -17; MWI_duration = 52; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
-    MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
+for i in np.linspace(1, reps, reps):
+    # RabiRO
+    start = 12; stop = 252; num_sweep_points = 61 
+    tausArray = np.linspace(start, stop, num_sweep_points)        
     
-    num_loops                    = int(1e5)
-    laser_init_delay             = 1e3;        laser_init_duration    = 5e3
+    if np.mod(i,2)==0:
+        velNum = 1; vel_current = 56.5; vel_wvl = 637.22; 
+        vel_vpz_target          = 78.1; laserRead_channel = 5
+    else:
+        velNum = 2; vel_current = 67; vel_wvl = 636.83
+        vel_vpz_target          = 75; laserRead_channel = 14
+    if np.mod(i,2)==0: 
+        SRSnum = 1; MWPower = -20; MWI_duration = 68; MWFreq  = 2747.88e6   #NV D1
+        MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
+    else:
+        SRSnum = 2; MWPower = -17; MWI_duration = 52; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
+        MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
+    
+    num_loops                    = int(1e4)
+    laser_init_delay             = 1e2;        laser_init_duration    = 8e3
     MW_to_read_delay             = 1e2
-    laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1750}
+    laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14:900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
     laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
     read_duration                = 300;        read_laser_duration    = 200
 
-    if_tracking = 0; threshold = 10
-    start = 27; stop = 41; num_sweep_points = 71; num_loops_track = 1e4
+    if_tracking = 1; threshold_repumpVpz = 18; threshold_scanVpz = 23
+    num_loops_track = 5e3; fracOfTausArray = 0.2; num_of_cavity_conditioning = 1 # if already cond' for many times, use more avgs. Not that longer
+    start = vel_vpz_target - 1.6; stop = vel_vpz_target + 1.6; num_sweep_points = 65; 
     vpzArray = np.linspace(start, stop, num_sweep_points)
 
-    ROtrackingSettings = {'if_tracking': if_tracking, 'threshold': threshold, 
-                          'vpzArray': vpzArray,    'num_loops':num_loops_track,  'MWPower':MWPower,    'MWFreq': MWFreq,
+    ROtrackingSettings = {'if_tracking': if_tracking, 'threshold_repumpVpz': threshold_repumpVpz, 'threshold_scanVpz': threshold_scanVpz,
+                          'fracOfTausArray': fracOfTausArray,
+                        'vpzArray': vpzArray,    'num_loops':num_loops_track,  'MWPower':MWPower,    'MWFreq': MWFreq,
                             'SRSnum':   SRSnum,
                             'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,
                             'laser_to_MWI_delay':     laser_to_MWI_delay ,   'MWI_duration':        MWI_duration,
@@ -64,8 +73,9 @@ for i in np.linspace(82, 82.4, reps):
                             'read_laser_duration':    read_laser_duration,   
                             'MW_to_read_delay':       MW_to_read_delay,   
                             'vel_current':            vel_current,           'vel_wvl':             vel_wvl,
+                            'velNum': velNum,                'ifInitVpz':ifInitVpz, 'num_of_cavity_conditioning':num_of_cavity_conditioning,
+                            'ifInitWvl':ifInitWvl,
                             'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,}
-
     settings = {'tausArray': tausArray, 'num_loops':num_loops, 'MWPower':MWPower, 'MWFreq': MWFreq, 'SRSnum': SRSnum,
                 'laser_init_delay':       laser_init_delay,      'laser_init_duration':       laser_init_duration,
                 'laser_to_MWI_delay':     laser_to_MWI_delay ,   
@@ -74,7 +84,8 @@ for i in np.linspace(82, 82.4, reps):
                 'laserInit_channel':      laserInit_channel,     'laserRead_channel':         laserRead_channel,
                 'vel_current':  vel_current, 'vel_wvl': vel_wvl, 'velNum': velNum,
                 'vel_vpz_start': vel_vpz_start, 'vel_vpz_target': vel_vpz_target, 'vel_vpz_end': vel_vpz_end,
-                'vel_vpz_step': vel_vpz_step, 'vel_vpz_step_time': vel_vpz_step_time, 'ifScanVpz': ifScanVpz,
+                'vel_vpz_step': vel_vpz_step, 'vel_vpz_step_time': vel_vpz_step_time, 'ifScanVpz': ifScanVpz, 'ifInitVpz':ifInitVpz,
+                'ifInitWvl': ifInitWvl,
                 'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,
                 'ROtrackingSettings': ROtrackingSettings, }
 
@@ -82,11 +93,18 @@ for i in np.linspace(82, 82.4, reps):
     RabiROObject = RabiRO(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
     RabiROObject.runScan()
     print('Total time = ' + str(time.time() - start) + ' s')
+    if RabiROObject.hasTracked:
+        vel_vpz_target = RabiROObject.vpz
 
-    if not ifLooped: 
-        dataFilename = RabiROObject.getDataFilename()
-        guess=(0.2, 100, 0, 0.9, 600)
-        dataReader.readData(dataFilename, type='RabiDecay', guess=guess, ifFit=1)
-    RabiROObject.close()
+
+
+
+
+
+    # if not ifLooped: 
+    #     dataFilename = RabiROObject.getDataFilename()
+    #     guess=(0.2, 100, 0, 0.9, 600)
+    #     dataReader.readData(dataFilename, type='RabiDecay', guess=guess, ifFit=1)
+    # RabiROObject.close()
     
 

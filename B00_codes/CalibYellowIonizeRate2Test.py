@@ -98,8 +98,3 @@ for i in np.linspace(1,100,100):
 
         # dataFilename = 'C:/Users/lukin2dmaterials/data/2023-05-23/#059_CalibYellowIonizeRate2_17-02-21/CalibYellowIonizeRate2Object_sig_set.dat'
         # dataReader.readDataFullData(dataFilename)
-        
-
-
-
-

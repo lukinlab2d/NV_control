@@ -57,16 +57,18 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
                     'z_minus_range':          z_minus_range ,        'z_plus_range':           z_plus_range,
                     'xz_displacement_limit':  xz_displacement_limit,}
 
-reps = 1; ifLooped = (reps != 1); ifFit = 0
-laserInit_channel = 7;  # 532 is 3, 589 is 6, Vel is 5
-for i in np.linspace(637.26,  637,  1):
+reps = 2; ifLooped = (reps != 1); ifFit = 0; laserInit_channel = 7; 
+num_of_cavity_conditioning = 2; ifInitWvl = 0
+for i in np.linspace(1,reps,reps):
     # Test for ScanROFreq
-    start = 0; stop = 100; num_sweep_points = 501
-    vpzArray = np.linspace(start, stop, num_sweep_points)
-    if False:
-        velNum = 1; vel_current = 65; vel_wvl = 637.26; laserRead_channel = 5
+    if False: 
+        velNum = 1; vel_current = 56.5; vel_wvl = 637.22; laserRead_channel = 5
+        start = 78.5; stop = 80.5; num_sweep_points = 41
     else:
-        velNum = 2; vel_current = 66.5; vel_wvl = i; laserRead_channel = 14
+        velNum = 2; vel_current = 67; vel_wvl = 636.83; laserRead_channel = 14
+        start = 76; stop = 78; num_sweep_points = 41
+    vpzArray = np.linspace(start, stop, num_sweep_points)
+    
     if False: 
         SRSnum = 1; MWPower = -20; MWI_duration = 72; MWFreq  = 2747.88e6   #NV D1
         MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
@@ -74,10 +76,10 @@ for i in np.linspace(637.26,  637,  1):
         SRSnum = 2; MWPower = -17; MWI_duration = 52; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
         MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
     
-    num_loops                    = int(5e3)
-    laser_init_delay             = 1e3;        laser_init_duration    = 7e3
+    num_loops                    = int(1e4);   ifInitVpz = 1
+    laser_init_delay             = 1e2;        laser_init_duration    = 8e3
     MW_to_read_delay             = 1e2
-    laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1750}
+    laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
     laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
     read_duration                = 300;        read_laser_duration = 200
@@ -91,6 +93,8 @@ for i in np.linspace(637.26,  637,  1):
                 'read_laser_duration':    read_laser_duration,   'trackingSettings':    trackingSettings,
                 'MW_to_read_delay':       MW_to_read_delay,   
                 'vel_current':            vel_current,           'vel_wvl':             vel_wvl, 'velNum': velNum,
+                'ifInitVpz':ifInitVpz,   'num_of_cavity_conditioning': num_of_cavity_conditioning,
+                'ifInitWvl':ifInitWvl,
                 'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,}
 
     start = time.time()
@@ -100,9 +104,9 @@ for i in np.linspace(637.26,  637,  1):
 
     dataFilename = ScanROFreqObject.getDataFilename()
     guess=(-2e6, 2.87e9, 0.02e9, 1)
-    # if not ifLooped: dataReader.readData(dataFilename, type='ScanROFreq', ifFit=ifFit, guess=guess)
     ScanROFreqObject.close()
 
+    
+    # if not ifLooped: dataReader.readData(dataFilename, type='ScanROFreq', ifFit=ifFit, guess=guess)
     # dataFilename = 'C:/Users/lukin2dmaterials/data/2023-05-25/#007_ScanROFreq_15-31-25/ScanROFreqObject_sig_set.dat'
     # dataReader.readData(dataFilename)
-

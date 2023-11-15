@@ -590,6 +590,16 @@ def readDataNoPlot(datafile):
     sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
     
     return x_s, sig, ref
+def readDataNoPlotDual(datafile):
+    readfile = np.loadtxt(datafile)
+    
+    x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    sig2 = [xAxisAndResult[4] for xAxisAndResult in readfile]
+    ref2 = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    
+    return x_s, sig, ref, sig2, ref2
 
 def readDataNoRef(datafile):
     readfile = np.loadtxt(datafile)

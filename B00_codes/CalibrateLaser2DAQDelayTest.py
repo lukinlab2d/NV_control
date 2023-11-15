@@ -55,14 +55,14 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
 
 for i in np.linspace(1000,2000,1):
     # CalibrateLaser2DAQDelay
-    start = 1200; stop = 3000; num_sweep_points = 31
+    start = 0; stop = 2000; num_sweep_points = 41
     tausArray = np.linspace(start, stop, num_sweep_points)
 
-    laserRead_channel = 5 # 532 is 3, 589 is 6
+    laserRead_channel = 14 # 532 is 3, 589 is 6
     
     if True:
         num_loops        = int(0.2e6)
-        laser_init_delay = 5e3;     laser_init_duration = 1000
+        laser_init_delay = 5e3;     laser_init_duration = 200
         read_duration    = 300;      #laser_to_DAQ_delay = 260
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops,

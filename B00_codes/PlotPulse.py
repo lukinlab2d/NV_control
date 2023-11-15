@@ -12,25 +12,46 @@ class PulseTrace:
             self.vert_offset = 6
             if initColor == 6 or initColor == 9: self.color = 'C1'
             else: self.color = 'C2'
+        elif "aserRead2" in name:
+            self.vert_offset = 12
+            if readColor == 6 or readColor == 9: self.color = 'C1'
+            elif readColor == 5 or readColor == 14: self.color = 'r'
+            else: self.color = 'C2'
         elif "aserRead" in name:
             self.vert_offset = 6
             if readColor == 6 or readColor == 9: self.color = 'C1'
-            elif readColor == 5: self.color = 'r'
+            elif readColor == 5 or readColor == 14: self.color = 'r'
             else: self.color = 'C2'
+        elif "aserIon2" in name:
+            self.vert_offset = 12
+            if ionColor == 6 or ionColor == 9: self.color = 'C1'
+            elif ionColor == 3: self.color = 'C2'
+            else: self.color = 'r'
         elif "aserIon" in name:
             self.vert_offset = 6
             if ionColor == 6 or ionColor == 9: self.color = 'C1'
             elif ionColor == 3: self.color = 'C2'
+            else: self.color = 'r'
+        elif "aserShelve2" in name:
+            self.vert_offset = 12
+            if shelveColor == 6 or shelveColor == 9: self.color = 'C1'
+            elif shelveColor == 3: self.color = 'C2'
             else: self.color = 'r'
         elif "aserShelve" in name:
             self.vert_offset = 6
             if shelveColor == 6 or shelveColor == 9: self.color = 'C1'
             elif shelveColor == 3: self.color = 'C2'
             else: self.color = 'r'
+        elif "MW_I2" in name or "AFG2" in name: 
+            self.vert_offset = 10.5; self.color = 'C0'
         elif "MW_I" in name or "AFG" in name: 
             self.vert_offset = 4.5; self.color = 'C0'
+        elif "MW_Q2" in name: 
+            self.vert_offset = 9; self.color = 'C1'
         elif "MW_Q" in name: 
             self.vert_offset = 3; self.color = 'C1'
+        elif "MWswitch2" in name: 
+            self.vert_offset = 7.5; self.color = 'C0'
         elif "MWswitch" in name: 
             self.vert_offset = 1.5; self.color = 'C0'
         elif "ounter" in name: 

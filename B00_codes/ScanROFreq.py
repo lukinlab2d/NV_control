@@ -79,7 +79,7 @@ class ScanROFreq(Instrument):
         # Vpiezos, MW power, and MW frequency
         self.vpzArray = self.settings['vpzArray']
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
-        self.velNum = self.settings['velNum']
+        self.velNum = self.settings['velNum']; self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl'] 
 
         # Pulse parameters
@@ -126,18 +126,25 @@ class ScanROFreq(Instrument):
         self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
 
-        # Velocity object
-        self.vel = Velocity(velNum=self.velNum)
-        self.vel.set_track()
-        time.sleep(0.5)
-        self.vel.set_wvl(vel_wvl)
-        time.sleep(1)
-        self.vel.set_ready()
+        # Velocity objects
+        self.vel = Velocity(velNum=self.velNum, ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl, initWvl=vel_wvl)
+        if self.ifInitWvl: 
+            self.vel.set_track()
+            time.sleep(0.5)
+            self.vel.set_wvl(vel_wvl)
+            time.sleep(1)
+            self.vel.set_ready()
+            self.vel.set_vpiezo(2)
+            self.vel.waitUntilComplete()
+            self.vel.set_ready()
+            time.sleep(0.7)
+        if self.ifInitVpz: 
+            self.vel.set_vpiezo(2)
+            self.vel.waitUntilComplete()
+            self.vel.set_ready()
+            time.sleep(0.7)
+
         self.vel.set_current(vel_current)
-        self.vel.set_vpiezo(1.1)
-        self.vel.waitUntilComplete()
-        self.vel.set_ready()
-        time.sleep(1)
 
         num_reads_per_iter = 0
         for pulse in pulse_sequence:
@@ -311,10 +318,11 @@ class Signal(Parameter):
         return sig_avg
     
     def set_raw(self, vpz):
-        vel.set_vpiezo(vpz)
-        vel.waitUntilComplete()
-        vel.set_ready()
-        time.sleep(0.3)
+        for i in range(self.settings['num_of_cavity_conditioning']):
+            vel.set_vpiezo(vpz)
+            vel.waitUntilComplete()
+            vel.set_ready()
+            time.sleep(0.3)
         print("Loop " + str(self.loopCounter))
         print("Set Vpiezo to " + str(np.round(vpz,1)) + ' %') # set the Velocity's piezo voltage
 
