@@ -34,8 +34,8 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PIL import Image
-from PlotPulse import *    
-from Confocal import *
+from B00_codes.PlotPulse import *    
+from B00_codes.Confocal import *
 
 class XY8(Instrument):
 
@@ -203,7 +203,7 @@ class Signal(Parameter):
         # Pulse parameters
         num_loops               = self.settings['num_loops'];               ifStartInY          = self.settings['ifStartInY']
         laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
-        laser_to_MWI_delay     = self.settings['laser_to_MWI_delay'];     
+        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];     
         piHalf                  = self.settings['pi_half'];                 pi = 2*piHalf
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  normalized_style    = self.settings['normalized_style']

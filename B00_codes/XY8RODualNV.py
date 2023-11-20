@@ -44,9 +44,9 @@ def ns2cycles(time, samp_rate=1e7):
         return int(time/1e9*samp_rate)
     
 
-class RabiRODualNV(Instrument):
+class XY8RODualNV(Instrument):
 
-    def __init__(self, name='RabiRODualNVObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
+    def __init__(self, name='XY8RODualNVObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
 
         # clock speed is in MHz - is 'status' needed in the dictionary?
         super().__init__(name, **kwargs)
@@ -91,6 +91,9 @@ class RabiRODualNV(Instrument):
         self.velNum2 = self.settings['velNum2']
         vel_current2 = self.settings['vel_current2']; vel_wvl2 = self.settings['vel_wvl2']; 
         self.vel_vpz_target2 = self.settings['vel_vpz_target2']
+
+        ifRandomized = self.settings['ifRandomized']
+        if ifRandomized: np.random.shuffle(self.tausArray)
         ###########################################################################################
 
         self.add_parameter(
@@ -204,19 +207,19 @@ class RabiRODualNV(Instrument):
                                             qctask(sig2.plotPulseSequences),
                                             )
 
-        data = loop.get_data_set(name='RabiRODualNV')
+        data = loop.get_data_set(name='XY8RODualNV')
         data.add_metadata(self.settings)
         self.data = data
         
         plot = QtPlot(
-            data.RabiRODualNVObject_sig2, # this is implemented as a Parameter
+            data.XY8RODualNVObject_sig2, # this is implemented as a Parameter
             figsize = (1200, 600),
             interval = 1,
             name = 'sig2'
             )
-        plot.add(data.RabiRODualNVObject_sig, name='sig')
-        plot.add(data.RabiRODualNVObject_ref2, name='ref2')
-        plot.add(data.RabiRODualNVObject_ref, name='ref')
+        plot.add(data.XY8RODualNVObject_sig, name='sig')
+        plot.add(data.XY8RODualNVObject_ref2, name='ref2')
+        plot.add(data.XY8RODualNVObject_ref, name='ref')
 
         loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
@@ -241,11 +244,11 @@ class RabiRODualNV(Instrument):
                 
                 datafile = self.getDataFilename()
                 x_s, sig, ref, sig2, ref2 = dr.readDataNoPlotDual(datafile)
-                ref = np.array(ref); ref2 = np.array(ref2)
+                sig = np.array(sig); sig2 = np.array(sig2)
                 
                 self.vpz = self.vel_vpz_target; self.vpz2 = self.vel_vpz_target2
 
-                if self.ROtrackingSettings['if_tracking'] == 1 and np.max(ref) < threshold_scanVpz: 
+                if self.ROtrackingSettings['if_tracking'] == 1 and np.max((np.max(ref), np.max(sig))) < threshold_scanVpz: 
                     print()
                     print('-----------------Start line tracking for NV1---------------------------')
                     ScanROFreqObject = ScanROFreq(settings=self.ROtrackingSettings, ifPlotPulse=0)
@@ -257,7 +260,7 @@ class RabiRODualNV(Instrument):
                     print()
                     self.timeLastROTracking = time.time()
                     self.hasTracked1 = 1
-                if self.ROtrackingSettings2['if_tracking'] == 1 and np.max(ref2) < threshold_scanVpz2: 
+                if self.ROtrackingSettings2['if_tracking'] == 1 and np.max((np.max(ref2), np.max(sig2))) < threshold_scanVpz2: 
                     print()
                     print('-----------------Start line tracking for NV2---------------------------')
                     ScanROFreqObject = ScanROFreq(settings=self.ROtrackingSettings2, ifPlotPulse=0)
@@ -276,7 +279,7 @@ class RabiRODualNV(Instrument):
         self.srs2.disableModulation()
     
     def getDataFilename(self):
-        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/RabiRODualNVObject_sig2_set.dat'
+        return 'C:/Users/lukin2dmaterials/' + self.data.location + '/XY8RODualNVObject_sig2_set.dat'
 
     
 class Signal2(Parameter):
@@ -287,7 +290,7 @@ class Signal2(Parameter):
         self.numOfRepumpVpz2 = 0
         self.settings = settings
         self.tausArray = self.settings['tausArray']
-        self.RabiRODualNVObject = measurementObject
+        self.XY8RODualNVObject = measurementObject
         self.ROtrackingSettings = self.settings['ROtrackingSettings']
         self.ROtrackingSettings2 = self.settings['ROtrackingSettings2']
         self.timeLastROTracking = time.time()
@@ -323,7 +326,7 @@ class Signal2(Parameter):
         if self.settings['laserRead_channel'] == 5 or self.settings['laserRead_channel'] == 14:
             if self.ROtrackingSettings['if_tracking'] == 1:
                 threshold_repumpVpz = self.ROtrackingSettings['threshold_repumpVpz']
-                if ref_avg < threshold_repumpVpz:
+                if sig_avg < threshold_repumpVpz:
                     if np.mod(self.numOfRepumpVpz,5) == 0:
                         print()
                         print('-----------------Start resetting Vpiezo for NV1---------------------------')
@@ -349,7 +352,7 @@ class Signal2(Parameter):
         if self.settings['laserRead2_channel'] == 5 or self.settings['laserRead2_channel'] == 14:
             if self.ROtrackingSettings2['if_tracking'] == 1:
                 threshold_repumpVpz2 = self.ROtrackingSettings2['threshold_repumpVpz']
-                if ref_avg2 < threshold_repumpVpz2:
+                if sig_avg2 < threshold_repumpVpz2:
                     if np.mod(self.numOfRepumpVpz2,5) == 0:
                         print()
                         print('-----------------Start resetting Vpiezo for NV2---------------------------')
@@ -377,19 +380,33 @@ class Signal2(Parameter):
         # Make pulses, program Pulse Blaster
         print("Loop " + str(self.loopCounter))
 
+        NO_MS_EQUALS_1 = 0
+        Q_FINAL = 1
+        THREE_PI_HALF_FINAL = 2
+
         # Pulse parameters
         num_loops               = self.settings['num_loops']
         laser_init_delay        = self.settings['laser_init_delay'];    laser_init_duration = self.settings['laser_init_duration']
-        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  MWI_duration        = tau_ns
+        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  
+        MWI_duration            = self.settings['pi_half'];             MWI_duration2       = self.settings['pi_half2']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];  read_duration       = self.settings['read_duration']   
         read_laser_duration     = self.settings['read_laser_duration']; MW_to_read_delay    = self.settings['MW_to_read_delay']
         shift_btwn_2NV_MW       = self.settings['shift_btwn_2NV_MW'];   shift_btwn_2NV_read = self.settings['shift_btwn_2NV_read']
-        laser_to_DAQ_delay2      = self.settings['laser_to_DAQ_delay2']
+        laser_to_DAQ_delay2      = self.settings['laser_to_DAQ_delay2'];normalized_style    = self.settings['normalized_style']
+
+        if tau_ns/2 > 30:
+            MWI_to_switch_delay  = self.settings['MWI_to_switch_delay']
+        else: 
+            MWI_to_switch_delay  = 0
 
         when_init_end              = laser_init_delay + laser_init_duration
 
-        MWI_delay                  = when_init_end    + laser_to_MWI_delay
-        when_pulse_end             = MWI_delay + MWI_duration        
+        ################# Signal  ################################################################
+        ###### NV1 ######################################
+        MWI_delay                  = when_init_end + laser_to_MWI_delay              
+        MWI2_delay                 = MWI_delay + MWI_duration + tau_ns/2;    MWI2_duration = 2*MWI_duration
+        MWI3_delay                 = MWI2_delay + MWI2_duration + tau_ns/2;  MWI3_duration = MWI_duration    
+        when_pulse_end             = MWI3_delay + MWI3_duration;             pulse_duration= tau_ns + 4*MWI_duration        
         laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay
         laser_read_signal_duration = read_laser_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
@@ -397,25 +414,50 @@ class Signal2(Parameter):
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
 
-        MWI_delay2                  = when_init_end   + laser_to_MWI_delay + shift_btwn_2NV_MW
-        when_pulse_end2             = MWI_delay2      + MWI_duration
+        ###### NV2 ######################################
+        MWI_delay2                  = when_init_end + laser_to_MWI_delay + shift_btwn_2NV_MW        
+        MWI2_delay2                 = MWI_delay2 + MWI_duration2 + tau_ns/2;    MWI2_duration2 = 2*MWI_duration2
+        MWI3_delay2                 = MWI2_delay2 + MWI2_duration2 + tau_ns/2;  MWI3_duration2 = MWI_duration2    
+        when_pulse_end2             = MWI3_delay2 + MWI3_duration2;             pulse_duration2= tau_ns + 4*MWI_duration2       
         laser_read_signal_delay2    = when_pulse_end2 + MW_to_read_delay + shift_btwn_2NV_read
         laser_read_signal_duration2 = read_laser_duration
         when_laser_read_signal_end2 = laser_read_signal_delay2 + laser_read_signal_duration2
         read_signal_delay2          = laser_read_signal_delay2 + laser_to_DAQ_delay2
         read_signal_duration2       = read_duration
         when_read_signal_end2       = read_signal_delay2 + read_signal_duration2
-        
-        laser_init_ref_delay        = np.max((when_read_signal_end2, when_read_signal_end)) + laser_init_delay
+
+        ################# Reference  ################################################################
+        ###### NV1 ######################################
+        laser_init_ref_delay        = np.max((when_read_signal_end2,when_read_signal_end)) + laser_init_delay
         when_init_ref_end           = laser_init_ref_delay + laser_init_duration
-        laser_read_ref_delay        = when_init_ref_end + laser_to_MWI_delay + MWI_duration + MW_to_read_delay
+
+        MWI4_delay                  = when_init_ref_end + laser_to_MWI_delay;    MWI4_duration = MWI_duration
+        MWI5_delay                  = MWI4_delay + MWI4_duration + tau_ns/2;     MWI5_duration = 2*MWI_duration
+        MWI6_delay                  = MWI5_delay + MWI5_duration + tau_ns/2;  
+        if normalized_style == Q_FINAL:                                 MWI6_duration = MWI_duration
+        elif normalized_style == THREE_PI_HALF_FINAL:                   MWI6_duration = 3*MWI_duration
+        else:                                                           MWI6_duration = 0
+        when_pulse_ref_end = MWI6_delay + MWI6_duration
+
+        laser_read_ref_delay        = when_pulse_ref_end + MW_to_read_delay
         laser_read_ref_duration     = read_laser_duration
         when_laser_read_ref_end     = laser_read_ref_delay + laser_read_ref_duration
         read_ref_delay              = laser_read_ref_delay + laser_to_DAQ_delay;  
         read_ref_duration           = read_duration
         when_read_ref_end           = read_ref_delay + read_ref_duration
 
-        laser_read_ref_delay2    = when_init_ref_end + laser_to_MWI_delay + shift_btwn_2NV_MW + MWI_duration + MW_to_read_delay + shift_btwn_2NV_read
+        ###### NV2 ######################################
+        MWI4_delay2       = when_init_ref_end + laser_to_MWI_delay + shift_btwn_2NV_MW
+        MWI4_duration2    = MWI_duration2
+        MWI5_delay2       = MWI4_delay2 + MWI4_duration2 + tau_ns/2
+        MWI5_duration2    = 2*MWI_duration2
+        MWI6_delay2       = MWI5_delay2 + MWI5_duration2 + tau_ns/2;  
+        if normalized_style == Q_FINAL:                                 MWI6_duration2 = MWI_duration2
+        elif normalized_style == THREE_PI_HALF_FINAL:                   MWI6_duration2 = 3*MWI_duration2
+        else:                                                           MWI6_duration2 = 0
+        when_pulse_ref_end2 = MWI6_delay2 + MWI6_duration2
+
+        laser_read_ref_delay2    = when_pulse_ref_end2 + MW_to_read_delay + shift_btwn_2NV_read
         laser_read_ref_duration2 = read_laser_duration
         when_laser_read_ref_end2 = laser_read_ref_delay2 + laser_read_ref_duration2
         read_ref_delay2          = laser_read_ref_delay2 + laser_to_DAQ_delay2
@@ -424,27 +466,59 @@ class Signal2(Parameter):
 
         self.read_duration = read_signal_duration
         if read_signal_duration != read_ref_duration:
-            raise Exception("Duration of reading signal and reference must be the same")    
-
+            raise Exception("Duration of reading signal and reference must be the same")  
+          
+        ################################################################################################
         # Make pulse sequence (per each freq)
         pulse_sequence = []
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
-            pulse_sequence += [spc.Pulse('LaserInit',laser_init_ref_delay,    duration=int(laser_init_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,               duration=int(MWI_duration))]
-        pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
-        pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('LaserInit',    laser_init_delay,             duration=int(laser_init_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('LaserInit',    laser_init_ref_delay,         duration=int(laser_init_duration))] # times are in ns
         
-        pulse_sequence += [spc.Pulse('LaserRead2',    laser_read_signal_delay2, duration=int(laser_read_signal_duration2))] # times are in ns
-        pulse_sequence += [spc.Pulse('LaserRead2',    laser_read_ref_delay2,    duration=int(laser_read_ref_duration2))]
-        pulse_sequence += [spc.Pulse('MWswitch2',     MWI_delay2,               duration=int(MWI_duration))]
-        pulse_sequence += [spc.Pulse('Counter',       read_signal_delay2,       duration=int(read_signal_duration2))] 
-        pulse_sequence += [spc.Pulse('Counter',       read_ref_delay2,          duration=int(read_ref_duration2))] 
-        
-        self.pulse_sequence = pulse_sequence
+        ###### NV1 ######################################
+        pulse_sequence += [spc.Pulse('LaserRead', laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead', laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
+        pulse_sequence += [spc.Pulse('MWswitch',  MWI_delay,                     duration=int(MWI_duration))]
+        pulse_sequence += [spc.Pulse('MWswitch',  MWI2_delay,                    duration=int(MWI2_duration))]
+        pulse_sequence += [spc.Pulse('MWswitch',  MWI3_delay,                    duration=int(MWI3_duration))]
+        pulse_sequence += [spc.Pulse('Counter',   read_signal_delay,             duration=int(read_signal_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('Counter',   read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
 
+        if not normalized_style == NO_MS_EQUALS_1:
+            pulse_sequence += [spc.Pulse('MWswitch', MWI4_delay,                     duration=int(MWI4_duration))]
+            pulse_sequence += [spc.Pulse('MWswitch', MWI5_delay,                     duration=int(MWI5_duration))]
+
+            if normalized_style == Q_FINAL:
+                MWI6_duration = MWI_duration
+                pulse_sequence += [spc.Pulse('MW_I', MWI6_delay-MWI_to_switch_delay, duration=int(MWI6_duration + 2*MWI_to_switch_delay))]
+                pulse_sequence += [spc.Pulse('MW_Q', MWI6_delay-MWI_to_switch_delay, duration=int(MWI6_duration + 2*MWI_to_switch_delay))] # times are in ns
+            elif normalized_style == THREE_PI_HALF_FINAL:
+                MWI6_duration = 3*MWI_duration
+            pulse_sequence += [spc.Pulse('MWswitch', MWI6_delay,                     duration=int(MWI6_duration))]
+        
+        ###### NV2 ######################################
+        pulse_sequence += [spc.Pulse('LaserRead2', laser_read_signal_delay2, duration=int(laser_read_signal_duration2))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead2', laser_read_ref_delay2,    duration=int(laser_read_ref_duration2))]
+        pulse_sequence += [spc.Pulse('MWswitch2',  MWI_delay2,               duration=int(MWI_duration2))]
+        pulse_sequence += [spc.Pulse('MWswitch2',  MWI2_delay2,              duration=int(MWI2_duration2))]
+        pulse_sequence += [spc.Pulse('MWswitch2',  MWI3_delay2,              duration=int(MWI3_duration2))]
+        pulse_sequence += [spc.Pulse('Counter',    read_signal_delay2,       duration=int(read_signal_duration2))] 
+        pulse_sequence += [spc.Pulse('Counter',    read_ref_delay2,          duration=int(read_ref_duration2))] 
+        
+        if not normalized_style == NO_MS_EQUALS_1:
+            pulse_sequence += [spc.Pulse('MWswitch2', MWI4_delay2,           duration=int(MWI4_duration2))]
+            pulse_sequence += [spc.Pulse('MWswitch2', MWI5_delay2,           duration=int(MWI5_duration2))]
+
+            if normalized_style == Q_FINAL:
+                MWI6_duration2 = MWI_duration2
+                pulse_sequence += [spc.Pulse('MW_I2', MWI6_delay2-MWI_to_switch_delay, duration=int(MWI6_duration2 + 2*MWI_to_switch_delay))]
+                pulse_sequence += [spc.Pulse('MW_Q2', MWI6_delay2-MWI_to_switch_delay, duration=int(MWI6_duration2 + 2*MWI_to_switch_delay))] # times are in ns
+            elif normalized_style == THREE_PI_HALF_FINAL:
+                MWI6_duration2 = 3*MWI_duration2
+            pulse_sequence += [spc.Pulse('MWswitch2', MWI6_delay2,                     duration=int(MWI6_duration2))]
+        
+        ################################################################################################
+        self.pulse_sequence = pulse_sequence
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
         self.pb.program_pb(pulse_sequence, num_loops=num_loops)
 
@@ -482,7 +556,7 @@ class Signal2(Parameter):
                                             initColor=self.initColor)
                 fig = plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.tausArray)-1: # only save first and last pulse sequence
-                self.RabiRODualNVObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
+                self.XY8RODualNVObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
 
     def close_turnOnAtEnd(self):

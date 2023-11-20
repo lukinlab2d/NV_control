@@ -266,7 +266,7 @@ class Signal(Parameter):
             if self.ROtrackingSettings['if_tracking'] == 1:
                 threshold_repumpVpz = self.ROtrackingSettings['threshold_repumpVpz']
                 if ref_avg < threshold_repumpVpz:
-                    if np.mod(self.numOfRepumpVpz,5) == 0:
+                    if np.mod(self.numOfRepumpVpz,6) == 0:
                         print()
                         print('-----------------Start resetting Vpiezo---------------------------')
                         vel.set_vpiezo(50)

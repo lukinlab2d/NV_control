@@ -26,12 +26,12 @@ class PulseTrace:
             self.vert_offset = 12
             if ionColor == 6 or ionColor == 9: self.color = 'C1'
             elif ionColor == 3: self.color = 'C2'
-            else: self.color = 'r'
+            else: self.color = 'darkred'
         elif "aserIon" in name:
             self.vert_offset = 6
             if ionColor == 6 or ionColor == 9: self.color = 'C1'
             elif ionColor == 3: self.color = 'C2'
-            else: self.color = 'r'
+            else: self.color = 'darkred'
         elif "aserShelve2" in name:
             self.vert_offset = 12
             if shelveColor == 6 or shelveColor == 9: self.color = 'C1'
@@ -101,8 +101,10 @@ class PlotPulse():
         for channel_id in self.pulseTrace:
             tr = self.pulseTrace[channel_id]
             x_axis = np.array(range(tr.length))/1e9*1e6
-            # if tr.name != "MWswitch": ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
-            ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
+            if '2' in tr.name:
+                ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color, linestyle='--')
+            else:
+                ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
             ax.set_xlabel("Time ($\mu$s)")
             ax.legend(loc='best')
 

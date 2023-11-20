@@ -302,6 +302,8 @@ class Signal(Parameter):
             MWI_to_switch_delay  = self.settings['MWI_to_switch_delay']
         else: 
             MWI_to_switch_delay  = 0
+
+        ################# Signal  ################################
         
         when_init_end = laser_init_delay + laser_init_duration
         MWI_delay     = when_init_end + laser_to_MWI_delay;                 
@@ -313,6 +315,8 @@ class Signal(Parameter):
         read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay; read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
+
+        ################# Reference  ################################
 
         laser_init_ref_delay = when_read_signal_end + laser_init_delay
         when_init_ref_end    = laser_init_ref_delay + laser_init_duration

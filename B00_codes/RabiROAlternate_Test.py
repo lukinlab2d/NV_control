@@ -27,7 +27,7 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 
 ####################################################################################################################
-reps = 20000;  ifLooped = (reps != 1); laserInit_channel = 7; ifInitWvl = 0
+reps = 2;  ifLooped = (reps != 1); laserInit_channel = 7; ifInitWvl = 0
 vel_vpz_start = 57;  vel_vpz_end       = 62
 vel_vpz_step  = 0.1; vel_vpz_step_time = 0.3; ifScanVpz   = 0; ifInitVpz = 1
 
@@ -35,16 +35,16 @@ vel_vpz_step  = 0.1; vel_vpz_step_time = 0.3; ifScanVpz   = 0; ifInitVpz = 1
 start = 12; stop = 252; num_sweep_points = 61 
 tausArray = np.linspace(start, stop, num_sweep_points)        
 
-vel_vpz_target_1        = 78.8;        vel_vpz_target_2         = 76.6
+vel_vpz_target_1        = 75.5;        vel_vpz_target_2         = 75.7
 
-num_loops                    = int(2e4)
+num_loops                    = int(1e4)
 laser_init_delay             = 1e2;        laser_init_duration    = 8e3
 MW_to_read_delay             = 1e2
 laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14:900}
 laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
 read_duration                = 300;        read_laser_duration    = 200
 
-if_tracking = 1; threshold_repumpVpz = 11; threshold_scanVpz = 16
+if_tracking = 1; threshold_repumpVpz = 13; threshold_scanVpz = 20
 num_loops_track = 5e3; num_of_cavity_conditioning = 1
 
 for i in np.linspace(1, reps, reps):

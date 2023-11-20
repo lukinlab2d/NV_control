@@ -61,15 +61,15 @@ reps = 2; ifLooped = (reps != 1); ifFit = 0; laserInit_channel = 7;
 num_of_cavity_conditioning = 2; ifInitWvl = 0
 for i in np.linspace(1,reps,reps):
     # Test for ScanROFreq
-    if False: 
+    if True: 
         velNum = 1; vel_current = 56.5; vel_wvl = 637.22; laserRead_channel = 5
-        start = 78.5; stop = 80.5; num_sweep_points = 41
+        start = 79.5; stop = 81.5; num_sweep_points = 41
     else:
         velNum = 2; vel_current = 67; vel_wvl = 636.83; laserRead_channel = 14
-        start = 76; stop = 78; num_sweep_points = 41
+        start = 75.3; stop = 77.3; num_sweep_points = 41
     vpzArray = np.linspace(start, stop, num_sweep_points)
     
-    if False: 
+    if True: 
         SRSnum = 1; MWPower = -20; MWI_duration = 72; MWFreq  = 2747.88e6   #NV D1
         MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
     else:
