@@ -73,7 +73,7 @@ class RabiRO(Instrument):
         self.tausArray = self.settings['tausArray']
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
         
-        self.velNum = self.settings['velNum']
+        self.velNum = self.settings['velNum']; self.ifNeedVel = self.settings['ifNeedVel']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
         self.vel_vpz_start = self.settings['vel_vpz_start']; self.vel_vpz_step = self.settings['vel_vpz_step']
         self.vel_vpz_step_time = self.settings['vel_vpz_step_time']; self.vel_vpz_target = self.settings['vel_vpz_target']
@@ -103,48 +103,49 @@ class RabiRO(Instrument):
         self.srs.enable_RFOutput()
 
         # Velocity object
-        self.vel = Velocity(velNum=self.velNum, 
-                            ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
-                            initWvl=vel_wvl)
-        if self.ifInitWvl: 
-            self.vel.set_track()
-            time.sleep(0.5)
-            self.vel.set_wvl(vel_wvl)
-            time.sleep(1)
-            self.vel.set_ready()
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
-        if self.ifInitVpz:
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
-
-
-        self.vel.set_current(vel_current)
-        
-        if self.ifScanVpz:
-            self.vel.set_vpiezo(self.vel_vpz_start)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
-
-            self.set_vpz()
-            time.sleep(0.7)
-        else:
-            for i in range(2):
-                self.vel.set_vpiezo(self.vel_vpz_target)
+        if self.ifNeedVel:
+            self.vel = Velocity(velNum=self.velNum, 
+                                ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
+                                initWvl=vel_wvl)
+            if self.ifInitWvl: 
+                self.vel.set_track()
+                time.sleep(0.5)
+                self.vel.set_wvl(vel_wvl)
+                time.sleep(1)
+                self.vel.set_ready()
+                self.vel.set_vpiezo(2)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
+            if self.ifInitVpz:
+                self.vel.set_vpiezo(2)
                 self.vel.waitUntilComplete()
                 self.vel.set_ready()
                 time.sleep(0.7)
 
+
+            self.vel.set_current(vel_current)
+            
+            if self.ifScanVpz:
+                self.vel.set_vpiezo(self.vel_vpz_start)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
+
+                self.set_vpz()
+                time.sleep(0.7)
+            else:
+                for i in range(2):
+                    self.vel.set_vpiezo(self.vel_vpz_target)
+                    self.vel.waitUntilComplete()
+                    self.vel.set_ready()
+                    time.sleep(0.7)
+            global vel; vel = self.vel
+
         # Make Pulse Blaster, Counter, SRS global objects
         global pb
         global srs; srs = self.srs
-        global vel; vel = self.vel
-    
+        
     def set_vpz(self):
         nstep = int((self.vel_vpz_target-self.vel_vpz_start)/self.vel_vpz_step + 1)
         for vpz in np.linspace(self.vel_vpz_start, self.vel_vpz_target, nstep):

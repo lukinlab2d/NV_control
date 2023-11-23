@@ -79,6 +79,7 @@ class SCCROPhotonStat(Instrument):
         self.velNum = self.settings['velNum']; self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl'] 
         self.vel_vpz_target = self.settings['vel_vpz_target']
+        self.ifNeedVel = self.settings['ifNeedVel']; 
         
         #########################################################################
         self.add_parameter(
@@ -109,33 +110,34 @@ class SCCROPhotonStat(Instrument):
         self.srs.enable_RFOutput()
 
         # Velocity objects
-        self.vel = Velocity(velNum=self.velNum, ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl, initWvl=vel_wvl)
-        self.vel.set_current(vel_current)
-        if self.ifInitWvl: 
-            self.vel.set_track()
-            time.sleep(0.5)
-            self.vel.set_wvl(vel_wvl)
-            time.sleep(1)
-            self.vel.set_ready()
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
-        if self.ifInitVpz: 
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
-            for i in range(1):
-                self.vel.set_vpiezo(self.vel_vpz_target)
+        if self.ifNeedVel:
+            self.vel = Velocity(velNum=self.velNum, ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl, initWvl=vel_wvl)
+            self.vel.set_current(vel_current)
+            if self.ifInitWvl: 
+                self.vel.set_track()
+                time.sleep(0.5)
+                self.vel.set_wvl(vel_wvl)
+                time.sleep(1)
+                self.vel.set_ready()
+                self.vel.set_vpiezo(2)
                 self.vel.waitUntilComplete()
                 self.vel.set_ready()
                 time.sleep(0.7)
+            if self.ifInitVpz: 
+                self.vel.set_vpiezo(2)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
+                for i in range(1):
+                    self.vel.set_vpiezo(self.vel_vpz_target)
+                    self.vel.waitUntilComplete()
+                    self.vel.set_ready()
+                    time.sleep(0.7)
+            global vel; vel = self.vel
 
         # Make Pulse Blaster, Counter, SRS global objects
         global pb
         global srs; srs = self.srs
-        global vel; vel = self.vel
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
         global laserReadChannel; laserReadChannel = self.LaserReadParam['channel']
     
@@ -303,13 +305,9 @@ class Signal(Parameter):
             self.loopCounter += 1
         
     def close_turnOnAtEnd(self):
-        ctrtask.close()
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
-
-    def close(self):
-        ctrtask.close()
        
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):

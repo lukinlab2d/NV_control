@@ -611,7 +611,7 @@ def readDataNoRef(datafile):
 
 def plotHistSweepTIon(sigs, tausArray, sweepWhat=None, ifPlot=1, ms=-1, power589 = 2, power532 = 1400, power635 = 9.5,
                 t532 = 500e3, delay1 = 20e6, delay2 = 20, tsh = 100, delay3 = 600, ti=200, delay4 = 5e3, tr_ns = 250e6, finalDataFolder=None,
-                gm=1.5,g0=2,nm=240,n0=90):
+                gm=1.5,g0=2,nm=240,n0=90, ifLogPlot=0):
     ths = []; fids = []; pNVms = []; snrs = []; gms = []; g0s = []; nms = []; n0s = []; nMean0s = []; nMeanms = [];
     for i in range(len(tausArray)):
         if 'SCCPhStatSweepDelaySI' in finalDataFolder: 
@@ -641,7 +641,7 @@ def plotHistSweepTIon(sigs, tausArray, sweepWhat=None, ifPlot=1, ms=-1, power589
         # p = p[start_idx:end_idx]; counts = counts[start_idx:end_idx]; counts=np.linspace(start_idx,counts[-1], len(counts))
         # counts0 = counts[0]; counts = counts-counts0
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(5,3))
         ns = np.linspace(0,len(p)-1,len(p))
         pguess = ps(ns, gm, g0, nm, n0, tr)
         # ax.plot(ns,pguess, '--', label="guess")
@@ -675,15 +675,16 @@ def plotHistSweepTIon(sigs, tausArray, sweepWhat=None, ifPlot=1, ms=-1, power589
         fidel = fidel_arr[th_idx]; snr = snr_arr[th_idx]
         sigma = np.sqrt(1+2/snr**2)
 
-        s1 = r"$\tau$ = %.0f ms. $m_s$ = %.0f. " % (tr_ns/1e6, ms)
+        s1 = r"$\tau$ = %.1f ms. $m_s$ = %.0f. " % (tr_ns/1e6, ms)
         s2 = "$g_{-0}$ = %.2f Hz. $g_{0-}$ = %.2f Hz. $\gamma_{-}$ = %.0f Hz. $\gamma_{0}$ = %.0f Hz" % (gm, g0, nm, n0)
         s3 = "$P_{589}$ = %.1f $\mu$W. $P_{532}$ = %.0f $\mu$W. $P_{635}$ = %.1f mW$. t_{532}$ = %.0f $\mu$s. $t_{in-MW}$ = %.0f $\mu$s" % (power589, power532, power635, t532/1e3, delay1/1e3)
         s4 = "$t_{MW-sh}$ = %.0f ns. $t_{sh}$ = %.0f ns. $t_{sh-i}$ = %.0f ns. $t_{i}$ = %.0f ns. $t_{i-r}$ = %.1f ms" % (delay2, tsh, delay3, ti, delay4/1e6)
         s5 = "Fit qual=%.3f. Thres=%.0f. Fidel=%.3f. $p_{NV^-}$=%.2f. SNR=%.2f. $\sigma_R$=%.2f"  % (fitQual, thres, fidel, pNVm, snr, sigma)
         s6 = "$n_{0, avg}$ = %.1f. $n_{-, avg}$ = %.1f" % (nMean0, nMeanm)
-        ax.set_title(s1  + s2 + "\n" + s3 + "\n" + s4 + "\n" + s5 + "\n" + s6, fontsize=9);
+        ax.set_title(s1  + s2 + "\n" + s3 + "\n" + s4 + "\n" + s5 + "\n" + s6, fontsize=7);
 
-        # ax.set_yscale('log')
+        if ifLogPlot:
+            ax.set_yscale('log')
         ax.set_ylim((1e-5,1.05*max(np.max(yfit),np.max(pdata))));
         ax.legend()
         ax.axvline(x=thres, ymin=0, ymax=1, color='black', linestyle='dashed', linewidth=1)
@@ -694,6 +695,9 @@ def plotHistSweepTIon(sigs, tausArray, sweepWhat=None, ifPlot=1, ms=-1, power589
         ths.append(thres); fids.append(fidel); pNVms.append(pNVm); snrs.append(snr)
         gms.append(gm); g0s.append(g0); nms.append(nm); n0s.append(n0)
         nMeanms.append(nMeanm); nMean0s.append(nMean0)
+
+        plt.tight_layout()
+
     ths = np.array(ths); fids = np.array(fids); pNVms = np.array(pNVms); snrs = np.array(snrs); tis = tausArray
     gms = np.array(gms); g0s = np.array(g0s); nms = np.array(nms); n0s = np.array(n0s)
     nMeanms = np.array(nMeanms); nMean0s = np.array(nMean0s)
@@ -704,8 +708,61 @@ def plotHistSweepTIon(sigs, tausArray, sweepWhat=None, ifPlot=1, ms=-1, power589
     filename = finalDataFolder + "/fitParams_ms" + str(ms) + ".csv"
     df.to_csv(filename, index=False)
 
+    
     return ths, fids, pNVms, snrs, gms, g0s, nms, n0s, nMeanms, nMean0s
 
+def plotHistSweepTIonNoFit(sigs, tausArray, sweepWhat=None, ifPlot=1, ms=-1, power589 = 2, power532 = 1400, power635 = 9.5,
+                t532 = 500e3, delay1 = 20e6, delay2 = 20, tsh = 100, delay3 = 600, ti=200, delay4 = 5e3, tr_ns = 250e6, finalDataFolder=None,
+                gm=1.5,g0=2,nm=240,n0=90, ifLogPlot=0):
+    for i in range(len(tausArray)):
+        if 'SCCPhStatSweepDelaySI' in finalDataFolder: 
+            delay3=tausArray[i]
+        elif sweepWhat =='tsh':
+            tsh = tausArray[i]
+        else:
+            ti = tausArray[i]
+        yPlot = sigs[i]
+        acqTimeMs = tausArray[i]/1e6; binTimeMs = acqTimeMs
+        binOverAcq = int(np.round(binTimeMs/acqTimeMs))
+
+        reshaped_y = yPlot.reshape(-1, binOverAcq)
+        summed_y = np.sum(reshaped_y, axis=1)
+
+        nbins = int(np.max(summed_y) + 1)
+        bins = np.arange(nbins)
+        
+        z = np.histogram(summed_y, bins=bins, density=True)
+        p = z[0]; counts = bins[0:-1]; c = counts; pdata = p
+
+        tr = tr_ns/1e9
+        guess=(gm, g0, nm, n0, tr)
+
+        start_idx = 0; end_idx = -1
+        # if i == 5: start_idx = 0
+        # p = p[start_idx:end_idx]; counts = counts[start_idx:end_idx]; counts=np.linspace(start_idx,counts[-1], len(counts))
+        # counts0 = counts[0]; counts = counts-counts0
+
+        fig, ax = plt.subplots(figsize=(5,3))
+        ns = np.linspace(0,len(p)-1,len(p))
+        ax.plot(c, pdata, 'o', markersize=3, label="Data")
+        ax.set_xlabel(r"Count")
+        ax.set_ylabel(r"Probability")
+
+        s1 = r"$\tau$ = %.1f ms. $m_s$ = %.0f. " % (tr_ns/1e6, ms)
+        s3 = "$P_{589}$ = %.1f $\mu$W. $P_{532}$ = %.0f $\mu$W. $P_{635}$ = %.1f mW$. t_{532}$ = %.0f $\mu$s. $t_{in-MW}$ = %.0f $\mu$s" % (power589, power532, power635, t532/1e3, delay1/1e3)
+        s4 = "$t_{MW-sh}$ = %.0f ns. $t_{sh}$ = %.0f ns. $t_{sh-i}$ = %.0f ns. $t_{i}$ = %.0f ns. $t_{i-r}$ = %.1f ms" % (delay2, tsh, delay3, ti, delay4/1e6)
+        ax.set_title(s1  + "\n" + s3 + "\n" + s4, fontsize=7);
+
+        if ifLogPlot:
+            ax.set_yscale('log')
+        
+        if ifPlot:
+            plt.show()
+        else:
+            plt.ioff(); plt.clf(); plt.close('all')
+        
+        plt.tight_layout()
+    
 def plotAnalysisSweepTIon(finalDataFolder, ifPlot=1, sweepWhat=None, power589 = 2, power532 = 1400, power635 = 9.5,
                 t532 = 500e3, delay1 = 20e6, delay2 = 20, tsh = 100, delay3 = 600, ti=160, delay4 = 5e3, tr_ns = 250e6,
                 ifYlim=0, ylim=None):

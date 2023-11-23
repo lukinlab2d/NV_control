@@ -35,12 +35,12 @@ class PulseTrace:
         elif "aserShelve2" in name:
             self.vert_offset = 12
             if shelveColor == 6 or shelveColor == 9: self.color = 'C1'
-            elif shelveColor == 3: self.color = 'C2'
+            elif shelveColor == 3 or shelveColor == 7: self.color = 'C2'
             else: self.color = 'r'
         elif "aserShelve" in name:
             self.vert_offset = 6
             if shelveColor == 6 or shelveColor == 9: self.color = 'C1'
-            elif shelveColor == 3: self.color = 'C2'
+            elif shelveColor == 3 or shelveColor == 7: self.color = 'C2'
             else: self.color = 'r'
         elif "MW_I2" in name or "AFG2" in name: 
             self.vert_offset = 10.5; self.color = 'C0'

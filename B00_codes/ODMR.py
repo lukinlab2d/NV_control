@@ -186,12 +186,6 @@ class ODMR(Instrument):
             name = 'sig'
             )
         plot.add(data.ODMRObject_ref, name='ref')
-        # plot = QtPlot(
-        #     data.ODMRObject_sigOverRef, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig/ref'
-        #     )
 
         loop.with_bg_task(plot.update)
         loop.run()

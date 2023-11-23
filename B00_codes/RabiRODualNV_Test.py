@@ -27,14 +27,15 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 
 ####################################################################################################################
-reps = 2;  ifLooped = (reps != 1); laserInit_channel = 7
-ifInitWvl = 0; ifInitVpz = 1
+reps = 200000;  ifLooped = (reps != 1); laserInit_channel = 7
+ifInitWvl = 0; ifInitVpz = 0
 
 # RabiRODualNV
 start = 12; stop = 252; num_sweep_points = 61 
 tausArray = np.linspace(start, stop, num_sweep_points)        
 
-vel_vpz_target       = 80.85;        vel_vpz_target2         = 77.2
+vel_vpz_target       = 76.18;        vel_vpz_target2         = 62.7
+ifNeedVel1           = 0;            ifNeedVel2              = 0
 
 num_loops                    = int(1e4)
 laser_init_delay             = 1e2;        laser_init_duration    = 8e3
@@ -44,15 +45,15 @@ laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channe
 read_duration                = 300;        read_laser_duration    = 200
 shift_btwn_2NV_MW            = 0;          shift_btwn_2NV_read    = 0
 
-if_tracking = 1; threshold_repumpVpz = 9; threshold_scanVpz = 13
-if_tracking2 = 1; threshold_repumpVpz2 = 9; threshold_scanVpz2 = 13
+if_tracking = 0; threshold_repumpVpz = 9; threshold_scanVpz = 13
+if_tracking2 = 0; threshold_repumpVpz2 = 9; threshold_scanVpz2 = 13
 num_loops_track = 5e3; num_of_cavity_conditioning = 1
 
 for i in np.linspace(1, reps, reps):
     # NV 1
-    velNum = 1; vel_current = 56.5; vel_wvl = 637.22;  laserRead_channel = 5
-    SRSnum = 1; MWPower = -18; MWI_duration = 52; MWFreq  = 2747.88e6   #NV D1
-    MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
+    velNum = 1; vel_current = 50; vel_wvl = 637.22
+    SRSnum = 1; MWPower = -18; MWI_duration = 52; MWFreq  = 2747.88e6   
+    laserRead_channel = 5; MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
 
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)
 
@@ -73,9 +74,9 @@ for i in np.linspace(1, reps, reps):
                             'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,}
     
     # NV2
-    velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.83; laserRead2_channel = 14
-    SRSnum2 = 2; MWPower2 = -16.5; MWI_duration2 = 52; MWFreq2  = 2838.26e6   #NV D2, 2nd MW path
-    MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11
+    velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.83
+    SRSnum2 = 2; MWPower2 = -16.5; MWI_duration2 = 52; MWFreq2  = 2838.26e6 
+    laserRead2_channel = 14; MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11
 
     laser_to_DAQ_delay2           = laser_to_DAQ_delay_directory.get(laserRead2_channel, 0)   
 
@@ -103,8 +104,8 @@ for i in np.linspace(1, reps, reps):
                 'MW_to_read_delay':       MW_to_read_delay,      'read_laser_duration':       read_laser_duration,
                 'laserInit_channel':      laserInit_channel,     'laserRead_channel':         laserRead_channel, 
                 'laser_to_DAQ_delay2':     laser_to_DAQ_delay2,  'laserRead2_channel': laserRead2_channel,
-                'vel_current':  vel_current, 'vel_wvl': vel_wvl, 'velNum': velNum,
-                'vel_current2':  vel_current2, 'vel_wvl2': vel_wvl2, 'velNum2': velNum2,
+                'vel_current':  vel_current, 'vel_wvl': vel_wvl, 'velNum': velNum, 'ifNeedVel1': ifNeedVel1,
+                'vel_current2':  vel_current2, 'vel_wvl2': vel_wvl2, 'velNum2': velNum2, 'ifNeedVel2': ifNeedVel2,
                 'vel_vpz_target': vel_vpz_target, 'vel_vpz_target2': vel_vpz_target2, 
                 'ifInitVpz':ifInitVpz,    'ifInitWvl': ifInitWvl,
                 'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,

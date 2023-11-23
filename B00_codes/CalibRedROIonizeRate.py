@@ -67,7 +67,7 @@ class CalibRedROIonizeRate(Instrument):
 
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
         
-        self.velNum = self.settings['velNum']
+        self.ifNeedVel = self.settings['ifNeedVel']; self.velNum = self.settings['velNum']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
         self.vel_vpz_target = self.settings['vel_vpz_target']
         self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
@@ -92,37 +92,39 @@ class CalibRedROIonizeRate(Instrument):
         self.srs.enable_RFOutput()
 
         # Velocity object
-        self.vel = Velocity(velNum=self.velNum, 
-                            ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
-                            initWvl=vel_wvl)
-        if self.ifInitWvl: 
-            self.vel.set_track()
-            time.sleep(0.5)
-            self.vel.set_wvl(vel_wvl)
-            time.sleep(1)
-            self.vel.set_ready()
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
-        if self.ifInitVpz: 
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
+        if self.ifNeedVel:
+            self.vel = Velocity(velNum=self.velNum, 
+                                ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
+                                initWvl=vel_wvl)
+            if self.ifInitWvl: 
+                self.vel.set_track()
+                time.sleep(0.5)
+                self.vel.set_wvl(vel_wvl)
+                time.sleep(1)
+                self.vel.set_ready()
+                self.vel.set_vpiezo(2)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
+            if self.ifInitVpz: 
+                self.vel.set_vpiezo(2)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
 
-        self.vel.set_current(vel_current)
+            self.vel.set_current(vel_current)
 
-        for i in range(5):
-            self.vel.set_vpiezo(self.vel_vpz_target)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
+            for i in range(5):
+                self.vel.set_vpiezo(self.vel_vpz_target)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
+            global vel; vel = self.vel
         
         # Make Pulse Blaster, Counter, SRS global objects
         global pb
         global srs; srs = self.srs
-        global vel; vel = self.vel
+        
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
@@ -144,22 +146,8 @@ class CalibRedROIonizeRate(Instrument):
         data.add_metadata(self.settings)
         self.data = data
         
-        # plot = QtPlot(
-        #     data.CalibRedROIonizeRateObject_sig, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig'
-        #     )
-        # plot.add(data.CalibRedROIonizeRateObject_ref, name='ref')
-
-        # loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
         print('Data saved to ' + str(data.location) + '/')
-
-        # dataPlotFilename = data.location + "/dataPlot.png"
-        # dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        # img = Image.open(dataPlotFile)
-        # img.show()
         
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
@@ -179,6 +167,7 @@ class Signal(Parameter):
         self.ifMeaningfulRef = self.settings['ifMeaningfulRef']
         self.ifRefBright = self.settings['ifRefBright']
         self.ifRefInitAgain = self.settings['ifRefInitAgain']
+        self.ifMWDuringRead = self.settings['ifMWDuringRead']
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.tausArray = np.linspace(start, stop, num_sweep_points)
 
@@ -196,6 +185,7 @@ class Signal(Parameter):
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];     read_duration           = self.settings['read_duration']
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; ref_laser_to_read_delay = self.settings['ref_laser_to_read_delay']
         delay_between_reads     = self.settings['delay_between_reads'];    nread                  = self.settings['num_reads']
+        laserRead_to_MWmix      = self.settings['laserRead_to_MWmix']
 
         self.num_loops = num_loops
 
@@ -206,11 +196,13 @@ class Signal(Parameter):
         MWI_delay = when_init_end + laser_to_MWI_delay;                 when_pulse_end = MWI_delay+MWI_duration
         
         laser_read_signal_delay    = when_pulse_end
-        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay + tau_ns;   read_signal_duration = read_duration
-        first_read_signal_delay    = laser_read_signal_delay + laser_to_DAQ_delay
-        when_read_signal_end       = read_signal_delay
+        first_read_signal_delay    = laser_read_signal_delay + laser_to_DAQ_delay; read_signal_duration = read_duration
+        when_read_signal_end       = laser_read_signal_delay + laser_to_DAQ_delay + tau_ns
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
         when_laser_read_signal_end = when_read_signal_end + DAQ_to_laser_off_delay
+
+        MWmix_delay                = laser_read_signal_delay + laserRead_to_MWmix
+        MWmix_duration             = laser_read_signal_duration - laserRead_to_MWmix + laser_to_DAQ_delay
         
         laser_read_ref_delay = (when_laser_read_signal_end + laser_to_DAQ_delay) + (laser_to_MWI_delay + MWI_duration) + when_init_end 
         laser_init_again_delay = (when_laser_read_signal_end + laser_to_DAQ_delay) + laser_init_delay
@@ -225,36 +217,19 @@ class Signal(Parameter):
         when_read_ref_end = read_ref_delay + read_ref_duration
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
 
-        # nread = int((laser_read_signal_duration - DAQ_to_laser_off_delay - laser_to_DAQ_delay) / (read_signal_duration + delay_between_reads))
-    
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,              duration=int(laser_init_duration))] # times are in ns
-        # print('Laser delay in us:')
-        # print(laser_read_signal_delay/1e3)
-        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
-        # if self.ifRefBright:
-        #     pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,       duration=int(laser_read_ref_duration))]
-        # if self.ifRefInitAgain:
-        #     pulse_sequence += [spc.Pulse('LaserInit',  laser_init_again_delay,       duration=int(laser_init_again_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
+        pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
+        if self.ifMWDuringRead:
+            pulse_sequence += [spc.Pulse('MWswitch', MWmix_delay,             duration=int(MWmix_duration))]
         for i in range(nread):
             delay = first_read_signal_delay + i*(read_signal_duration + delay_between_reads)
-            # print('DAQ delay in us:')
-            # print(delay/1e3)
             pulse_sequence += [spc.Pulse('Counter',  delay,             duration=int(read_signal_duration))] # times are in ns
-        
-        # pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
         
         self.read_duration = read_signal_duration
     
-        
-        
         self.pulse_sequence = pulse_sequence
-
-        # if np.mod(self.loopCounter,100) == 0:
-        #     self.ifPrintTime = True
-        # else: self.ifPrintTime = False
         self.ifPrintTime = True
-        
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False, ifPrintTime=self.ifPrintTime)
         self.pb.program_pb(pulse_sequence, num_loops=num_loops)
 

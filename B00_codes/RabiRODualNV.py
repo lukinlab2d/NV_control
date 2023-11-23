@@ -80,7 +80,7 @@ class RabiRODualNV(Instrument):
         self.tausArray = self.settings['tausArray']
         self.SRSnum = self.settings['SRSnum']; MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
         
-        self.velNum = self.settings['velNum']
+        self.ifNeedVel1 = self.settings['ifNeedVel1']; self.velNum = self.settings['velNum']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
         self.vel_vpz_target = self.settings['vel_vpz_target']
         self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
@@ -88,7 +88,7 @@ class RabiRODualNV(Instrument):
         # Microwave and velocity 2
         self.SRSnum2 = self.settings['SRSnum2']; MWPower2 = self.settings['MWPower2']; MWFreq2 = self.settings['MWFreq2']
         
-        self.velNum2 = self.settings['velNum2']
+        self.ifNeedVel2 = self.settings['ifNeedVel2']; self.velNum2 = self.settings['velNum2']
         vel_current2 = self.settings['vel_current2']; vel_wvl2 = self.settings['vel_wvl2']; 
         self.vel_vpz_target2 = self.settings['vel_vpz_target2']
         ###########################################################################################
@@ -129,65 +129,69 @@ class RabiRODualNV(Instrument):
         self.srs2.enable_RFOutput()
 
         # Velocity object
-        self.vel = Velocity(velNum=self.velNum, 
-                            ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
-                            initWvl=vel_wvl)
-        if self.ifInitWvl: 
-            self.vel.set_track()
-            time.sleep(0.5)
-            self.vel.set_wvl(vel_wvl)
-            time.sleep(1)
-            self.vel.set_ready()
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
-        if self.ifInitVpz:
-            self.vel.set_vpiezo(2)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
+        if self.ifNeedVel1:
+            self.vel = Velocity(velNum=self.velNum, 
+                                ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
+                                initWvl=vel_wvl)
+            if self.ifInitWvl: 
+                self.vel.set_track()
+                time.sleep(0.5)
+                self.vel.set_wvl(vel_wvl)
+                time.sleep(1)
+                self.vel.set_ready()
+                self.vel.set_vpiezo(2)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
+            if self.ifInitVpz:
+                self.vel.set_vpiezo(2)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
 
-        self.vel.set_current(vel_current)
-        
-        for i in range(1):
-            self.vel.set_vpiezo(self.vel_vpz_target)
-            self.vel.waitUntilComplete()
-            self.vel.set_ready()
-            time.sleep(0.7)
+            self.vel.set_current(vel_current)
+            
+            for i in range(1):
+                self.vel.set_vpiezo(self.vel_vpz_target)
+                self.vel.waitUntilComplete()
+                self.vel.set_ready()
+                time.sleep(0.7)
+            global vel; vel = self.vel; 
 
         # Velocity object 2
-        self.vel2 = Velocity(velNum=self.velNum2, 
-                            ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
-                            initWvl=vel_wvl2)
-        if self.ifInitWvl: 
-            self.vel2.set_track()
-            time.sleep(0.5)
-            self.vel2.set_wvl(vel_wvl2)
-            time.sleep(1)
-            self.vel2.set_ready()
-            self.vel2.set_vpiezo(2)
-            self.vel2.waitUntilComplete()
-            self.vel2.set_ready()
-            time.sleep(0.7)
-        if self.ifInitVpz:
-            self.vel2.set_vpiezo(2)
-            self.vel2.waitUntilComplete()
-            self.vel2.set_ready()
-            time.sleep(0.7)
+        if self.ifNeedVel2:
+            self.vel2 = Velocity(velNum=self.velNum2, 
+                                ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl,
+                                initWvl=vel_wvl2)
+            if self.ifInitWvl: 
+                self.vel2.set_track()
+                time.sleep(0.5)
+                self.vel2.set_wvl(vel_wvl2)
+                time.sleep(1)
+                self.vel2.set_ready()
+                self.vel2.set_vpiezo(2)
+                self.vel2.waitUntilComplete()
+                self.vel2.set_ready()
+                time.sleep(0.7)
+            if self.ifInitVpz:
+                self.vel2.set_vpiezo(2)
+                self.vel2.waitUntilComplete()
+                self.vel2.set_ready()
+                time.sleep(0.7)
 
-        self.vel2.set_current(vel_current2)
-        
-        for i in range(1):
-            self.vel2.set_vpiezo(self.vel_vpz_target2)
-            self.vel2.waitUntilComplete()
-            self.vel2.set_ready()
-            time.sleep(0.7)
+            self.vel2.set_current(vel_current2)
+            
+            for i in range(1):
+                self.vel2.set_vpiezo(self.vel_vpz_target2)
+                self.vel2.waitUntilComplete()
+                self.vel2.set_ready()
+                time.sleep(0.7)
+            global vel2; vel2 = self.vel2
 
         # Make Pulse Blaster, Counter, SRS global objects
         global pb
         global srs; srs = self.srs; global srs2; srs2 = self.srs2
-        global vel; vel = self.vel; global vel2; vel2 = self.vel2
+       
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
