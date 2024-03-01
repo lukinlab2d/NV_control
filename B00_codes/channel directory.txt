@@ -13,3 +13,6 @@
 12: 2nd MW I
 13: 2nd MW Q 
 14: 2nd velocity
+15: 3rd MW switch for ms+1, NV1
+16: 4th MW switch for ms+1, NV2
+17: toggle hi/lo MW power. off = high; on = low

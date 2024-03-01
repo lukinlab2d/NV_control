@@ -1,19 +1,5 @@
 """
-    This file is part of b26_toolkit, a pylabcontrol add-on for experiments in Harvard LISE B26.
-    Copyright (C) <2016>  Arthur Safira, Jan Gieseler, Aaron Kabcenell
-
-    b26_toolkit is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    b26_toolkit is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with b26_toolkit.  If not, see <http://www.gnu.org/licenses/>.
+This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
 """
 from copy import deepcopy
 from qcodes.actions import Task as qctask
@@ -34,13 +20,12 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PIL import Image
-from B00_codes.PlotPulse import *    
-from B00_codes.ScanROFreq import *  
+from B00_codes.PlotPulse import *  
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
 
 class Rabi(Instrument):
 
-    def __init__(self, name='RabiObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
+    def __init__(self, name='RabiObject', settings=None, ifPlotPulse=True, ifDummy=0, **kwargs) -> None:
         
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
@@ -83,7 +68,7 @@ class Rabi(Instrument):
         self.srs = SRS(SRSnum=self.SRSnum)
         self.srs.set_freq(self.uwFreq) #Hz
         self.srs.set_RFAmplitude(self.uwPower) #dBm
-        self.srs.enableIQmodulation()
+        if not ifDummy: self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
     
     def runScan(self):

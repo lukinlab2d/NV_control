@@ -1,14 +1,5 @@
-# NI_9402 live counter read
-# dates initial program written during 07-2022
-# updates/changes started: 082222
-# last change made on 082922
-
 """
-this program using the QCoDeS experiment control interface to count the rising edges of an
-input digital signal. The desired sampling rate can be set. Two channels are used on the NI-9402
-module; both can be selected when setting up the instrument. One channel is for the counter
-input and the second is for the internal hardware based clock. The counting process is
-executed using the legacy QCoDeS Loop() fnc.
+This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
 """
 
 ################################## importing required modules ####################################

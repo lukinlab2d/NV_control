@@ -1,3 +1,7 @@
+"""
+This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
+"""
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -6,54 +10,71 @@ from PIL import Image
 class PulseTrace:
     def __init__(self, arr, name, readColor=3, initColor=3, ionColor=8, shelveColor=3):
         self.name = name
-        self.arr = arr
+        self.arr = arr        
 
-        if "aserInit" in name or name == "Laser": 
-            self.vert_offset = 6
-            if initColor == 6 or initColor == 9: self.color = 'C1'
-            else: self.color = 'C2'
+        if "MWswitch2" in name: 
+            self.vert_offset = 16; self.color = 'C3'
+        elif "MWswitch4" in name: 
+            self.vert_offset = 15.5; self.color = 'C4'
+
+        elif "MW_I2" in name or "AFG2" in name: 
+            self.vert_offset = 14; self.color = 'C0'
+        elif "MW_Q2" in name: 
+            self.vert_offset = 13.5; self.color = 'C1'
+        
         elif "aserRead2" in name:
             self.vert_offset = 12
             if readColor == 6 or readColor == 9: self.color = 'C1'
             elif readColor == 5 or readColor == 14: self.color = 'r'
             else: self.color = 'C2'
-        elif "aserRead" in name:
-            self.vert_offset = 6
-            if readColor == 6 or readColor == 9: self.color = 'C1'
-            elif readColor == 5 or readColor == 14: self.color = 'r'
-            else: self.color = 'C2'
-        elif "aserIon2" in name:
-            self.vert_offset = 12
-            if ionColor == 6 or ionColor == 9: self.color = 'C1'
-            elif ionColor == 3: self.color = 'C2'
-            else: self.color = 'darkred'
-        elif "aserIon" in name:
-            self.vert_offset = 6
-            if ionColor == 6 or ionColor == 9: self.color = 'C1'
-            elif ionColor == 3: self.color = 'C2'
-            else: self.color = 'darkred'
         elif "aserShelve2" in name:
             self.vert_offset = 12
             if shelveColor == 6 or shelveColor == 9: self.color = 'C1'
             elif shelveColor == 3 or shelveColor == 7: self.color = 'C2'
             else: self.color = 'r'
+        elif "aserIon2" in name:
+            self.vert_offset = 11.5
+            if ionColor == 6 or ionColor == 9: self.color = 'C1'
+            elif ionColor == 3: self.color = 'C2'
+            else: self.color = 'darkred'
+        
+        ##########################################################################
+
+        elif "aserInit" in name or name == "Laser": 
+            self.vert_offset = 10
+            if initColor == 6 or initColor == 9: self.color = 'C1'
+            else: self.color = 'C2'
+        elif "hiLoMWPwr" in name: 
+            self.vert_offset = 8; self.color = 'k'
+
+        ##########################################################################
+
+        elif "aserRead" in name:
+            self.vert_offset = 6
+            if readColor == 6 or readColor == 9: self.color = 'C1'
+            elif readColor == 5 or readColor == 14: self.color = 'r'
+            else: self.color = 'C2'
         elif "aserShelve" in name:
             self.vert_offset = 6
             if shelveColor == 6 or shelveColor == 9: self.color = 'C1'
             elif shelveColor == 3 or shelveColor == 7: self.color = 'C2'
             else: self.color = 'r'
-        elif "MW_I2" in name or "AFG2" in name: 
-            self.vert_offset = 10.5; self.color = 'C0'
+        elif "aserIon" in name:
+            self.vert_offset = 5.5
+            if ionColor == 6 or ionColor == 9: self.color = 'C1'
+            elif ionColor == 3: self.color = 'C2'
+            else: self.color = 'darkred'
+
         elif "MW_I" in name or "AFG" in name: 
-            self.vert_offset = 4.5; self.color = 'C0'
-        elif "MW_Q2" in name: 
-            self.vert_offset = 9; self.color = 'C1'
+            self.vert_offset = 4; self.color = 'C0'
         elif "MW_Q" in name: 
-            self.vert_offset = 3; self.color = 'C1'
-        elif "MWswitch2" in name: 
-            self.vert_offset = 7.5; self.color = 'C0'
-        elif "MWswitch" in name: 
-            self.vert_offset = 1.5; self.color = 'C0'
+            self.vert_offset = 3.5; self.color = 'C1'
+
+        elif name == "MWswitch": 
+            self.vert_offset = 2; self.color = 'C3'
+        elif "MWswitch3" in name: 
+            self.vert_offset = 1.5; self.color = 'C4'
+
         elif "ounter" in name: 
             self.vert_offset = 0; self.color = 'k'
 
@@ -101,12 +122,13 @@ class PlotPulse():
         for channel_id in self.pulseTrace:
             tr = self.pulseTrace[channel_id]
             x_axis = np.array(range(tr.length))/1e9*1e6
-            if '2' in tr.name:
+            if '2' in tr.name or '4' in tr.name or 'hiLo' in tr.name:
                 ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color, linestyle='--')
             else:
                 ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
             ax.set_xlabel("Time ($\mu$s)")
-            ax.legend(loc='best')
+            ax.legend(loc='right', bbox_to_anchor=(1.35, 0.5))
+            plt.tight_layout()
 
         if self.ifSave: 
             plt.savefig(self.plotFilename)

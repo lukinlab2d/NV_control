@@ -1,3 +1,6 @@
+"""
+This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
+"""
 # Python program to read
 # json file
   

@@ -1,19 +1,5 @@
 """
-    This file is part of b26_toolkit, a pylabcontrol add-on for experiments in Harvard LISE B26.
-    Copyright (C) <2016>  Arthur Safira, Jan Gieseler, Aaron Kabcenell
-
-    b26_toolkit is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    b26_toolkit is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with b26_toolkit.  If not, see <http://www.gnu.org/licenses/>.
+This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
 """
 import numpy as np
 import requests
@@ -38,7 +24,7 @@ def read_file_on_github():
     folder = 'B00_codes'
 
     # GitHub personal access token
-    access_token = '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'
+    access_token = 1
     timestamp = int(time.time())
     url = f'https://api.github.com/repos/{owner}/{repo}/contents/{folder}/{path}?timestamp={timestamp}'
     headers = {'Authorization': f'token {access_token}',
@@ -78,22 +64,44 @@ def read_file_on_github():
         print("Error:", e)
         return None
     
-def read_file_from_dropbox(dbx):
+def read_file_from_dropbox(velNum, dbx):
     # Download the file content from Dropbox
-    dropbox_path = '/wlm_laser1.txt'
-    _, response = dbx.files_download(dropbox_path)
-    file_content = response.content
+    if velNum == 1:
+        dropbox_path = '/wlm_laser1.txt'
+    elif velNum == 2:
+        dropbox_path = '/wlm_laser2.txt'
 
-    # Convert bytes to string
-    data_str = file_content.decode('utf-8')
+    max_retries = 300  # Set the maximum number of retries
+    retry_delay = 1 # Set the delay between retries in seconds
 
-    # Split the string into lines
-    lines = data_str.split('\r\n')
+    for retry_count in range(max_retries):
+        try:
+            _, response = dbx.files_download(dropbox_path)
+            file_content = response.content
 
-    # Convert each line to a float
-    data_float = [float(line) for line in lines if line]
-    data = np.array(data_float)
+            # Convert bytes to string
+            data_str = file_content.decode('utf-8')
 
+            # Split the string into lines
+            lines = data_str.split('\r\n')
+
+            # Convert each line to a float
+            data_float = [float(line) for line in lines if line]
+            data = np.array(data_float)
+
+            return data
+
+        except Exception as e:
+            # Handle the exception (e.g., log the error)
+            print(f"Attempt {retry_count + 1} failed: {e}")
+            
+            if retry_count < max_retries - 1:
+                # Wait before retrying
+                time.sleep(retry_delay)
+                print("Retrying...")
+            else:
+                # Maximum retries reached, raise the exception
+                raise
     return data
 
 class PID:
@@ -179,35 +187,70 @@ class PID:
             #if only have a single error so far, then derivative is undefined so do not calculate it
             self.cv = self.p * error[-1] + self.i * np.sum(error) / self.memory
 
+
 if __name__ == '__main__':
-    vel = Velocity(velNum=1, ifInitVpz=0, ifInitWvl=0)
-    pid = PID(p=0.2,i=1,d=0,setpoint=470.47650,memory=20)
-    vpz_now = 69.84
+    velNum=1
+    vel = Velocity(velNum=velNum, ifInitVpz=0, ifInitWvl=0)
 
     # Create a Dropbox client
-    access_token = 'sl.BqVkE-T6NM7G3vXCagIvfJURtRLsA13xdkdl5U6K9NaRrvFCN8-uRvdVlKLeHOLOLSl5mZxdAtnY25U83Rn2FLr2NLRBeo1hJkcNsG_EKYaQVfRJ1EkPOlBYq6rplQ3TRHvHHBu5DZ2lpce1FZ4gqEY'
-    app_key = 'jr02kdlisnsp67m'
-    app_secret = 'ts6lhusxptmz4yk'
-    refresh_token = '_YKA5RRymgcAAAAAAAAAAQnPHYunyWVJ6xfos_yVNImpt68T03ae7N_udN8_6FC7'
+    tkFile = 'C:/Users/lukin2dmaterials/data/tk.txt'; lines = []
+    with open(tkFile, 'r') as file:
+        for line in file:
+            if "\n" in line: line = line[0:-1]
+            lines.append(line)
+    access_token = lines[0]
+    app_key = lines[1]
+    app_secret = lines[2]
+    refresh_token = lines[3]
     
     dbx = dropbox.Dropbox(oauth2_access_token=access_token,
                           app_key=app_key, 
                           app_secret=app_secret, 
                           oauth2_refresh_token=refresh_token)
     timeLastRefreshedToken = time.time()
+    ##########################
+
+    lockStatusFile = 'C:\\Users\\lukin2dmaterials\\miniconda3\\envs\\NV_control\\B00_codes\\laser1_lockStatus.txt'
+    lockStatusParam = np.loadtxt(lockStatusFile)
+    setpoint = lockStatusParam[1]; vpz_old = lockStatusParam[2]
+
+    pid = PID(p=2,i=1,d=0,setpoint=setpoint,memory=20)
+    factor=25
+
+    print('Setpoint = ' + str(setpoint) + '. Vpz guess = ' + str(vpz_old))
 
     while True:
-        # print()
-        data = read_file_from_dropbox(dbx)
-        pid.set_pv(data)
-        pid.set_cv()
-        # print(pid.cv)
+        lockStatusParam = np.loadtxt(lockStatusFile)
+        lockStatus = int(lockStatusParam[0]); setpoint = lockStatusParam[1]; vpz_old = lockStatusParam[2]
 
-        vpz_correction = -pid.cv*25
-        
-        vel.set_vpiezo(vpz_now + vpz_correction, ifVerbose=0)
-        vpz_now = vpz_now + vpz_correction
-        print(vpz_now)
+        if lockStatus == 1:
+            data = read_file_from_dropbox(velNum=velNum,dbx=dbx)
+            pid.set_parameters(setpoint=setpoint)
+            pid.set_pv(data)
+            pid.set_cv()
+
+            if np.abs(pid.error*1e6) >= 3:
+                vpz_correction = -pid.cv*factor
+            else:
+                vpz_correction = 0
+            
+            vpz_new = vpz_old + vpz_correction
+            vel.set_vpiezo(vpz_new, ifVerbose=0)
+            print(vpz_new)
+            with open(lockStatusFile, 'r+') as file:
+                # Read all lines from the file
+                lines = file.readlines()
+                # print(lines)
+                # Seek to the beginning of the 3rd row (0-indexed)
+                file.seek(len(lines[0]+lines[1])+1)
+
+                # Write the number to the 3rd row
+                file.write(str(vpz_new))
+                file.truncate()
+
+        else:
+            print('Laser unlocked')
+            time.sleep(0.5)
 
         if time.time() - timeLastRefreshedToken > 3600:
             dbx.refresh_access_token()

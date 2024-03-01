@@ -1,3 +1,6 @@
+"""
+This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
+"""
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -157,7 +160,7 @@ def fitDecay(xdata, ydata, guess=None):
     upperBounds = (np.inf, np.inf, 1e8)
     popt, pcov = curve_fit(decay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
-    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
     yfit = decay(xfit, *popt)
     return xfit, yfit, popt, perr
 
@@ -245,9 +248,82 @@ def fitBlinkTwoPois(xdata, ydata, guess=None):
     yfit = ps(xfit, *popt)
     return xfit, yfit, popt, perr
 
+def readDataConfocalRR(datafile):
+    readfile = np.loadtxt(datafile)
+    y = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    x = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    sig2 = [xAxisAndResult[3] for xAxisAndResult in readfile]
 
+    y = np.array(y); x = np.array(x); sig = np.array(sig); sig2 = np.array(sig2)
+    ny = np.count_nonzero(y == np.min(y))
+    nx = int(len(y)/ny)
 
+    y = np.reshape(y,(nx,ny))
+    x = np.reshape(x,(nx,ny))
+    sig = np.reshape(sig,(nx,ny))
+    sig2= np.reshape(sig2,(nx,ny))
 
+    return x,y,sig,sig2
+
+def readDataConfocalRRSingleRead(datafile):
+    readfile = np.loadtxt(datafile)
+    y = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    x = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
+
+    y = np.array(y); x = np.array(x); sig = np.array(sig)
+    ny = np.count_nonzero(y == np.min(y))
+    nx = int(len(y)/ny)
+
+    y = np.reshape(y,(nx,ny))
+    x = np.reshape(x,(nx,ny))
+    sig = np.reshape(sig,(nx,ny))
+
+    return x,y,sig
+
+def readDataFullDataDualNV(datafile, num_of_bins=10, binwidth=0, plot_hist_every=5, 
+                     ifDataSavedAsCountRate=False, ifLogColor=False, ifSubtractRef=False, ifPlotRef=False,
+                     ifRealTimeMonitor=False, ifPlot=True, num_of_iter=0):
+    readfile = np.loadtxt(datafile)
+    
+    tau = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    ref2 = [xAxisAndResult[4] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[7] for xAxisAndResult in readfile]
+    sig2 = [xAxisAndResult[8] for xAxisAndResult in readfile]
+    tau = np.array(tau); sig = np.array(sig); ref = np.array(ref); sig2 = np.array(sig2); ref2 = np.array(ref2)
+
+    if ifRealTimeMonitor: 
+        num_of_iter_same_tau = num_of_iter
+    else: 
+        num_of_iter_same_tau = np.count_nonzero(tau == np.min(tau))
+    num_of_different_tau = int(len(tau)/num_of_iter_same_tau)
+
+    sig = np.reshape(sig,(num_of_different_tau, num_of_iter_same_tau))
+    ref = np.reshape(ref,(num_of_different_tau, num_of_iter_same_tau))
+    sig2 = np.reshape(sig2,(num_of_different_tau, num_of_iter_same_tau))
+    ref2 = np.reshape(ref2,(num_of_different_tau, num_of_iter_same_tau))
+    tau = np.reshape(tau,(num_of_different_tau, num_of_iter_same_tau))
+    
+    return tau, sig, sig2, ref, ref2
+
+def readDataFullDataDualNVSingleRead(datafile):
+    readfile = np.loadtxt(datafile)
+    
+    tau = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[4] for xAxisAndResult in readfile]
+    tau = np.array(tau); sig = np.array(sig); ref = np.array(ref)
+
+    num_of_iter_same_tau = np.count_nonzero(tau == np.min(tau))
+    num_of_different_tau = int(len(tau)/num_of_iter_same_tau)
+
+    sig = np.reshape(sig,(num_of_different_tau, num_of_iter_same_tau))
+    ref = np.reshape(ref,(num_of_different_tau, num_of_iter_same_tau))
+    tau = np.reshape(tau,(num_of_different_tau, num_of_iter_same_tau))
+    
+    return tau, sig, ref
 
 def readDataFullData(datafile, num_of_bins=10, binwidth=0, plot_hist_every=5, 
                      ifDataSavedAsCountRate=False, ifLogColor=False, ifSubtractRef=False, ifPlotRef=False,
@@ -600,7 +676,23 @@ def readDataNoPlotDual(datafile):
     ref2 = [xAxisAndResult[2] for xAxisAndResult in readfile]
     
     return x_s, sig, ref, sig2, ref2
+def readDataNoPlotWM(datafile):
+    readfile = np.loadtxt(datafile)
+    # print(readfile)
+    x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    wvl = [xAxisAndResult[3] for xAxisAndResult in readfile]
 
+    return x_s, sig, ref, wvl
+def readDataNoPlotWMJustRef(datafile):
+    readfile = np.loadtxt(datafile)
+    # print(readfile)
+    x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    wvl = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    sig = np.zeros(len(ref))
+    return x_s, sig, ref, wvl
 def readDataNoRef(datafile):
     readfile = np.loadtxt(datafile)
     # print(readfile)
@@ -1025,7 +1117,7 @@ def plotAnalysisT1SCC(finalDataFolder, ifPlot=1, power589 = 2, power532 = 1400, 
 
     return tis, ths, fids, pms, snrs, gms, g0s, nms, n0s, nMeanms, nMean0s, thsref, fidsref, pmsref, snrsref, gmsref, g0sref, nmsref, n0sref, nMeanmsref, nMean0sref, sigmaSCC, sigavg, refavg, t1s, t1s_err
 
-def plotT1Simple(x, sig, ref, thresmax=2, ifPlot=1, power589 = 2, power532 = 1400, power635 = 9.5,
+def plotT1Simple(x, sig, ref, ifThres=1, ifContrastFirstThenAvg=0, thres=1, thresmax=2, ifPlot=1, power589 = 2, power532 = 1400, power635 = 9.5, power660=0,
                 t532 = 500e3, delay1 = 20e6, delay2 = 20, tsh = 100, delay3 = 600, ti=160, delay4 = 2e6, tr_ns = 250e6):
     
     fig, axs = plt.subplots(1,2, figsize=(6,3))
@@ -1034,7 +1126,17 @@ def plotT1Simple(x, sig, ref, thresmax=2, ifPlot=1, power589 = 2, power532 = 140
     t1s = []; t1s_err = []
 
     ###########################################################
-    y = (sigavg-refavg)/(sigavg+refavg); a = np.max(y)
+    if ifContrastFirstThenAvg == 1:
+        # contrast = (sig-ref)/(sig+ref); contrast = np.nan_to_num(contrast, nan=0)
+        # y = np.average(contrast, axis=1)
+
+        diff = sig-ref
+        y = np.average(diff, axis=1)/(sigavg+refavg)
+
+    else:
+        y = (sigavg-refavg)/(sigavg+refavg)
+    a = np.max(y)
+
     guess = (a,0,1e6)
     xfit, yfit, popt, perr = fitDecay(x,y,guess=guess)
     s = "$T_{1}$=%.2f$\pm$%.2f ms" % (popt[2]/1e6, perr[2]/1e6)
@@ -1045,30 +1147,32 @@ def plotT1Simple(x, sig, ref, thresmax=2, ifPlot=1, power589 = 2, power532 = 140
     a00.legend(fontsize=7, loc='lower left')
     a00.set_xscale('log')
     a00.set_title(s, fontsize=7)
-    a00.set_xlabel("$t_{MW-sh}$ (ns)")
+    a00.set_xlabel("$\\tau$ (ns)")
 
     t1s.append(popt[2]/1e6); t1s_err.append(perr[2]/1e6)
 
-    ###########################################################
-    ratios = []
-    for thres in range(thresmax+1):
-        (row, col) = np.shape(sig)
+    ######################################################################################################################
+    if ifThres:
+        ratios = []
+        for thres in range(thresmax+1):
+            (row, col) = np.shape(sig)
 
-        sigsThd = np.zeros((row, col))
-        for i in range(row):
-            for j in range(col):
-                if sig[i,j] > thres: sigsThd[i,j] = 1
+            sigsThd = np.zeros((row, col))
+            for i in range(row):
+                for j in range(col):
+                    if sig[i,j] > thres: sigsThd[i,j] = 1
 
-        refsThd = np.zeros((row, col))
-        for i in range(row):
-            for j in range(col):
-                if ref[i,j] > thres: refsThd[i,j] = 1
-        sigThdAvg = np.average(sigsThd,axis=1); refThdAvg = np.average(refsThd,axis=1)
-        c = (sigThdAvg-refThdAvg)/(sigThdAvg+refThdAvg); a = np.max(c)
-        guess = (a,0,1e6)
-        xfit, yfit, popt, perr = fitDecay(x,c,guess=guess)
-        ratios.append(perr[2]/popt[2])
-    ratios = np.array(ratios); thres = np.argmin(ratios)
+            refsThd = np.zeros((row, col))
+            for i in range(row):
+                for j in range(col):
+                    if ref[i,j] > thres: refsThd[i,j] = 1
+            sigThdAvg = np.average(sigsThd,axis=1); refThdAvg = np.average(refsThd,axis=1)
+            c = (sigThdAvg-refThdAvg)/(sigThdAvg+refThdAvg)
+            c = np.nan_to_num(c, nan=-1, posinf=-1, neginf=-1); a = np.max(c)
+            guess = (a,0,1e6)
+            xfit, yfit, popt, perr = fitDecay(x,c,guess=guess)
+            ratios.append(perr[2]/popt[2])
+        ratios = np.array(ratios); thres = np.argmin(ratios) # Find a threshold that minimizes the error in fitting?
     ###########################################################
 
     (row, col) = np.shape(sig)
@@ -1082,24 +1186,34 @@ def plotT1Simple(x, sig, ref, thresmax=2, ifPlot=1, power589 = 2, power532 = 140
         for j in range(col):
             if ref[i,j] > thres: refsThd[i,j] = 1
     sigThdAvg = np.average(sigsThd,axis=1); refThdAvg = np.average(refsThd,axis=1)
+    # print(sigThdAvg); print(refThdAvg)
     c = (sigThdAvg-refThdAvg)/(sigThdAvg+refThdAvg); a = np.max(c)
     guess = (a,0,1e6)
     xfit, yfit, popt, perr = fitDecay(x,c,guess=guess)
     s = "$T_{1}$=%.2f$\pm$%.2f ms. Thres=%.0f" % (popt[2]/1e6, perr[2]/1e6, thres)
     
-    a01.plot(x, c, 'o-', linewidth=0.5, markersize=3, label="Thresholded CSR")
-    a01.plot(xfit, yfit, color='C0')    
+    a01.plot(x, c, 'o-', color='C2', linewidth=0.5, markersize=3, label="Thresholded CSR")
+    a01.plot(xfit, yfit, color='C2')    
         
     a01.set_title(s, fontsize=8)
     a01.legend(fontsize=6, loc='lower left')
     a01.set_xscale('log')
-    a01.set_xlabel("$t_{MW-sh}$ (ns)")
+    a01.set_xlabel("$\\tau$ (ns)")
+
+    b01 = a01.twinx()
+    b01.plot(x, sigavg/(tr_ns/1e6), 'o-', linewidth=0.5, markersize=3, label="$m_s$=-1")
+    b01.plot(x, refavg/(tr_ns/1e6), 'o-', linewidth=0.5, markersize=3, label="$m_s$=0")
+    b01.legend(fontsize=6)
+    b01.set_ylabel('Count (kc/s)')
 
     t1s.append(popt[2]/1e6); t1s_err.append(perr[2]/1e6)
 
-    s1 = "$P_{589}$ = %.1f $\mu$W. $P_{532}$ = %.0f $\mu$W. $P_{635}$ = %.1f mW$. t_{532}$ = %.0f $\mu$s. $t_{in-MW}$ = %.0f $\mu$s" % (power589, power532, power635, t532/1e3, delay1/1e3)
-    s2 = r"$t_{sh}$ = %.0f ns. $t_{sh-i}$ = %.0f ns. $t_{i}$ = %.0f ns. $t_{i-r}$ = %.1f ms. $\tau$ = %.1f ms" % (tsh, delay3, ti, delay4/1e6, tr_ns/1e6)
-    plt.suptitle(s1  +  "\n" + s2, fontsize=9, y=0.935);
+    # s1 = "$P_{589}$ = %.1f $\mu$W. $P_{532}$ = %.0f $\mu$W. $P_{635}$ = %.1f mW$. t_{532}$ = %.0f $\mu$s. $t_{in-MW}$ = %.0f $\mu$s" % (power589, power532, power635, t532/1e3, delay1/1e3)
+    # s2 = r"$t_{sh}$ = %.0f ns. $t_{sh-i}$ = %.0f ns. $t_{i}$ = %.0f ns. $t_{i-r}$ = %.1f ms. $\tau$ = %.1f ms" % (tsh, delay3, ti, delay4/1e6, tr_ns/1e6)
+    # plt.suptitle(s1  +  "\n" + s2, fontsize=9, y=0.935);
+
+    s1 = "$P_{532}$ = %.0f $\mu$W. $P_{635}$ = %.0f nW. $P_{660}$ = %.1f mW. $t_{i}$ = %.2f $\mu$s. $t_R$ = %.1f ms" % (power532, power635, power660,ti/1e3, tr_ns/1e6)
+    plt.suptitle(s1, fontsize=9, y=0.935);
 
     plt.tight_layout()
     if ifPlot:

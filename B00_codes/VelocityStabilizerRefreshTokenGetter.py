@@ -1,10 +1,20 @@
+"""
+This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
+"""
+
 import base64
 import requests
 import json
 
-APP_KEY = 'jr02kdlisnsp67m'
-APP_SECRET = 'ts6lhusxptmz4yk'
-ACCESS_CODE_GENERATED = 'DMYteU69mToAAAAAAAAEEX921Yz0_likzbra8YkLeFA'
+tkFile = 'C:/Users/lukin2dmaterials/data/tk.txt'; lines = []
+with open(tkFile, 'r') as file:
+    for line in file:
+        if "\n" in line: line = line[0:-1]
+        lines.append(line)
+
+APP_KEY = lines[1]
+APP_SECRET = lines[2]
+ACCESS_CODE_GENERATED = 0
 
 BASIC_AUTH = base64.b64encode(f'{APP_KEY}:{APP_SECRET}'.encode())
 
