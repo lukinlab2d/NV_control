@@ -8,6 +8,7 @@ import numpy as np
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
+from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
 from copy import deepcopy
 
 from qcodes_contrib_drivers.drivers.NationalInstruments.DAQ import *

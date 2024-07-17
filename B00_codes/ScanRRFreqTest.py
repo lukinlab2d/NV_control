@@ -8,41 +8,34 @@ from B00_codes.PlotPulse import *
 import dropbox
 
 ####################################################################################################################
-reps = 122; ifLooped = (reps != 1); ifFit = 0; laserInit_channel = 3; 
-num_of_cavity_conditioning = 1; ifInitWvl = 0; timeSleepReadWvl = 0
+reps = 1; ifLooped = (reps != 1); ifFit = 0; laserInit_channel = 3; 
+ifAWG=1; SDGnum=1; AWG_channel = 18
+num_of_cavity_conditioning = 1; ifInitWvl = 1; timeSleepReadWvl = 0
 for i in np.linspace(1,reps,reps):
     # Test for ScanRRFreq
-    if np.mod(i,2) == 0: 
-    # if False:
-        velNum = 1; vel_current = 62.2; vel_wvl = 637.22; laserRead_channel = 5
+    if True:
+        # velNum = 1; vel_current = 62.7; vel_wvl = 637.2; laserRead_channel = 5
+        velNum = 2; vel_current = 67; vel_wvl = 636.87; laserRead_channel = 14
 
-        # SRSnum = 1; MWPower = -2.7; MWI_duration = 44; MWFreq  = 2747.88e6   #NV D1
-        # MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
-        SRSnum = 2; MWPower = -1;   MWI_duration = 44; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
-        MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
-        
-        # start = 77.1; stop = 77.6; num_sweep_points = 51 # fine scan
-        # start = 80; stop = 85; num_sweep_points = 126 # fast scan
-        start = 53; stop = 70; num_sweep_points = 426 # slow scan
+        SRSnum = 1; MWPower = -2; MWI_duration = 58; MWFreq  = 2843.87e6   #NV D1
+        MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
+        start = 0; stop = 100; num_sweep_points = 501 # slow scan
     else:
         velNum = 2; vel_current = 67; vel_wvl = 636.83; laserRead_channel = 14
 
-        # SRSnum = 2; MWPower = -1;   MWI_duration = 44; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
-        # MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
-        SRSnum = 1; MWPower = -2.7; MWI_duration = 44; MWFreq  = 2747.88e6   #NV D1
-        MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
-        
-        # start = 64.15; stop = 64.65; num_sweep_points = 51 # fine scan
-        start = 69.4; stop = 86; num_sweep_points = 326# slow scan
+        SRSnum = 2; MWPower = -20;   MWI_duration = 44; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
+        MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
+        start = 80; stop = 81; num_sweep_points = 11 # slow scan
     vpzArray = np.linspace(start, stop, num_sweep_points)
 
-    num_loops                    = int(12e4);   ifInitVpz = 0
-    laser_init_delay             = 1e2;        laser_init_duration    = 5e3
-    MW_to_read_delay             = 1e2
+    num_loops                    = int(5e5);   ifInitVpz = 0
+    laser_init_delay             = 1e2;        laser_init_duration    = 1e3
+    MW_to_read_delay             = 0
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1750, 14: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
     laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
-    read_duration                = 300;      read_laser_duration    = 200
+    read_duration                = 2000;       read_laser_duration    = 2000
+    AWGbuffer                    = 10;         AWG_output_delay      = 1450      
 
     # Create a Dropbox client
     tkFile = 'C:/Users/lukin2dmaterials/data/tk.txt'; lines = []
@@ -72,7 +65,9 @@ for i in np.linspace(1,reps,reps):
                 'ifInitVpz':ifInitVpz,   'num_of_cavity_conditioning': num_of_cavity_conditioning,
                 'ifInitWvl':ifInitWvl,
                 'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,
-                'timeSleepReadWvl': timeSleepReadWvl}
+                'timeSleepReadWvl': timeSleepReadWvl, 'ifAWG': ifAWG, 'AWGbuffer':AWGbuffer, 'AWG_output_delay':AWG_output_delay,
+                'SDGnum': SDGnum, 'AWG_channel':AWG_channel
+                }
 
     start = time.time()
     ScanRRFreqObject = ScanRRFreq(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument

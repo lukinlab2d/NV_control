@@ -20,8 +20,8 @@ from nidaqmx.constants import(
     FrequencyUnits
 )
 from PIL import Image
-from PlotPulse import *    
-from Confocal import *
+from B00_codes.PlotPulse import *    
+from B00_codes.Confocal import *
 
 class T1(Instrument):
 
@@ -65,7 +65,7 @@ class T1(Instrument):
         self.savedPulseSequencePlots = {}
 
         # SRS object
-        self.srs = SRS()
+        self.srs = SRS(SRSnum=2)
         self.srs.set_freq(self.uwFreq) #Hz
         self.srs.set_RFAmplitude(self.uwPower) #dBm
         self.srs.enableIQmodulation()

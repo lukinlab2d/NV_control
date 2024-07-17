@@ -13,25 +13,25 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 
 ####################################################################################################################
-reps = 2
+reps = 1
 for i in range(reps):
     # Rabi
-    start = 12; stop = 132; num_sweep_points = 31; ifLooped = (reps != 1)
+    start = 12; stop = 412; num_sweep_points = 51; ifLooped = False
     tausArray = np.linspace(start, stop, num_sweep_points)
-    SRSnum=2; uwPower = -17; uwFreq = 2838.26e6
-    laserInit_channel = 7; laserRead_channel = 7
+    SRSnum=2; uwPower = 0; uwFreq = 2869.2e6
+    laserInit_channel = 3; laserRead_channel = 3
     MWswitch_channel = 11; MWI_channel = 12; MWQ_channel = 13
     
     if True:
         print(uwFreq)
 
-        num_loops               = int(1e6)
+        num_loops               = int(1e5)
         laser_init_delay        = 0;        laser_init_duration = 0
         laser_to_MWI_delay      = 1000;       
         laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
         laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)  
         read_duration           = 250
-        DAQ_to_laser_off_delay  = 1000;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
+        DAQ_to_laser_off_delay  = 20000;     MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 
                     'SRSnum':SRSnum, 'uwPower':uwPower, 'uwFreq': uwFreq,
@@ -51,7 +51,7 @@ for i in range(reps):
         if not ifLooped: 
             dataFilename = RabiObject.getDataFilename()
             guess=(0.2, 1000, 0, 0.9, 600)
-            dataReader.readData(dataFilename, type='RabiDecay', guess=guess, ifFit=1)
+            dataReader.readData(dataFilename, type='RabiDecay', guess=guess, ifFit=0)
         RabiObject.close()
         
         # guess=(0.3, 250, 0, 0.9)

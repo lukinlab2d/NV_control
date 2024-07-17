@@ -47,7 +47,7 @@ class ODMR(Instrument):
         self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':1}
-        self.MWswitchParam =    {'delay_time': 2, 'channel':2}
+        self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
 
@@ -62,6 +62,7 @@ class ODMR(Instrument):
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.freqsArray = np.linspace(start, stop, num_sweep_points)
         uwPower = self.settings['uwPower']
+        self.SRSnum = self.settings['SRSnum']
 
         # Pulse parameters
         num_loops               = self.settings['num_loops']
@@ -97,7 +98,7 @@ class ODMR(Instrument):
         self.pulse_sequence = pulse_sequence
         
         # SRS object
-        self.srs = SRS()
+        self.srs = SRS(SRSnum=self.SRSnum)
         self.srs.set_freq(3e9) #Hz
         self.srs.set_RFAmplitude(uwPower) #dBm
         self.srs.enableIQmodulation()

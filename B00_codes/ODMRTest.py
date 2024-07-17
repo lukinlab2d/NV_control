@@ -3,22 +3,13 @@ This file is part of B00 codes based on b26_toolkit. Questions are addressed to 
 """
 import numpy as np
 from nidaqmx.constants import *
-from nidaqmx.constants import(
-    Edge,
-    CountDirection,
-    AcquisitionType,
-    FrequencyUnits
-)
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+
 from B00_codes.ODMR import *  
 from B00_codes.ODMR_CW import *
 from B00_codes.PlotPulse import *
 import B00_codes.dataReader as dataReader
 
 ####################################################################################################################
-
-
 # For NV tracking
 if True: 
     if_tracking = 0
@@ -44,31 +35,33 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
                     'z_minus_range':          z_minus_range ,        'z_plus_range':           z_plus_range,
                     'xz_displacement_limit':  xz_displacement_limit,}
 
-ifCW = 1
+ifCW = 0
 
 if ifCW == 0:
-    reps = 5
+    reps = 1
     for i in range(reps):
         # Test for Pulsed ODMR
-        start = 2742.5e6; stop = 2752.5e6; num_sweep_points = 201
+        start = 2850e6; stop = 2890e6; num_sweep_points = 51
         freqsArray = np.linspace(start, stop, num_sweep_points)
-        uwPower = -52.5; ifLooped = (reps != 1)
-        laserInit_channel = 7; laserRead_channel = 7 # 532 is 3, 589 is 6
+        uwPower = -10; ifLooped = (reps != 1)
+        laserInit_channel = 3; laserRead_channel = 3 # 532 is 3, 589 is 6
+        SRSnum = 2; MWswitch_channel=11
 
-        num_loops                    = int(0.5e6)
+        num_loops                    = int(1e5)
         laser_init_delay             = 0;          laser_init_duration    = 0*1000
-        MWI_duration                 = 2600
+        MWI_duration                 = 250
         laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
         laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
         laser_to_MWI_delay           = laser_to_DAQ_delay + 150
-        read_duration                = 250;        DAQ_to_laser_off_delay = 1000
+        read_duration                = 250;        DAQ_to_laser_off_delay = 25000
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
                     'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,
                     'laser_to_MWI_delay':     laser_to_MWI_delay ,   'MWI_duration':        MWI_duration,
                     'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':       read_duration,
                     'laserInit_channel':      laserInit_channel,     'laserRead_channel':   laserRead_channel,
-                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':    trackingSettings,}
+                    'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':    trackingSettings,
+                    'SRSnum':SRSnum, 'MWswitch_channel':MWswitch_channel,}
 
         start = time.time()
         ODMRObject = ODMR(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
@@ -85,15 +78,16 @@ if ifCW == 0:
 
 else:
     # Test for CW ODMR
-    reps = 4
+    reps = 1
     for i in range(reps):
-        start = 2700e6; stop = 3060e6; num_sweep_points = 91
+        start = 2850e6; stop = 2890e6; num_sweep_points = 41
         freqsArray = np.linspace(start, stop, num_sweep_points)
-        uwPower = -15; ifLooped = (reps != 1)
-        laserInit_channel = 7; laserRead_channel = 7 # 532 is 3, 589 is 6, 2nd 532 is 7
+        uwPower = 10; ifLooped = (reps != 1)
+        laserInit_channel = 3; laserRead_channel = 3
+        SRSnum = 2; MWswitch_channel=11
 
-        num_loops = int(100e3); wait_btwn_sig_ref = 1e3
-        MWI_delay = 3e3; MWI_duration = 1e3
+        num_loops = int(100e3); wait_btwn_sig_ref = 30e3
+        MWI_delay = 1e3; MWI_duration = 1e3
         laser_delay = 10; MWI_off_to_read_signal_off = 0
 
         settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points, 'num_loops':num_loops, 'uwPower':uwPower,
@@ -101,7 +95,7 @@ else:
                     'laserInit_channel':      laserInit_channel,     'laserRead_channel':   laserRead_channel,
                     'MWI_off_to_read_signal_off':MWI_off_to_read_signal_off,
                     'wait_btwn_sig_ref':wait_btwn_sig_ref,                   'laser_delay':laser_delay,
-                    'trackingSettings': trackingSettings
+                    'trackingSettings': trackingSettings, 'SRSnum':SRSnum, 'MWswitch_channel':MWswitch_channel,
                     }
 
         start = time.time()

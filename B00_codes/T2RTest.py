@@ -18,11 +18,11 @@ Q_FINAL = 1
 THREE_PI_HALF_FINAL = 2
 
 ####################################################################################################################
+reps =1
 
-
-for i in np.linspace(30,28,2):
+for i in range(reps):
     # T2R
-    taus1 = np.linspace(10, 20010, 1001)
+    taus1 = np.linspace(10, 20, 2)
     tausArray = taus1
 
     # Params
@@ -35,7 +35,7 @@ for i in np.linspace(30,28,2):
     laser_to_MWI_delay           = laser_to_DAQ_delay + 150   
     DAQ_to_laser_off_delay       = 1000;       MWI_to_switch_delay       = 10 # cannot be between 0 and 10
 
-    ifRandomized = 0; ifLooped = True; normalized_style = Q_FINAL
+    ifRandomized = 0; ifLooped = False; normalized_style = Q_FINAL
     uwPower = -15; uwFreq = 2824.6e6
 
     

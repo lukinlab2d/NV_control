@@ -8,6 +8,7 @@ import numpy as np
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
+from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
 
 import nidaqmx, time
 from nidaqmx.constants import *
@@ -52,10 +53,11 @@ class ScanRRFreq(Instrument):
         self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
         self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
         self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
+        self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
-                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam, 'AWG': self.AWGParam,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                           'min_pulse_dur': int(5*1e3/self.clock_speed)}
         self.settings = {**settings, **settings_extra}
@@ -69,16 +71,38 @@ class ScanRRFreq(Instrument):
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
         self.velNum = self.settings['velNum']; self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl'] 
+        self.SDGnum = self.settings['SDGnum']
+
+        # SRS object
+        self.srs = SRS(SRSnum=self.SRSnum)
+        self.srs.set_freq(MWFreq) #Hz
+        self.srs.set_RFAmplitude(MWPower) #dBm
+        self.srs.enableIQmodulation()
+        self.srs.enable_RFOutput()
+
+        # AWG object
+        ifAWG = self.settings['ifAWG']; self.ifAWG = ifAWG
+        if self.ifAWG:
+            self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+            global AWG; AWG = self.AWG
 
         # Pulse parameters
-        num_loops               = self.settings['num_loops']
+        num_loops               = self.settings['num_loops'];           AWGbuffer           = self.settings['AWGbuffer']
         laser_init_delay        = self.settings['laser_init_delay'];    laser_init_duration = self.settings['laser_init_duration']
         laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  MWI_duration        = self.settings['MWI_duration']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];  read_duration       = self.settings['read_duration']   
         read_laser_duration     = self.settings['read_laser_duration']; MW_to_read_delay    = self.settings['MW_to_read_delay']
+        AWG_output_delay        = self.settings['AWG_output_delay'];    
         
         when_init_end              = laser_init_delay + laser_init_duration
-        MWI_delay                  = when_init_end    + laser_to_MWI_delay;  when_pulse_end = MWI_delay + MWI_duration
+        MWI_delay                  = when_init_end    + laser_to_MWI_delay; self.MWI_delay = MWI_delay
+        MW_delay_for_AWG           = MWI_delay-AWG_output_delay
+        MW_duration_for_AWG        = int(2*int((2*AWGbuffer + MWI_duration + 1)/2)) # to make it even
+
+        if ifAWG:
+            when_pulse_end = MW_delay_for_AWG + MW_duration_for_AWG + AWG_output_delay
+        else:
+            when_pulse_end = MWI_delay + MWI_duration
         
         laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay;           laser_read_signal_duration = read_laser_duration
         read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay;  read_signal_duration       = read_duration
@@ -93,7 +117,11 @@ class ScanRRFreq(Instrument):
         laser_read_ref_duration = read_laser_duration
 
         if read_signal_duration != read_ref_duration:
-            raise Exception("Duration of reading signal and reference must be the same")    
+            raise Exception("Duration of reading signal and reference must be the same")  
+
+        if ifAWG:
+            global ch1plot; global ch2plot
+            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MWI_duration), buffer=int(AWGbuffer))  
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
@@ -102,17 +130,13 @@ class ScanRRFreq(Instrument):
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_ref_delay,    duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,               duration=int(MWI_duration))]
+        if ifAWG:
+            pulse_sequence += [spc.Pulse('AWG',          MW_delay_for_AWG,    duration=20)]
+        else:
+            pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,           duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
         self.pulse_sequence = pulse_sequence
-        
-        # SRS object
-        self.srs = SRS(SRSnum=self.SRSnum)
-        self.srs.set_freq(MWFreq) #Hz
-        self.srs.set_RFAmplitude(MWPower) #dBm
-        self.srs.enableIQmodulation()
-        self.srs.enable_RFOutput()
 
         # Velocity objects
         self.vel = Velocity(velNum=self.velNum, ifInitVpz=self.ifInitVpz, ifInitWvl=self.ifInitWvl, initWvl=vel_wvl)
@@ -225,10 +249,14 @@ class ScanRRFreq(Instrument):
             pulsePlotFilename = data.location + "/pulsePlot.png"
             plotPulseObject = PlotPulse(measurementObject=self, plotFilename=pulsePlotFilename, ifShown=True,
                                         readColor=self.readColor, initColor=self.initColor)
-            plotPulseObject.makePulsePlot()
+            if self.ifAWG:
+                fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.MWI_delay)
+            else:
+                plotPulseObject.makePulsePlot()
         
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
+        if self.ifAWG: self.AWG.turn_off()
 
     def runScanInPulseSequence(self):
         sig = self.sig # this is implemented as a Parameter

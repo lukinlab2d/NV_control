@@ -42,6 +42,8 @@ def strDecaySinusoid(t, A, T2, n, Tosc, phi, B, C):
     return A*np.exp(-(t/T2)**n)*np.cos(2*np.pi/Tosc*t + phi) + B*np.exp(-(t/T2)**n) + C
 def lor(f, A, f0, g, C):
     return A*g/((f-f0)**2 + (g/2)**2) + C
+def lorTwo(f, A0, f0, g0, A1,f1,g1,C):
+    return A0*g0/((f-f0)**2 + (g0/2)**2) + A1*g1/((f-f1)**2 + (g1/2)**2) + C
 def lorThree(f, A0, f0, g0, A1, f1, g1, A2, f2, g2, C):
     return A0*g0/((f-f0)**2 + (g0/2)**2) + A1*g1/((f-f1)**2 + (g1/2)**2) + A2*g2/((f-f2)**2 + (g2/2)**2) + C
 def lorFour(f, A0, f0, g0, A1, f1, g1, A2, f2, g2, A3, f3, g3, C):
@@ -147,7 +149,7 @@ def fitCosFour(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
     return xfit, yfit, popt, perr
 
 def fitSinusoidDecay(xdata, ydata, guess=None):
-    lowerBounds = (0,0,-np.pi, -np.inf,0)
+    lowerBounds = (-np.inf,0,-np.pi, -np.inf,0)
     upperBounds = (np.inf, np.inf, np.pi, np.inf, np.inf)
     popt, pcov = curve_fit(sinusoidDecay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
@@ -155,7 +157,7 @@ def fitSinusoidDecay(xdata, ydata, guess=None):
     yfit = sinusoidDecay(xfit, *popt)
     return xfit, yfit, popt, perr
 
-def fitDecay(xdata, ydata, guess=None):
+def fitDecay(xdata, ydata, guess=None, upperBounds=None,lowerBounds=None):
     lowerBounds = (-np.inf, -np.inf,0)
     upperBounds = (np.inf, np.inf, 1e8)
     popt, pcov = curve_fit(decay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
@@ -219,6 +221,16 @@ def fitLor(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     yfit = lor(xfit, *popt)
     return xfit, yfit, popt, perr
 
+def fitLorTwo(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.inf,0,0,-np.inf,0,0,0)
+    if upperBounds is None: upperBounds = (0, np.inf, np.inf,  0, np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(lorTwo, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = lorTwo(xfit, *popt)
+    return xfit, yfit, popt, perr
+
 def fitLorThree(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     if lowerBounds is None: lowerBounds = (-np.inf,0,0,-np.inf,0,0,-np.inf,0,0,0)
     if upperBounds is None: upperBounds = (0, np.inf, np.inf, 0, np.inf, np.inf,0, np.inf, np.inf,np.inf)
@@ -230,7 +242,7 @@ def fitLorThree(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     return xfit, yfit, popt, perr
 
 def fitLorFour(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
-    if lowerBounds is None: lowerBounds = (-np.inf,0,0,  -np.inf,0,0,  -np.inf,0,0,  0)
+    if lowerBounds is None: lowerBounds = (-np.inf,0,0,  -np.inf,0,0,  -np.inf,0,0,  -np.inf,0,0, 0)
     if upperBounds is None: upperBounds = (0, np.inf, np.inf,   0, np.inf, np.inf,  0, np.inf, np.inf,  0, np.inf, np.inf,  np.inf)
     popt, pcov = curve_fit(lorFour, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
@@ -256,8 +268,8 @@ def readDataConfocalRR(datafile):
     sig2 = [xAxisAndResult[3] for xAxisAndResult in readfile]
 
     y = np.array(y); x = np.array(x); sig = np.array(sig); sig2 = np.array(sig2)
-    ny = np.count_nonzero(y == np.min(y))
-    nx = int(len(y)/ny)
+    nx = np.count_nonzero(y == np.min(y))
+    ny = int(len(y)/nx)
 
     y = np.reshape(y,(nx,ny))
     x = np.reshape(x,(nx,ny))
@@ -273,14 +285,66 @@ def readDataConfocalRRSingleRead(datafile):
     sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
 
     y = np.array(y); x = np.array(x); sig = np.array(sig)
-    ny = np.count_nonzero(y == np.min(y))
-    nx = int(len(y)/ny)
+    nx = np.count_nonzero(y == np.min(y))
+    ny = int(len(y)/nx)
 
     y = np.reshape(y,(nx,ny))
     x = np.reshape(x,(nx,ny))
     sig = np.reshape(sig,(nx,ny))
 
     return x,y,sig
+
+def readDataConfocalODMR(datafile,freqSplitFactor=1):
+    readfile = np.loadtxt(datafile)
+    y = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    x = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    freq = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[4] for xAxisAndResult in readfile]
+
+    y = np.array(y); x = np.array(x); sig = np.array(sig); ref = np.array(ref); freq = np.array(freq)
+    npixel = np.count_nonzero(freq == np.min(freq))*freqSplitFactor
+    nfreq = int(len(freq)/npixel)
+    nx = int(np.count_nonzero(y == np.min(y))/nfreq)
+    ny = int(len(y)/nfreq/nx)
+    print()
+
+    y = np.reshape(y,(ny, nx, nfreq))
+    x = np.reshape(x,(ny, nx, nfreq))
+    freq = np.reshape(freq,(ny, nx, nfreq))
+    sig = np.reshape(sig,(ny, nx, nfreq))
+    ref = np.reshape(ref,(ny, nx, nfreq))
+
+    return x,y,freq,sig,ref
+
+def readDataConfocalT2R4point(datafile,freqSplitFactor=1):
+    readfile = np.loadtxt(datafile)
+    y = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    x = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    freq = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    ref2 = [xAxisAndResult[4] for xAxisAndResult in readfile]
+    ref3 = [xAxisAndResult[5] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[6] for xAxisAndResult in readfile]
+
+    y = np.array(y); x = np.array(x); sig = np.array(sig); ref = np.array(ref); freq = np.array(freq)
+    ref2 = np.array(ref2); ref3 = np.array(ref3)
+
+    npixel = np.count_nonzero(freq == np.min(freq))*freqSplitFactor
+    nfreq = int(len(freq)/npixel)
+    nx = int(np.count_nonzero(y == np.min(y))/nfreq)
+    ny = int(len(y)/nfreq/nx)
+    print()
+
+    y = np.reshape(y,(ny, nx, nfreq))
+    x = np.reshape(x,(ny, nx, nfreq))
+    freq = np.reshape(freq,(ny, nx, nfreq))
+    sig = np.reshape(sig,(ny, nx, nfreq))
+    ref = np.reshape(ref,(ny, nx, nfreq))
+    ref2 = np.reshape(ref2,(ny, nx, nfreq))
+    ref3 = np.reshape(ref3,(ny, nx, nfreq))
+
+    return x,y,freq,sig,ref,ref2,ref3
 
 def readDataFullDataDualNV(datafile, num_of_bins=10, binwidth=0, plot_hist_every=5, 
                      ifDataSavedAsCountRate=False, ifLogColor=False, ifSubtractRef=False, ifPlotRef=False,
@@ -475,14 +539,19 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
             axs[1].plot(x_s, sig/ref, 'o-',markersize=3,  label='sig/ref', color='C0')
             axs[1].set_ylabel('sig/ref')
         elif typeNorm == THREE_PI_HALF_FINAL or typeNorm == Q_FINAL:
-            axs[1].plot(x_s, (sig-ref)/(sig+ref), 'o-', markersize=3, label='(sig-ref)/(sig+ref)', color='C0')
+            axs[1].plot(x_s, ((sig-ref)/(sig+ref)), 'o-', markersize=3, label='(sig-ref)/(sig+ref)', color='C0')
             axs[1].set_ylabel('(sig-ref)/(sig+ref)')
+        elif typeNorm == 4:
+            delta = np.max(sig-ref)
+            axs[1].plot(x_s, (sig-delta)/ref, 'o-',markersize=3, label='(sig-delta)/ref', color='C0')
+            axs[1].set_ylabel('(sig-delta)/ref')
         else:
             axs[1].plot(x_s, -(sig-ref)/(sig+ref), 'o-', markersize=3, label='(sig-ref)/(sig+ref)', color='C0')
             axs[1].set_ylabel('(sig-ref)/(sig+ref)')
         axs[1].legend(loc='best')
         axs[1].set_xlabel(r"$\tau$ (ns)")
         if type == 'T2E' or type == 'XY8': axs[1].set_xlabel(r"$\tau$ ($\mu$s)")
+        if type == 'ODMR': axs[1].set_xlabel(r"$f$ (Hz)")
         axs[1].set_title(datafile.split('/')[4] + "/" + datafile.split('/')[5] + " - normalized")
 
     if type in ['Rabi', 'RabiDecay']and ifFit:
@@ -500,16 +569,17 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
         
     if type in ['T2E'] and ifFit:
         if ifSinusoid: fitFunc = fitStrDecaySinusoid
-        else: fitFunc = fitStrDecay
+        else: fitFunc = fitDecay#fitStrDecay
 
         if typeNorm == NO_MS_EQUALS_1: y = sigOverRef
-        else: y = np.abs((sig-ref)/(sig+ref))
+        else: y = ((sig-ref)/(sig+ref))
 
         xfit, yfit, popt, perr = fitFunc(x_s, y, guess=guess, upperBounds=upperBounds, lowerBounds=lowerBounds)
         if ifPrint: print(popt)
         if ifPlot:
             axs[1].plot(xfit, yfit, color='C1')
-            axs[1].set_title(r'$T_{2E}$ = %.2f $\pm$ %.2f $\mu$s; $n$ = %.2f $\pm$ %.2f' % (popt[1], perr[1], popt[2], perr[2]))
+            # axs[1].set_title(r'$T_{2E}$ = %.2f $\pm$ %.2f $\mu$s; $n$ = %.2f $\pm$ %.2f' % (popt[1], perr[1], popt[2], perr[2]))
+            axs[1].set_title(r'$T_{2E}$ = %.2f $\pm$ %.2f ns; $n$ = 1' % (popt[2]*1e3, perr[2]*1e3))
     
     if type in ['ODMR'] and ifFit:
         fitFunc = fitLor
@@ -529,7 +599,7 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
         fitFunc = fitDecay
 
         if typeNorm == NO_MS_EQUALS_1: y = sigOverRef
-        else: y = np.abs((sig-ref)/(sig+ref)); a = np.max(y)
+        else: y = ((sig-ref)/(sig+ref)); a = np.max(y)
         guess = (a,0,1e6)
 
         xfit, yfit, popt, perr = fitFunc(x_s, y, guess=guess)
@@ -541,10 +611,97 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
             axs[1].set_xscale('log')
             axs[0].set_xscale('log')
     
+    if type in ['T2R'] and ifFit:
+        fitFunc = fitDecay
+
+        if typeNorm == NO_MS_EQUALS_1: y = sigOverRef
+        else: y = ((sig-ref)/(sig+ref)); 
+
+        xfit, yfit, popt, perr = fitFunc(x_s, y, guess=guess)
+        # if ifPrint: print(popt)
+        if ifPlot:
+            axs[1].plot(xfit, yfit, color='C1')
+            s = "$T_{2R}$=%.2f$\pm$%.2f ns" % (popt[2], perr[2])
+            axs[1].set_title(s)    
     
     plt.show()
     if not ifFit: popt=(1,1,1); perr=(1,1,1)    
     return sig, ref, popt, perr, x_s
+
+def readData4point(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=True, ifSinusoid=False,
+             ifFit=False, upperBounds=None, lowerBounds=None, endDataPoint=None, startDataPoint=None):
+    readfile = np.loadtxt(datafile)
+    x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    ref2 = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    ref3 = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[4] for xAxisAndResult in readfile]
+
+    sig = np.array(sig); ref = np.array(ref); x_s = np.array(x_s)
+    ref2 = np.array(ref2); ref3 = np.array(ref3)
+
+    if ifPlot:
+        fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(12, 3))
+        fontsize=8
+        
+        axs[0].plot(x_s, sig, 'o-', markersize=3, label='sig', color='C0')
+        axs[0].plot(x_s, ref, 'o-', markersize=3, label='ref', color='C1')
+        axs[0].plot(x_s, ref2, 'o-', markersize=3, label='ref2', color='C2')
+        axs[0].plot(x_s, ref3, 'o-', markersize=3, label='ref3', color='C3')
+        axs[0].legend(loc='best',fontsize=fontsize)
+        axs[0].set_xlabel(r"$\tau$ (ns)")
+        axs[0].set_ylabel("PL count rate (kc/s)")
+        
+        axs[1].plot(x_s, ((sig-ref)/(sig+ref)), 'o-', markersize=3, label='(sig-ref)/(sig+ref)', color='C0')
+        axs[1].set_ylabel('(sig-ref)/(sig+ref)')
+        axs[1].legend(loc='best',fontsize=fontsize)
+        axs[1].set_xlabel(r"$\tau$ (ns)")
+
+        phase = np.arctan((sig-ref)/np.abs(ref2-ref3))/np.pi
+        axs[2].plot(x_s, phase, 'o-', markersize=3, label='Phase', color='C0')
+        axs[2].set_ylabel('$\phi$ ($\pi$)')
+        axs[2].legend(loc='best',fontsize=fontsize)
+        axs[2].set_xlabel(r"$\tau$ (ns)")
+
+        axs[0].set_title(datafile.split('/')[4] + "/" + datafile.split('/')[5] + " - normalized", fontsize=fontsize+2)
+    
+    if ifFit==1:
+        fitFunc = fitDecay
+
+        y = ((sig-ref)/(sig+ref)); 
+
+        xfit, yfit, popt, perr = fitFunc(x_s, y, guess=guess)
+        if ifPlot:
+            axs[1].plot(xfit, yfit, color='C1')
+            s = "$T_{2R}$=%.2f$\pm$%.2f ns" % (popt[2], perr[2])
+            axs[1].set_title(s, fontsize=fontsize+2)    
+        
+            idxs = np.where(x_s < 2.5*popt[2])[0]
+            axs[2].plot(x_s[idxs], phase[idxs], 'o-', markersize=3, label='Phase', color='C0')
+            axs[2].set_ylim((-0.55,0))
+            # axs[2].set_xlim(/(-1,2.5*popt[2]))
+    elif ifFit==2:
+        fitFunc = fitSinusoidDecay
+        # (t, A, Tpi, phi,C, T2)
+
+        y = ((sig-ref)/(sig+ref)); 
+
+        xfit, yfit, popt, perr = fitFunc(x_s, y, guess=guess)
+        if ifPlot:
+            axs[1].plot(xfit, yfit, color='C1')
+            s = "$T_{2R}$=%.2f$\pm$%.2f ns" % (popt[4], perr[4])
+            axs[1].set_title(s, fontsize=fontsize+2)    
+        
+            idxs = np.where(x_s < 2.5*popt[2])[0]
+            axs[2].plot(x_s[idxs], phase[idxs], 'o-', markersize=3, label='Phase', color='C0')
+            axs[2].set_ylim((-0.55,0))
+            # axs[2].set_xlim(/(-1,2.5*popt[2]))
+    
+    if ifPlot:
+        plt.tight_layout()
+        plt.show()
+    if not ifFit: popt=(1,1,1); perr=(1,1,1)    
+    return sig, ref, ref2, ref3, popt, perr, x_s
 
 def readDataSoftAvg(dateFolder, indices, type=None, typeNorm=0):
     sig = []; ref = []

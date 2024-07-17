@@ -741,6 +741,7 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
                         print("Time per row: " + str(end) + " s")
 
                     self.sc.axes.pcolormesh(X_plot, Y_plot, xy_scan_data_array, cmap = "inferno")
+                    # self.sc.axes.set_aspect(1)
                     self.sc.axes.xaxis.set_tick_params(labelsize = 8)
                     self.sc.axes.yaxis.set_tick_params(labelsize = 8)
                     self.sc.axes.set_xlabel("x_mirror_driving_voltage_(V)", fontsize = 8)
@@ -781,7 +782,7 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
 
         # xy_scan resolution check then run fnc
         def xy_scan_resolution_validation_fnc():
-            self.sc.axes.cla()
+            # self.sc.axes.cla()
 
             # the try-except frameworks are used to refresh the plotted figs -removing the color bars associated with a previous plotted data
             try:
@@ -1063,7 +1064,7 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
         # xz_scan resolution check then run fnc
         def xz_scan_resolution_validation_fnc():
 
-            self.sc.axes.cla()
+            # self.sc.axes.cla()
 
             try:
                 self.xz_scan_plot_colorbar.remove()
@@ -1331,7 +1332,7 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
         # yz_scan resolution check then run fnc
         def yz_scan_resolution_validation_fnc():
 
-            self.sc.axes.cla()
+            # self.sc.axes.cla()
 
             try:
                 self.yz_scan_plot_colorbar.remove()

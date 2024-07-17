@@ -65,7 +65,7 @@ class PulseTrace:
             elif ionColor == 3: self.color = 'C2'
             else: self.color = 'darkred'
 
-        elif "MW_I" in name or "AFG" in name: 
+        elif "MW_I" in name or "AFG" in name or "AWG" in name: 
             self.vert_offset = 4; self.color = 'C0'
         elif "MW_Q" in name: 
             self.vert_offset = 3.5; self.color = 'C1'
@@ -75,7 +75,7 @@ class PulseTrace:
         elif "MWswitch3" in name: 
             self.vert_offset = 1.5; self.color = 'C4'
 
-        elif "ounter" in name: 
+        elif "Counter" in name: 
             self.vert_offset = 0; self.color = 'k'
 
         self.arr = [x + self.vert_offset for x in arr]
@@ -147,6 +147,50 @@ class PlotPulse():
 
         return fig
     
+    def makePulsePlotAWG(self, ch1plot, ch2plot, MW_del):
+        self.makeTraceDict()
+
+        fig = plt.figure(1)
+        ax = fig.gca()
+        ax.clear()
+
+        for channel_id in self.pulseTrace:
+            tr = self.pulseTrace[channel_id]
+            x_axis = np.array(range(tr.length))/1e9*1e6
+            if '2' in tr.name or '4' in tr.name or 'hiLo' in tr.name:
+                ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color, linestyle='--')
+            else:
+                ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
+            
+        if len(x_axis)>=(len(ch1plot)+int(MW_del)):
+            diff = len(x_axis) - len(ch1plot) - int(MW_del)
+            ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot, np.zeros(int(diff)))) + 16.75
+            ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot, np.zeros(int(diff)))) + 16.5
+            ax.plot(x_axis, ch1, label='MW1')
+            ax.plot(x_axis, ch2, label='MW2')
+        
+        
+        ax.set_xlabel("Time ($\mu$s)")
+        ax.legend(loc='right', bbox_to_anchor=(1.35, 0.5))
+        plt.tight_layout()
+
+        if self.ifSave: 
+            plt.savefig(self.plotFilename)
+            print('Pulse plot saved to ' + self.plotFilename)
+
+            if self.ifShown: 
+                plt.show(block=False)
+                plt.pause(0.05)
+                self.showPulsePlot()
+
+        else:
+            if self.ifShown:
+                plt.show(block=False)
+                plt.pause(0.05)
+
+
+        return fig
+
     def showPulsePlot(self):
         img = Image.open(self.plotFilename)
         img.show()

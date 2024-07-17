@@ -44,7 +44,7 @@ for SRSnum in np.array((1,2,3,4)):
                     'SRSnum': SRSnum}
 
         start = time.time()
-        RabiObject = Rabi(settings=settings, ifPlotPulse=not(ifLooped), ifDummy=1) # this is implemented as an Instrument
+        RabiObject = Rabi(settings=settings, ifPlotPulse=0, ifDummy=1) # this is implemented as an Instrument
         RabiObject.runScan()
         print('Total time = ' + str(time.time() - start) + ' s')
 

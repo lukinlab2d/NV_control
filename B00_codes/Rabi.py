@@ -109,8 +109,8 @@ class Rabi(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
 
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
@@ -167,8 +167,11 @@ class Signal(Parameter):
         MWI_delay       = when_init_end+laser_to_MWI_delay;                 when_pulse_end = MWI_delay+MWI_duration
         
         laser_read_signal_delay    = when_pulse_end
-        read_signal_delay          = when_pulse_end + laser_to_DAQ_delay;   read_signal_duration = read_duration; when_read_signal_end = read_signal_delay + read_signal_duration
-        laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay; when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
+        read_signal_delay          = when_pulse_end + laser_to_DAQ_delay
+        read_signal_duration       = read_duration
+        when_read_signal_end       = read_signal_delay + read_signal_duration
+        laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
+        when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
         laser_read_ref_delay = when_laser_read_signal_end + laser_to_MWI_delay + MWI_duration
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  

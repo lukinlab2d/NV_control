@@ -34,13 +34,12 @@ class ODMR_CW(Instrument):
         self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
         self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
-        self.MWIParam =         {'delay_time': 2, 'channel':1}
-        self.MWswitchParam =    {'delay_time': 2, 'channel':2}
+        self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
 
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 
                           'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
-                        'MW_I': self.MWIParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
+                        'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed)}
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
@@ -49,6 +48,7 @@ class ODMR_CW(Instrument):
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.freqsArray = np.linspace(start, stop, num_sweep_points)
         uwPower = self.settings['uwPower']
+        self.SRSnum=self.settings['SRSnum']
 
         # Pulse lengths
         num_loops                = self.settings['num_loops'];                wait_btwn_sig_ref          = self.settings['wait_btwn_sig_ref']
@@ -69,7 +69,7 @@ class ODMR_CW(Instrument):
         self.pulse_sequence = pulse_sequence
         
         # SRS object
-        self.srs = SRS()
+        self.srs = SRS(SRSnum=self.SRSnum)
         self.srs.set_freq(3e9) #Hz
         self.srs.set_RFAmplitude(uwPower) #dBm
         self.srs.enableIQmodulation()

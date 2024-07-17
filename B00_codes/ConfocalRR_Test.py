@@ -13,8 +13,8 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 
 ####################################################################################################################
-reps = 1;  ifLooped=(reps!=1); laserInit_channel = 3; vel_vpz_target = 76.18; vel_vpz_target2 = 62.7
-ifInitWvl = 0; ifInitVpz = 0; ifNeedVel1 = 0; ifNeedVel2 = 0; ifNeedSRS = 0
+reps = 1;  ifLooped=(reps!=1); laserInit_channel = 3; ifNeedSRS=0; ifInitVpz=0; ifInitWvl=0
+ifNeedVel1=1; ifNeedVel2=1; vel_vpz_target=50; vel_vpz_target2=70
 
 # ConfocalRR
 xArray = np.linspace(0.720,0.754,18); yArray = np.linspace(0.124,0.100,13)  
