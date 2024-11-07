@@ -17,7 +17,7 @@ class PulseTrace:
         elif "MWswitch4" in name: 
             self.vert_offset = 15.5; self.color = 'C4'
 
-        elif "MW_I2" in name or "AFG2" in name: 
+        elif "MW_I2" in name or "AFG2" in name or "AWG2" in name: 
             self.vert_offset = 14; self.color = 'C0'
         elif "MW_Q2" in name: 
             self.vert_offset = 13.5; self.color = 'C1'
@@ -147,32 +147,62 @@ class PlotPulse():
 
         return fig
     
-    def makePulsePlotAWG(self, ch1plot, ch2plot, MW_del):
+    def makePulsePlotAWG(self, ch1plot, ch2plot, MW_del, fig=None,
+                         offset1=16.75, offset2=16.5, label1='MW1', label2='MW2'):
         self.makeTraceDict()
 
-        fig = plt.figure(1)
-        ax = fig.gca()
-        ax.clear()
+        if fig is None:
+            fig = plt.figure(1)
+            ax = fig.gca()
+            ax.clear()
 
-        for channel_id in self.pulseTrace:
-            tr = self.pulseTrace[channel_id]
-            x_axis = np.array(range(tr.length))/1e9*1e6
-            if '2' in tr.name or '4' in tr.name or 'hiLo' in tr.name:
-                ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color, linestyle='--')
-            else:
-                ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
+            for channel_id in self.pulseTrace:
+                tr = self.pulseTrace[channel_id]
+                x_axis = np.array(range(tr.length))/1e9*1e6
+                if '2' in tr.name or '4' in tr.name or 'hiLo' in tr.name:
+                    ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color, linestyle='--')
+                else:
+                    ax.plot(x_axis, tr.arr, label=tr.name, color=tr.color)
             
-        if len(x_axis)>=(len(ch1plot)+int(MW_del)):
-            diff = len(x_axis) - len(ch1plot) - int(MW_del)
-            ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot, np.zeros(int(diff)))) + 16.75
-            ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot, np.zeros(int(diff)))) + 16.5
-            ax.plot(x_axis, ch1, label='MW1')
-            ax.plot(x_axis, ch2, label='MW2')
+            if len(x_axis)>=(len(ch1plot)+int(MW_del)):
+                diff = len(x_axis) - len(ch1plot) - int(MW_del)
+                ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot, np.zeros(int(diff)))) + offset1
+                ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot, np.zeros(int(diff)))) + offset2
+            else:
+                diff = (len(ch1plot) + int(MW_del)) - len(x_axis)
+                ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot)) + offset1
+                ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot)) + offset2
+                step_x = x_axis[1] - x_axis[0]
+                next_x = x_axis[-1] + step_x
+                extra_xs = np.linspace(next_x, next_x+(diff-1)*step_x ,diff)
+                x_axis = np.concatenate((x_axis, extra_xs))
+            ax.plot(x_axis, ch1, label=label1)
+            ax.plot(x_axis, ch2, label=label2)
+            
+            ax.set_xlabel("Time ($\mu$s)")
+            ax.legend(loc='right', bbox_to_anchor=(1.35, 0.5))
+            plt.tight_layout()
         
-        
-        ax.set_xlabel("Time ($\mu$s)")
-        ax.legend(loc='right', bbox_to_anchor=(1.35, 0.5))
-        plt.tight_layout()
+        else: # to plot more AWG traces
+            ax = fig.gca()
+            tr = next(iter(self.pulseTrace.values()))
+            x_axis = np.array(range(tr.length))/1e9*1e6
+
+            diff = len(x_axis) - (len(ch1plot) + int(MW_del))
+            if diff >= 0:
+                ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot, np.zeros(int(diff)))) + offset1
+                ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot, np.zeros(int(diff)))) + offset2
+                ax.plot(x_axis, ch1, label=label1)
+                ax.plot(x_axis, ch2, label=label2)
+            else:
+                ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot)) + offset1
+                ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot)) + offset2
+                x_axis_new = np.array(range(len(ch1)))/1e9*1e6
+                ax.plot(x_axis_new, ch1, label=label1)
+                ax.plot(x_axis_new, ch2, label=label2)
+
+            ax.legend(loc='right', bbox_to_anchor=(1.35, 0.5))
+            plt.tight_layout()
 
         if self.ifSave: 
             plt.savefig(self.plotFilename)
@@ -187,7 +217,6 @@ class PlotPulse():
             if self.ifShown:
                 plt.show(block=False)
                 plt.pause(0.05)
-
 
         return fig
 

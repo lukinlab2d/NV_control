@@ -188,12 +188,15 @@ class Signal(Parameter):
         print("Loop " + str(self.loopCounter))
         
         # Pulse parameters
-        num_loops               = self.settings['num_loops']; mode = self.settings['mode'];  numxy8 = self.settings['numxy8']
-        laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
-        laser_to_AWG_delay      = self.settings['laser_to_AWG_delay'];      pi2time        = self.settings['pi2time']; pitime        = self.settings['pitime']
-        laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
-        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; AWG_output_delay = self.settings['AWG_output_delay']
-        AWG_buffer = self.settings['AWG_buffer']; sig_to_ref_wait = read_duration+laser_to_DAQ_delay+DAQ_to_laser_off_delay+laser_to_AWG_delay
+        num_loops               = self.settings['num_loops'];          mode = self.settings['mode']
+        numxy8                  = self.settings['numxy8']
+        laser_init_delay        = self.settings['laser_init_delay'];   laser_init_duration = self.settings['laser_init_duration']
+        laser_to_AWG_delay      = self.settings['laser_to_AWG_delay']; DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']
+        pi2time                 = self.settings['pi2time'];            pitime              = self.settings['pitime']
+        laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay']; read_duration       = self.settings['read_duration']   
+        AWG_output_delay        = self.settings['AWG_output_delay'];   AWG_buffer          = self.settings['AWG_buffer']
+
+        sig_to_ref_wait = read_duration+laser_to_DAQ_delay+DAQ_to_laser_off_delay+laser_to_AWG_delay
         MW_duration = int(2*int((AWG_buffer + 2*pi2time + numxy8*tau_ns*8 + numxy8*pitime*8 + 1)/2))
 
         when_init_end = laser_init_delay + laser_init_duration

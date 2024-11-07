@@ -571,13 +571,13 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
             self.isStopped = 0
             """
             This runs X and Y only scan. It currently creates and then populates a user defined size numpy array according to a set counter acquisition time and a motor
-step voltage setting. Additionally, the initial driving voltage for the X and Y motors can be set according to the desired scanning range. This scanning program runs in a snake pattern, it scan the first row left to right, moves up one row, 
-then scans right to left and continues. Alternatives would be scanning left to right, and resetting the position of the laser on the next higher row and scanning again left 
-to right OR scanning in a "circular" patter either CW or CCW from outside to inside or inside to outside. The chosen method was picked for simplicity of understanding. The 
-scanning loops are present within NI-DAQmx tasks to speed up the program. Starting and stopping a NI-DAQmx task repeatedly slows down the program dramatically. So, the 
-counter and hardware clock task are started once, then the scanning program is run, and then the counter and clock tasks are closed -un-reserving the hardware resources. 
-This cell uses the "DAQAnalogOutputs" function from a written class file at:
-C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contrib_drivers/drivers/NationalInstruments/class_file. Slashes are reversed to run
+            step voltage setting. Additionally, the initial driving voltage for the X and Y motors can be set according to the desired scanning range. This scanning program runs in a snake pattern, it scan the first row left to right, moves up one row, 
+            then scans right to left and continues. Alternatives would be scanning left to right, and resetting the position of the laser on the next higher row and scanning again left 
+            to right OR scanning in a "circular" patter either CW or CCW from outside to inside or inside to outside. The chosen method was picked for simplicity of understanding. The 
+            scanning loops are present within NI-DAQmx tasks to speed up the program. Starting and stopping a NI-DAQmx task repeatedly slows down the program dramatically. So, the 
+            counter and hardware clock task are started once, then the scanning program is run, and then the counter and clock tasks are closed -un-reserving the hardware resources. 
+            This cell uses the "DAQAnalogOutputs" function from a written class file at:
+            C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contrib_drivers/drivers/NationalInstruments/class_file. Slashes are reversed to run
             """
 
             ############################################################### begin scanning script #############################################################################################
@@ -787,17 +787,17 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             # the try-except frameworks are used to refresh the plotted figs -removing the color bars associated with a previous plotted data
             try:
                 self.xy_scan_plot_colorbar.remove()
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
         
             try:
                 self.yz_scan_plot_colorbar.remove()
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
 
             try:
                 self.xz_scan_plot_colorbar.remove()
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
         
         #################################### resolution checking ##################################
@@ -857,13 +857,13 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             self.isStopped = 0
             """
             This cell runs a XZ scan. It currently creates and then populates a user defined size numpy array according to a set counter acquisition time and a motor
-step voltage setting. Additionally, the initial driving voltage for the X and Y motors can be set according to the desired scanning range. This scanning program runs in a snake pattern, it scan the first row left to right, moves up one row, 
-then scans right to left and continues. Alternatives would be scanning left to right, and resetting the position of the laser on the next higher row and scanning again left 
-to right OR scanning in a "circular" patter either CW or CCW from outside to inside or inside to outside. The chosen method was picked for simplicity of understanding. The 
-scanning loops are present within NI-DAQmx tasks to speed up the program. Starting and stopping a NI-DAQmx task repeatedly slows down the program dramatically. So, the 
-counter and hardware clock task are started once, then the scanning program is run, and then the counter and clock tasks are closed -un-reserving the hardware resources. 
-This cell uses the "DAQAnalogOutputs" function from a written class file at:
-C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contrib_drivers/drivers/NationalInstruments/class_file. Slashes are reversed to run
+            step voltage setting. Additionally, the initial driving voltage for the X and Y motors can be set according to the desired scanning range. This scanning program runs in a snake pattern, it scan the first row left to right, moves up one row, 
+            then scans right to left and continues. Alternatives would be scanning left to right, and resetting the position of the laser on the next higher row and scanning again left 
+            to right OR scanning in a "circular" patter either CW or CCW from outside to inside or inside to outside. The chosen method was picked for simplicity of understanding. The 
+            scanning loops are present within NI-DAQmx tasks to speed up the program. Starting and stopping a NI-DAQmx task repeatedly slows down the program dramatically. So, the 
+            counter and hardware clock task are started once, then the scanning program is run, and then the counter and clock tasks are closed -un-reserving the hardware resources. 
+            This cell uses the "DAQAnalogOutputs" function from a written class file at:
+            C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contrib_drivers/drivers/NationalInstruments/class_file. Slashes are reversed to run
             """
 
             ################################################################################## card 2 (AO) ########################################################################
@@ -1069,19 +1069,19 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             try:
                 self.xz_scan_plot_colorbar.remove()
 
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
 
             try:
                 self.yz_scan_plot_colorbar.remove()
 
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
             
             try:
                 self.xy_scan_plot_colorbar.remove()
             
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
 
             res_min_condition = 0 # set the min allowed resolution for scanning
@@ -1129,13 +1129,13 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             self.isStopped = 0
             """
             This cell runs a YZ only scan. It currently creates and then populates a user defined size numpy array according to a set counter acquisition time and a motor
-step voltage setting. Additionally, the initial driving voltage for the X and Y motors can be set according to the desired scanning range. This scanning program runs in a snake pattern, it scan the first row left to right, moves up one row, 
-then scans right to left and continues. Alternatives would be scanning left to right, and resetting the position of the laser on the next higher row and scanning again left 
-to right OR scanning in a "circular" patter either CW or CCW from outside to inside or inside to outside. The chosen method was picked for simplicity of understanding. The 
-scanning loops are present within NI-DAQmx tasks to speed up the program. Starting and stopping a NI-DAQmx task repeatedly slows down the program dramatically. So, the 
-counter and hardware clock task are started once, then the scanning program is run, and then the counter and clock tasks are closed -un-reserving the hardware resources. 
-This cell uses the "DAQAnalogOutputs" function from a written class file at:
-C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contrib_drivers/drivers/NationalInstruments/class_file. Slashes are reversed to run
+            step voltage setting. Additionally, the initial driving voltage for the X and Y motors can be set according to the desired scanning range. This scanning program runs in a snake pattern, it scan the first row left to right, moves up one row, 
+            then scans right to left and continues. Alternatives would be scanning left to right, and resetting the position of the laser on the next higher row and scanning again left 
+            to right OR scanning in a "circular" patter either CW or CCW from outside to inside or inside to outside. The chosen method was picked for simplicity of understanding. The 
+            scanning loops are present within NI-DAQmx tasks to speed up the program. Starting and stopping a NI-DAQmx task repeatedly slows down the program dramatically. So, the 
+            counter and hardware clock task are started once, then the scanning program is run, and then the counter and clock tasks are closed -un-reserving the hardware resources. 
+            This cell uses the "DAQAnalogOutputs" function from a written class file at:
+            C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contrib_drivers/drivers/NationalInstruments/class_file. Slashes are reversed to run
             """
 
             ################################################################################## card 2 (AO) ########################################################################
@@ -1337,19 +1337,19 @@ C:/Users/lukin2dmaterials/miniconda3/envs/qcodes/Lib/site-packages/qcodes_contri
             try:
                 self.yz_scan_plot_colorbar.remove()
 
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
             
             try:
                 self.xy_scan_plot_colorbar.remove()
             
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
                 
             try:
                 self.xz_scan_plot_colorbar.remove()
             
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
 
             res_min_condition = 0 # set the min allowed resolution for scanning

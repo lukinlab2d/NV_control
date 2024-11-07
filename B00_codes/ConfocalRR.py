@@ -48,20 +48,21 @@ class ConfocalRR(Instrument):
         self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
         self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
         self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
+        self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
         self.MWI2Param =         {'delay_time': 2, 'channel':settings['MWI2_channel']}
         self.MWQ2Param =         {'delay_time': 2, 'channel':settings['MWQ2_channel']}
         self.MWswitch2Param =    {'delay_time': 2, 'channel':settings['MWswitch2_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
-                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,'AWG': self.AWGParam,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                           'LaserRead2': self.LaserRead2Param, 'LaserInit': self.LaserInitParam,
                           'MW_I2': self.MWI2Param, 'MW_Q2': self.MWQ2Param, 'MWswitch2': self.MWswitch2Param,
                           'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
-
+    
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
 
@@ -70,7 +71,7 @@ class ConfocalRR(Instrument):
         self.xArray = self.settings['xArray']; self.yArray = self.settings['yArray']
         self.ifNeedSRS = self.settings['ifNeedSRS']
         self.SRSnum = self.settings['SRSnum']; MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
-        
+        self.SDGnum = self.settings['SDGnum']
         self.ifNeedVel1 = self.settings['ifNeedVel1']; self.velNum = self.settings['velNum']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
         self.vel_vpz_target = self.settings['vel_vpz_target']
@@ -85,14 +86,14 @@ class ConfocalRR(Instrument):
         ###########################################################################################
 
         self.add_parameter(
-            name = "sig",
-            parameter_class  = Signal,
-        )
-        self.add_parameter(
             name = "sig2",
             parameter_class = Signal2,
             settings = self.settings,
             measurementObject = self
+        )
+        self.add_parameter(
+            name = "sig",
+            parameter_class  = Signal,
         )
         self.add_parameter(
             name = "y",
@@ -119,6 +120,12 @@ class ConfocalRR(Instrument):
             self.srs2.enable_RFOutput()
 
             global srs; srs = self.srs; global srs2; srs2 = self.srs2
+        
+        # AWG object
+        ifAWG = self.settings['ifAWG']; self.ifAWG = ifAWG
+        if self.ifAWG:
+            self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+            global AWG; AWG = self.AWG
 
         # Velocity object
         if self.ifNeedVel1:
@@ -240,6 +247,7 @@ class ConfocalRR(Instrument):
             self.srs.disableModulation()
             self.srs2.disable_RFOutput()
             self.srs2.disableModulation()
+        if self.ifAWG: self.AWG.turn_off()
         self.galvo.close() 
     
     def getDataFilename(self):
@@ -259,6 +267,7 @@ class Signal2(Parameter):
 
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
+        self.ifAWG = self.settings['ifAWG']
 
         self.vel_vpz_target = self.settings['vel_vpz_target']
         self.vel_vpz_target2 = self.settings['vel_vpz_target2']
@@ -271,11 +280,20 @@ class Signal2(Parameter):
         read_laser_duration     = self.settings['read_laser_duration']; MW_to_read_delay    = self.settings['MW_to_read_delay']
         shift_btwn_2NV_MW       = self.settings['shift_btwn_2NV_MW'];   shift_btwn_2NV_read = self.settings['shift_btwn_2NV_read']
         laser_to_DAQ_delay2     = self.settings['laser_to_DAQ_delay2']
+        AWG_buffer              = self.settings['AWG_buffer'];          AWG_output_delay    = self.settings['AWG_output_delay']
+        MW_duration_for_AWG = int(2*int((AWG_buffer + MWI_duration + 1)/2))
+
+        self.MW_duration_for_AWG = MW_duration_for_AWG; self.AWG_buffer = AWG_buffer
 
         when_init_end              = laser_init_delay + laser_init_duration
-
         MWI_delay                  = when_init_end    + laser_to_MWI_delay
-        when_pulse_end             = MWI_delay + MWI_duration        
+        global MW_del;      MW_del = MWI_delay + AWG_output_delay
+
+        if self.ifAWG:
+            when_pulse_end         = MWI_delay + AWG_output_delay + MW_duration_for_AWG
+        else:
+            when_pulse_end         = MWI_delay + MWI_duration
+                
         laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay
         laser_read_signal_duration = read_laser_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
@@ -311,6 +329,7 @@ class Signal2(Parameter):
         self.read_duration = read_signal_duration
         # if read_signal_duration != read_ref_duration:
         #     raise Exception("Duration of reading signal and reference must be the same")    
+        
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
@@ -319,7 +338,10 @@ class Signal2(Parameter):
             # pulse_sequence += [spc.Pulse('LaserInit',laser_init_ref_delay,    duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
         # pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
-        # pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,               duration=int(MWI_duration))]
+        # if self.ifAWG:
+        #     pulse_sequence += [spc.Pulse('AWG',          MWI_delay,    duration=20)]
+        # else:
+        #     pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,           duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         # pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
         
@@ -371,6 +393,10 @@ class Signal2(Parameter):
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
         self.pb.program_pb(self.pulse_sequence, num_loops=self.num_loops)
 
+        if self.ifAWG:
+            global ch1plot; global ch2plot
+            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(self.MW_duration_for_AWG), buffer=int(self.AWG_buffer))
+
         # Pulse width counter. Timebase = signal; gate = PB signal
         self.ctrtask = nidaqmx.Task()
         pulseWidthChan = self.ctrtask.ci_channels.add_ci_pulse_width_chan( # define the pulse width counter
@@ -397,7 +423,10 @@ class Signal2(Parameter):
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False,
                                             readColor=self.readColor, 
                                             initColor=self.initColor)
-                fig = plotPulseObject.makePulsePlot()
+                if self.ifAWG:
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, MW_del)
+                else:
+                    fig = plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.xArray)-1: # only save first and last pulse sequence
                 self.ConfocalRRObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
@@ -405,7 +434,7 @@ class Signal2(Parameter):
     def close_turnOnAtEnd(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
-        pb.turn_on_infinite(channels=channels)
+        # pb.turn_on_infinite(channels=channels)
     
 
 class Signal(Parameter):

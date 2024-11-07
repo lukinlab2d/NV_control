@@ -164,7 +164,7 @@ class ODMRAWG(Instrument):
         # For each iteration, sweep frequency (sig.sweep calls set_raw() method of Parameter sig)
         # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
-            sig.sweep(self.freqsArray[0], self.freqsArray[-1], num=len(self.freqsArray)),
+            sig.sweep(keys=self.freqsArray),
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig,ref).then(qctask(sig.close))
 
@@ -186,8 +186,8 @@ class ODMRAWG(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
         
         if self.ifPlotPulse:
             pulsePlotFilename = data.location + "/pulsePlot.png"
@@ -264,7 +264,7 @@ class Signal(Parameter):
         ctrtask.close()
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
-        pb.turn_on_infinite(channels=channels)
+        # pb.turn_on_infinite(channels=channels)
 
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):

@@ -71,13 +71,14 @@ class ScanRRFreq(Instrument):
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
         self.velNum = self.settings['velNum']; self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl'] 
-        self.SDGnum = self.settings['SDGnum']
+        self.SDGnum = self.settings['SDGnum']; self.ifIQ = self.settings['ifIQ']
 
         # SRS object
         self.srs = SRS(SRSnum=self.SRSnum)
         self.srs.set_freq(MWFreq) #Hz
         self.srs.set_RFAmplitude(MWPower) #dBm
-        self.srs.enableIQmodulation()
+        if self.ifIQ:
+            self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
 
         # AWG object
@@ -87,9 +88,9 @@ class ScanRRFreq(Instrument):
             global AWG; AWG = self.AWG
 
         # Pulse parameters
-        num_loops               = self.settings['num_loops'];           AWGbuffer           = self.settings['AWGbuffer']
+        num_loops               = self.settings['num_loops'];           AWG_buffer           = self.settings['AWG_buffer']
         laser_init_delay        = self.settings['laser_init_delay'];    laser_init_duration = self.settings['laser_init_duration']
-        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  MWI_duration        = self.settings['MWI_duration']
+        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  MW_duration        = self.settings['MW_duration']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];  read_duration       = self.settings['read_duration']   
         read_laser_duration     = self.settings['read_laser_duration']; MW_to_read_delay    = self.settings['MW_to_read_delay']
         AWG_output_delay        = self.settings['AWG_output_delay'];    
@@ -97,21 +98,23 @@ class ScanRRFreq(Instrument):
         when_init_end              = laser_init_delay + laser_init_duration
         MWI_delay                  = when_init_end    + laser_to_MWI_delay; self.MWI_delay = MWI_delay
         MW_delay_for_AWG           = MWI_delay-AWG_output_delay
-        MW_duration_for_AWG        = int(2*int((2*AWGbuffer + MWI_duration + 1)/2)) # to make it even
+        MW_duration_for_AWG        = int(2*int((2*AWG_buffer + MW_duration + 1)/2)) # to make it even
 
         if ifAWG:
-            when_pulse_end = MW_delay_for_AWG + MW_duration_for_AWG + AWG_output_delay
+            when_pulse_end = MWI_delay + MW_duration_for_AWG
         else:
-            when_pulse_end = MWI_delay + MWI_duration
+            when_pulse_end = MWI_delay + MW_duration
         
-        laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay;           laser_read_signal_duration = read_laser_duration
-        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay;  read_signal_duration       = read_duration
+        laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay;           
+        laser_read_signal_duration = read_laser_duration
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
+        read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
         laser_init_ref_delay = when_read_signal_end + laser_init_delay
         when_init_ref_end    = laser_init_ref_delay + laser_init_duration
-        laser_read_ref_delay = when_init_ref_end + laser_to_MWI_delay + MWI_duration + MW_to_read_delay
+        laser_read_ref_delay = when_init_ref_end + laser_to_MWI_delay + MW_duration + MW_to_read_delay
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  
         read_ref_duration    = read_duration;       when_read_ref_end = read_ref_delay + read_ref_duration
         laser_read_ref_duration = read_laser_duration
@@ -121,7 +124,7 @@ class ScanRRFreq(Instrument):
 
         if ifAWG:
             global ch1plot; global ch2plot
-            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MWI_duration), buffer=int(AWGbuffer))  
+            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MW_duration), buffer=int(AWG_buffer))  
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
@@ -131,9 +134,9 @@ class ScanRRFreq(Instrument):
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
         if ifAWG:
-            pulse_sequence += [spc.Pulse('AWG',          MW_delay_for_AWG,    duration=20)]
+            pulse_sequence += [spc.Pulse('AWG',          MW_delay_for_AWG,    duration=50)]
         else:
-            pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,           duration=int(MWI_duration))]
+            pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,           duration=int(MW_duration))]
         pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
         self.pulse_sequence = pulse_sequence

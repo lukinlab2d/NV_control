@@ -21,21 +21,22 @@ THREE_PI_HALF_FINAL = 2; pi = np.pi
 
 reps = 1; ifLooped = (reps!=1)
 for i in np.linspace(1,reps,reps):
-    tausArray = np.linspace(2,362,31)
+    # tausArray = np.linspace(4,20004,51)
+    tausArray = np.round(np.logspace(2,np.log10(2e6),35),-2)
 
     # Params for T2EAWG
     laserInit_channel            = 3;         laserRead_channel   = 3
-    num_loops                    = int(1e6);  phi_IQ              = 0
+    num_loops                    = int(3e5);  phi_IQ              = pi/2 #rad, angle of last pi/2
     laser_init_delay             = 0;         laser_init_duration = 0
-    pi2time                      = 19;        pitime              = 38
+    pi2time                      = 17;        pitime              = 34
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
     laser_to_AWG_delay           = 0;         read_duration       = 300
     AWG_output_delay = 1450; AWG_channel = 18; SRSnum = 1; SDGnum = 1; AWG_buffer = 1
     DAQ_to_laser_off_delay       = 400
 
-    ifRandomized = 0; normalized_style = Q_FINAL
-    uwPower = -2; uwFreq = 2843.23e6
+    uwPower = 0; uwFreq = 2785.5e6
+    ifRandomized = 1; normalized_style = Q_FINAL
 
     if True: 
         if_tracking = 0 # 2 is for the monty setup
@@ -78,7 +79,4 @@ for i in np.linspace(1,reps,reps):
     T2EAWGObject = T2EAWG(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
     T2EAWGObject.runScan()
     print('Total time = ' + str(time.time() - start) + ' s')
-
-    dataFilename = T2EAWGObject.getDataFilename()
-    if not ifLooped: dataReader.readData(dataFilename, typeNorm = normalized_style)
     T2EAWGObject.close()

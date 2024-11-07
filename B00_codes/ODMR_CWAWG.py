@@ -141,7 +141,7 @@ class ODMR_CWAWG(Instrument):
         # For each iteration, sweep frequency (sig.sweep calls set_raw() method of Parameter sig)
         # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
-            sig.sweep(self.freqsArray[0], self.freqsArray[-1], num=len(self.freqsArray)),
+            sig.sweep(keys=self.freqsArray),
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig,ref,sigOverRef).then(qctask(sig.close))
 
@@ -245,9 +245,9 @@ class Signal(Parameter):
 
     def close(self):
         ctrtask.close()
-        pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
-        channels = np.linspace(laserInitChannel,laserInitChannel,1)
-        pb.turn_on_infinite(channels=channels)
+        # pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
+        # channels = np.linspace(laserInitChannel,laserInitChannel,1)
+        # pb.turn_on_infinite(channels=channels)
 
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):

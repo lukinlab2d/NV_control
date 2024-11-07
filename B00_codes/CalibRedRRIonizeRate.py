@@ -9,6 +9,7 @@ import numpy as np
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
+from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
 
 import nidaqmx, time
 from nidaqmx.constants import *
@@ -39,10 +40,11 @@ class CalibRedRRIonizeRate(Instrument):
         self.MWI2Param =         {'delay_time': 2, 'channel':settings['MWI2_channel']}
         self.MWQ2Param =         {'delay_time': 2, 'channel':settings['MWQ2_channel']}
         self.MWswitch2Param =    {'delay_time': 2, 'channel':settings['MWswitch2_channel']}
+        self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
 
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 
-                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam, 'AWG': self.AWGParam,
                         'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'MW_I2': self.MWI2Param, 'MW_Q2': self.MWQ2Param, 'MWswitch2': self.MWswitch2Param,
                         'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
@@ -58,6 +60,7 @@ class CalibRedRRIonizeRate(Instrument):
         self.SRSnum = self.settings['SRSnum'];   MWPower = self.settings['MWPower'];   MWFreq = self.settings['MWFreq']
         self.SRSnum2 = self.settings['SRSnum2']; MWPower2 = self.settings['MWPower2']; MWFreq2 = self.settings['MWFreq2']
         self.ifMWDuringRead = self.settings['ifMWDuringRead']; self.ifMW2DuringRead = self.settings['ifMW2DuringRead']
+        self.SDGnum = self.settings['SDGnum']
 
         self.ifNeedVel = self.settings['ifNeedVel']; self.velNum = self.settings['velNum']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
@@ -69,10 +72,6 @@ class CalibRedRRIonizeRate(Instrument):
             parameter_class  = Signal,
             settings = self.settings,
             measurementObject = self
-        )
-        self.add_parameter(
-            name = "ref",
-            parameter_class = Reference,
         )
         self.savedPulseSequencePlots = {}
 
@@ -95,6 +94,12 @@ class CalibRedRRIonizeRate(Instrument):
                 self.srs2.enableIQmodulation()
             self.srs2.enable_RFOutput()
             global srs2; srs2 = self.srs2
+        
+        # AWG object 1
+        ifAWG = self.settings['ifAWG']; self.ifAWG = ifAWG
+        if self.ifAWG:
+            self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+            global AWG; AWG = self.AWG
 
         # Velocity object
         if self.ifNeedVel:
@@ -133,10 +138,7 @@ class CalibRedRRIonizeRate(Instrument):
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
-        ref = self.ref # this is implemented as a Parameter
 
-        # For each iteration, sweep tau (sig.sweep calls set_raw() method of Parameter sig)
-        # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
             sig.sweep(keys=self.tausArray),
             delay = 0,
@@ -144,7 +146,7 @@ class CalibRedRRIonizeRate(Instrument):
             numOfPBLoops = self.settings['num_loops'],
             ifMultReads=1, nread=self.settings['num_reads'],
             sleepTimeAfterFinishing=0).each(
-                                            sig, #ref, 
+                                            sig, 
                                             qctask(sig.plotPulseSequences),
                                             )
         data = loop.get_data_set(name='CalibRedRRIonizeRate')
@@ -160,6 +162,15 @@ class CalibRedRRIonizeRate(Instrument):
                 pulsePlotFilename = data.location + "/pulsePlot_" + str(index) + ".png"
                 fig.savefig(pulsePlotFilename)
 
+        if self.ifMWDuringRead:
+            self.srs.disable_RFOutput()
+            self.srs.disableModulation()
+        if self.ifMW2DuringRead:
+            self.srs2.disable_RFOutput()
+            self.srs2.disableModulation()
+        if self.ifAWG: 
+            self.AWG.turn_off()
+
     def getDataFilename(self):
         return 'C:/Users/lukin2dmaterials/' + self.data.location + '/CalibRedRRIonizeRateObject_sig_set.dat'
     
@@ -169,9 +180,9 @@ class Signal(Parameter):
         self.settings = settings
         self.CalibRedRRIonizeRateObject = measurementObject
         self.loopCounter = 0
-        self.ifIonizedRef = self.settings['ifIonizedRef']
         self.ifMWDuringRead = self.settings['ifMWDuringRead']
         self.ifMW2DuringRead = self.settings['ifMW2DuringRead']
+        self.ifAWG = self.settings['ifAWG']
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.tausArray = np.linspace(start, stop, num_sweep_points)
 
@@ -187,45 +198,51 @@ class Signal(Parameter):
         laser_init_delay        = self.settings['laser_init_delay'];       laser_init_duration     = self.settings['laser_init_duration']
         laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];     MWI_duration            = self.settings['pi_time']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];     read_duration           = self.settings['read_duration']
-        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; ref_laser_to_read_delay = self.settings['ref_laser_to_read_delay']
+        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']
         delay_between_reads     = self.settings['delay_between_reads'];    nread                   = self.settings['num_reads']
         laserRead_to_MWmix      = self.settings['laserRead_to_MWmix'];     MW_to_read_delay        = self.settings['MW_to_read_delay']
-
+        AWG_buffer              = self.settings['AWG_buffer'];             AWG_output_delay        = self.settings['AWG_output_delay']  
+        
         self.num_loops = num_loops
 
         # Make pulse sequence
         pulse_sequence = []
 
-        when_init_end   = laser_init_delay +  laser_init_duration
-        MWI_delay = when_init_end + laser_to_MWI_delay;                 when_pulse_end = MWI_delay+MWI_duration
+        when_init_end        = laser_init_delay +  laser_init_duration
+        MWI_delay            = when_init_end + laser_to_MWI_delay
+        MW_delay_for_AWG     = MWI_delay - AWG_output_delay
+        MW_duration_for_AWG  = int(2*int((2*AWG_buffer + MWI_duration + 1)/2)) # to make it even
+
+        if self.ifAWG:
+            when_pulse_end = MWI_delay + MW_duration_for_AWG
+        else:
+            when_pulse_end = MWI_delay + MWI_duration
         
         laser_read_signal_delay    = when_pulse_end + MW_to_read_delay
-        first_read_signal_delay    = laser_read_signal_delay + laser_to_DAQ_delay; read_signal_duration = read_duration
+        first_read_signal_delay    = laser_read_signal_delay + laser_to_DAQ_delay
+        read_signal_duration       = read_duration
         when_read_signal_end       = laser_read_signal_delay + laser_to_DAQ_delay + tau_ns
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
         when_laser_read_signal_end = when_read_signal_end + DAQ_to_laser_off_delay
 
         MWmix_delay                = laser_read_signal_delay + laserRead_to_MWmix
         MWmix_duration             = laser_read_signal_duration - laserRead_to_MWmix + laser_to_DAQ_delay
-        
-        laser_read_ref_delay = (when_laser_read_signal_end + laser_to_DAQ_delay) + (laser_to_MWI_delay + MWI_duration) + when_init_end 
-        laser_init_again_delay = (when_laser_read_signal_end + laser_to_DAQ_delay) + laser_init_delay
-        laser_init_again_duration = laser_init_duration
 
-        if self.ifIonizedRef:
-            read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay + ref_laser_to_read_delay
-            read_ref_duration    = read_duration
-        else:
-            read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay
-            read_ref_duration = 30
-        when_read_ref_end = read_ref_delay + read_ref_duration
-        laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
+        MWmix_delay_for_AWG        = MWmix_delay - AWG_output_delay; self.MWmix_delay= MWmix_delay
+        MWmix_duration_for_AWG     = int(2*int((2*AWG_buffer + MWmix_duration + 1)/2)) # to make it even
+
+        if self.ifAWG:
+            global ch1plot; global ch2plot
+            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MWmix_duration), buffer=int(AWG_buffer))
 
         if not laser_init_delay == 0:
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
         if self.ifMWDuringRead:
-            pulse_sequence += [spc.Pulse('MWswitch', MWmix_delay,             duration=int(MWmix_duration))]
+            if self.ifAWG:
+                pulse_sequence += [spc.Pulse('AWG',      MWmix_delay_for_AWG,     duration=50)]
+            else:
+                pulse_sequence += [spc.Pulse('MWswitch', MWmix_delay,             duration=int(MWmix_duration))]
         if self.ifMW2DuringRead:
             pulse_sequence += [spc.Pulse('MWswitch2', MWmix_delay,             duration=int(MWmix_duration))]
         for i in range(nread):
@@ -294,7 +311,10 @@ class Signal(Parameter):
         if self.settings['ifPlotPulse']:
             if np.mod(self.loopCounter,5) == 0 or self.loopCounter == len(self.tausArray)-1: # plot every 5 sequences and plot the last seq
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False, readColor=self.readColor)
-                fig = plotPulseObject.makePulsePlot()
+                if self.ifAWG:
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.MWmix_delay, label1='chnl1-AWG1', label2='chnl2-AWG1')
+                else:
+                    fig = plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.tausArray)-1: # only save first and last pulse sequence
                 self.CalibRedRRIonizeRateObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
@@ -305,19 +325,6 @@ class Signal(Parameter):
         pb.turn_on_infinite(channels=channels)
 
 
-class Reference(Parameter):
-    def __init__(self, name='ref',**kwargs):
-        super().__init__(name, **kwargs)
-
-    def get_raw(self):
-        return 0
-
-class SigOverRef(Parameter):
-    def __init__(self, name='sigOverRef',**kwargs):
-        super().__init__(name, **kwargs)
-
-    def get_raw(self):
-        return 0
     
 class SigFullData(Parameter):
     def __init__(self, name='sigFullData',**kwargs):
@@ -326,9 +333,3 @@ class SigFullData(Parameter):
     def get_raw(self):
         return sig_data
     
-class RefFullData(Parameter):
-    def __init__(self, name='refFullData',**kwargs):
-        super().__init__(name, **kwargs)
-
-    def get_raw(self):
-        return 0

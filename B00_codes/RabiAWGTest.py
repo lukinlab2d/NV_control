@@ -18,10 +18,10 @@ for i in range(reps):
     # RabiAWG
     start = 2; stop = 122; num_sweep_points = 31; ifLooped =1#(reps != 1)
     tausArray = np.linspace(start, stop, num_sweep_points)
-    SDGnum=1; SRSnum=1; uwPower = -2; uwFreq = 2845.62e6; print(uwFreq)
+    SDGnum=1; SRSnum=1; uwPower = 0; uwFreq = 2785.2e6; print(uwFreq)
     laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18
 
-    num_loops               = int(3e5);  AWGbuffer               = 10
+    num_loops               = int(5e5);  AWGbuffer               = 10
     laser_init_delay        = 0;         laser_init_duration     = 0
     laser_to_AWG_delay      = 0;         AWG_output_delay        = 1450      
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
@@ -29,7 +29,6 @@ for i in range(reps):
     read_duration           = 300;       DAQ_to_laser_off_delay  = 400
 
     if True:
-    
         settings = {'num_loops':num_loops, 'tausArray':tausArray,
                     'SRSnum':SRSnum, 'uwPower':uwPower, 'uwFreq': uwFreq, 'SDGnum':SDGnum,
                     'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,

@@ -9,6 +9,7 @@ import numpy as np
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
+from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
 from copy import deepcopy
 
 import nidaqmx, time
@@ -40,10 +41,11 @@ class T2ERR(Instrument):
         self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
         self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
         self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
+        self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
 
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 
-                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,'AWG': self.AWGParam,
                         'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
         self.settings = {**settings, **settings_extra}; self.RRtrackingSettings = self.settings['RRtrackingSettings']
@@ -55,7 +57,7 @@ class T2ERR(Instrument):
         # Vpiezos, MW power, and MW frequency
         self.tausArray = self.settings['tausArray']
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
-        
+        self.SDGnum = self.settings['SDGnum']
         self.velNum = self.settings['velNum']; self.ifNeedVel = self.settings['ifNeedVel']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
         self.vel_vpz_start = self.settings['vel_vpz_start']; self.vel_vpz_step = self.settings['vel_vpz_step']
@@ -84,6 +86,12 @@ class T2ERR(Instrument):
         if (self.SRSnum != 3) and (self.SRSnum != 4):
             self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
+
+        # AWG object
+        ifAWG = self.settings['ifAWG']; self.ifAWG = ifAWG
+        if self.ifAWG:
+            self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+            global AWG; AWG = self.AWG
 
         # Velocity object
         if self.ifNeedVel:
@@ -147,7 +155,7 @@ class T2ERR(Instrument):
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig, ref,
                                             qctask(sig.plotPulseSequences),
-                                            ).then(qctask(sig.sweepVelToEnd))
+                                            ).then(qctask(sig.turn_on_at_end))
 
         data = loop.get_data_set(name='T2ERR')
         data.add_metadata(self.settings)
@@ -202,6 +210,7 @@ class T2ERR(Instrument):
         
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
+        if self.ifAWG: self.AWG.turn_off()
 
     def getDataFilename(self):
         return 'C:/Users/lukin2dmaterials/' + self.data.location + '/T2ERRObject_sig_set.dat'
@@ -219,6 +228,7 @@ class Signal(Parameter):
 
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
+        self.ifAWG = self.settings['ifAWG']
 
         self.vel_vpz_start = self.settings['vel_vpz_start']; self.vel_vpz_step = self.settings['vel_vpz_step']; self.vel_vpz_end = self.settings['vel_vpz_end']
         self.vel_vpz_step_time = self.settings['vel_vpz_step_time']; self.vel_vpz_target = self.settings['vel_vpz_target']
@@ -280,10 +290,13 @@ class Signal(Parameter):
         # Pulse parameters
         num_loops               = self.settings['num_loops'];              
         laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
-        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];      MWI_duration        = self.settings['pi_half']
+        laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];      pi2time             = self.settings['pi_half']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
         read_laser_duration     = self.settings['read_laser_duration'];     normalized_style    = self.settings['normalized_style']
-        MW_to_read_delay        = self.settings['MW_to_read_delay']
+        MW_to_read_delay        = self.settings['MW_to_read_delay'];        pitime              = 2*pi2time
+        AWG_buffer              = self.settings['AWG_buffer'];              AWG_output_delay    = self.settings['AWG_output_delay']
+        phi_IQ                  = self.settings['phi_IQ']
+        MW_duration_for_AWG = int(2*int((AWG_buffer + 2*pi2time + pitime + tau_ns + 1)/2))
 
         if tau_ns/2 > 30:
             MWI_to_switch_delay  = self.settings['MWI_to_switch_delay']
@@ -293,13 +306,21 @@ class Signal(Parameter):
         ################# Signal  ################################
         
         when_init_end = laser_init_delay + laser_init_duration
-        MWI_delay     = when_init_end + laser_to_MWI_delay;                 
-        MWI2_delay    = MWI_delay + MWI_duration + tau_ns/2;    MWI2_duration = 2*MWI_duration
-        MWI3_delay    = MWI2_delay + MWI2_duration + tau_ns/2;  MWI3_duration = MWI_duration    
-        when_pulse_end= MWI3_delay + MWI3_duration;             pulse_duration= tau_ns + 4*MWI_duration
+        MWI_delay     = when_init_end + laser_to_MWI_delay
+        global MW_del; MW_del = MWI_delay + AWG_output_delay
 
-        laser_read_signal_delay    = when_pulse_end + MW_to_read_delay;            laser_read_signal_duration = read_laser_duration
-        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay; read_signal_duration       = read_duration
+        MWI2_delay    = MWI_delay + pi2time + tau_ns/2;    MWI2_duration = 2*pi2time
+        MWI3_delay    = MWI2_delay + MWI2_duration + tau_ns/2;  MWI3_duration = pi2time  
+
+        if self.ifAWG:
+            when_pulse_end = MWI_delay + AWG_output_delay + MW_duration_for_AWG
+        else:
+            when_pulse_end = MWI3_delay + MWI3_duration
+
+        laser_read_signal_delay    = when_pulse_end + MW_to_read_delay
+        laser_read_signal_duration = read_laser_duration
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
+        read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
 
@@ -308,21 +329,34 @@ class Signal(Parameter):
         laser_init_ref_delay = when_read_signal_end + laser_init_delay
         when_init_ref_end    = laser_init_ref_delay + laser_init_duration
 
-        MWI4_delay         = when_init_ref_end + laser_to_MWI_delay;    MWI4_duration = MWI_duration
-        MWI5_delay         = MWI4_delay + MWI4_duration + tau_ns/2;     MWI5_duration = 2*MWI_duration
+        MWI4_delay         = when_init_ref_end + laser_to_MWI_delay;    MWI4_duration = pi2time
+        MWI5_delay         = MWI4_delay + MWI4_duration + tau_ns/2;     MWI5_duration = 2*pi2time
         MWI6_delay         = MWI5_delay + MWI5_duration + tau_ns/2;        
-        if normalized_style == Q_FINAL:                                 MWI6_duration = MWI_duration
-        elif normalized_style == THREE_PI_HALF_FINAL:                   MWI6_duration = 3*MWI_duration
+        if normalized_style == Q_FINAL:                                 MWI6_duration = pi2time
+        elif normalized_style == THREE_PI_HALF_FINAL:                   MWI6_duration = 3*pi2time
         else:                                                           MWI6_duration = 0
-        when_pulse_ref_end = MWI6_delay + MWI6_duration
+       
+        laser_read_ref_delay    = when_read_signal_end + laser_read_signal_delay
+        laser_read_ref_duration = read_laser_duration
+        read_ref_delay          = laser_read_ref_delay + laser_to_DAQ_delay;  
+        read_ref_duration       = read_duration
+        when_read_ref_end       = read_ref_delay + read_ref_duration
 
-        laser_read_ref_delay = when_pulse_ref_end + MW_to_read_delay;      laser_read_ref_duration = read_laser_duration
-        read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  
-        read_ref_duration    = read_duration;                              when_read_ref_end = read_ref_delay + read_ref_duration
+        sig_to_ref_wait         = laser_read_ref_delay - 2*MW_duration_for_AWG - MW_del
         self.read_duration = read_signal_duration
 
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")
+        
+        #  Set I and Q for special pi/2 pulse
+        I = round(32767*np.cos(phi_IQ))
+        Q = round(32767*np.sin(phi_IQ))
+        
+        if self.ifAWG:
+            global ch1plot; global ch2plot
+            ch1plot, ch2plot = AWG.send_T2E_seq(pi_2time=int(pi2time), pitime = int(pitime), tau = int(tau_ns/2),
+                                             buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait),
+                                             special_I=int(I), special_Q=int(Q))
 
         # Make pulse sequence
         pulse_sequence = []
@@ -331,23 +365,27 @@ class Signal(Parameter):
             pulse_sequence += [spc.Pulse('LaserInit',    laser_init_ref_delay,         duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('MWswitch', MWI_delay,                     duration=int(MWI_duration))]
-        pulse_sequence += [spc.Pulse('MWswitch', MWI2_delay,                    duration=int(MWI2_duration))]
-        pulse_sequence += [spc.Pulse('MWswitch', MWI3_delay,                    duration=int(MWI3_duration))]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,             duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
 
-        if not normalized_style == NO_MS_EQUALS_1:
-            pulse_sequence += [spc.Pulse('MWswitch', MWI4_delay,                     duration=int(MWI4_duration))]
-            pulse_sequence += [spc.Pulse('MWswitch', MWI5_delay,                     duration=int(MWI5_duration))]
+        if self.ifAWG:
+            pulse_sequence += [spc.Pulse('AWG',      MWI_delay,    duration=50)]
+        else:
+            pulse_sequence += [spc.Pulse('MWswitch', MWI_delay,                     duration=int(pi2time))]
+            pulse_sequence += [spc.Pulse('MWswitch', MWI2_delay,                    duration=int(MWI2_duration))]
+            pulse_sequence += [spc.Pulse('MWswitch', MWI3_delay,                    duration=int(MWI3_duration))]
 
-            if normalized_style == Q_FINAL:
-                MWI6_duration = MWI_duration
-                pulse_sequence += [spc.Pulse('MW_I', MWI6_delay-MWI_to_switch_delay, duration=int(MWI6_duration + 2*MWI_to_switch_delay))]
-                pulse_sequence += [spc.Pulse('MW_Q', MWI6_delay-MWI_to_switch_delay, duration=int(MWI6_duration + 2*MWI_to_switch_delay))] # times are in ns
-            elif normalized_style == THREE_PI_HALF_FINAL:
-                MWI6_duration = 3*MWI_duration
-            pulse_sequence += [spc.Pulse('MWswitch', MWI6_delay,                     duration=int(MWI6_duration))]
+            if not normalized_style == NO_MS_EQUALS_1:
+                pulse_sequence += [spc.Pulse('MWswitch', MWI4_delay,                     duration=int(MWI4_duration))]
+                pulse_sequence += [spc.Pulse('MWswitch', MWI5_delay,                     duration=int(MWI5_duration))]
+
+                if normalized_style == Q_FINAL:
+                    MWI6_duration = pi2time
+                    pulse_sequence += [spc.Pulse('MW_I', MWI6_delay-MWI_to_switch_delay, duration=int(MWI6_duration + 2*MWI_to_switch_delay))]
+                    pulse_sequence += [spc.Pulse('MW_Q', MWI6_delay-MWI_to_switch_delay, duration=int(MWI6_duration + 2*MWI_to_switch_delay))] # times are in ns
+                elif normalized_style == THREE_PI_HALF_FINAL:
+                    MWI6_duration = 3*pi2time
+                pulse_sequence += [spc.Pulse('MWswitch', MWI6_delay,                     duration=int(MWI6_duration))]
         
         self.pulse_sequence = pulse_sequence
         
@@ -386,7 +424,10 @@ class Signal(Parameter):
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False,
                                             readColor=self.readColor, 
                                             initColor=self.initColor)
-                fig = plotPulseObject.makePulsePlot()
+                if self.ifAWG:
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, MW_del)
+                else:
+                    fig = plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.tausArray)-1: # only save first and last pulse sequence
                 self.T2ERRObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
@@ -394,7 +435,7 @@ class Signal(Parameter):
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
-        pb.turn_on_infinite(channels=channels)
+        # pb.turn_on_infinite(channels=channels)
 
     def sweepVelToEnd(self):
         if (self.settings['ifScanVpz']):

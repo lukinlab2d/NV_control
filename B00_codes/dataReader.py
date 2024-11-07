@@ -22,6 +22,8 @@ REF_MINUS_SIG  = 3
 
 def sinusoid(t, A, Tpi, phi,C):
     return A*np.cos(np.pi/Tpi*t + phi) + C
+def cosTwo(t, A, f1, p1, B,f2,p2,D):
+    return A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2)  + D
 def cosThree(t, A, f1, p1, B,f2,p2, C, f3,p3,D):
     return A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2) + C*np.cos(2*np.pi*f3*t + p3) + D
 def cosFour(t, A, f1, p1, B,f2,p2, C, f3,p3, D,f4,p4, E):
@@ -130,6 +132,15 @@ def fitSinusoid(xdata, ydata, guess=None):
     yfit = sinusoid(xfit, *popt)
     return xfit, yfit, popt, perr
 
+def fitCosTwo(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0, 0,-np.pi, 0, 0,-np.pi, -np.inf)
+    if upperBounds is None: upperBounds = (1, np.inf, np.pi, 1, np.inf, np.pi,  np.inf)
+    popt, pcov = curve_fit(cosTwo, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = cosTwo(xfit, *popt)
+    return xfit, yfit, popt, perr
+
 def fitCosThree(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
     if lowerBounds is None: lowerBounds = (0, 0,-np.pi, 0, 0,-np.pi, 0, 0,-np.pi, -np.inf)
     if upperBounds is None: upperBounds = (1, np.inf, np.pi, 1, np.inf, np.pi, 1, np.inf, np.pi, np.inf)
@@ -162,7 +173,8 @@ def fitDecay(xdata, ydata, guess=None, upperBounds=None,lowerBounds=None):
     upperBounds = (np.inf, np.inf, 1e8)
     popt, pcov = curve_fit(decay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
-    xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
+    # xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = decay(xfit, *popt)
     return xfit, yfit, popt, perr
 
@@ -271,12 +283,59 @@ def readDataConfocalRR(datafile):
     nx = np.count_nonzero(y == np.min(y))
     ny = int(len(y)/nx)
 
-    y = np.reshape(y,(nx,ny))
-    x = np.reshape(x,(nx,ny))
-    sig = np.reshape(sig,(nx,ny))
-    sig2= np.reshape(sig2,(nx,ny))
+    y = np.reshape(y,(ny,nx))
+    x = np.reshape(x,(ny,nx))
+    sig = np.reshape(sig,(ny,nx))
+    sig2= np.reshape(sig2,(ny,nx))
 
     return x,y,sig,sig2
+
+def readDataConfocalSCCRR(datafile):
+    readfile = np.loadtxt(datafile)
+    y = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    x = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    ref2 = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    refFull=[xAxisAndResult[4] for xAxisAndResult in readfile]
+    refFull2=[xAxisAndResult[5] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[6] for xAxisAndResult in readfile]
+    sig2 = [xAxisAndResult[7] for xAxisAndResult in readfile]
+    sigFull=[xAxisAndResult[8] for xAxisAndResult in readfile]
+    sigFull2=[xAxisAndResult[9] for xAxisAndResult in readfile]
+
+    y = np.array(y); x = np.array(x); sig = np.array(sig); sig2 = np.array(sig2); ref=np.array(ref); ref2=np.array(ref2)
+    sigFull=np.array(sigFull); sigFull2=np.array(sigFull2); refFull=np.array(refFull); refFull2=np.array(refFull2)
+
+    num_of_iter_same_px = np.count_nonzero(sig == np.max(sig))
+    
+    y=y[::num_of_iter_same_px]; x=x[::num_of_iter_same_px]; sig=sig[::num_of_iter_same_px]
+    sig2=sig2[::num_of_iter_same_px];ref=ref[::num_of_iter_same_px];ref2=ref2[::num_of_iter_same_px]
+    
+    nx = np.count_nonzero(y == np.min(y))
+    ny = int(len(y)/nx)
+
+    y = np.reshape(y,(ny,nx))
+    x = np.reshape(x,(ny,nx))
+    sig = np.reshape(sig,(ny,nx))
+    sig2= np.reshape(sig2,(ny,nx))
+    ref = np.reshape(ref,(ny,nx))
+    ref2= np.reshape(ref2,(ny,nx))
+
+    sigFull  = np.reshape(sigFull,(ny,nx,num_of_iter_same_px))
+    sigFull2 = np.reshape(sigFull2,(ny,nx,num_of_iter_same_px))
+    refFull  = np.reshape(refFull,(ny,nx,num_of_iter_same_px))
+    refFull2 = np.reshape(refFull2,(ny,nx,num_of_iter_same_px))
+
+    sigma_sig  = np.std(sigFull, axis=2);  sigma_ref  = np.std(refFull, axis=2)
+    sigma_sig2 = np.std(sigFull2, axis=2); sigma_ref2 = np.std(refFull2, axis=2)
+    sigs_avg_count  = np.average(sigFull,axis=2);  refs_avg_count  = np.average(refFull,axis=2)
+    sigs_avg_count2 = np.average(sigFull2,axis=2); refs_avg_count2 = np.average(refFull2,axis=2)
+    snr     = (sigs_avg_count-refs_avg_count)   / np.sqrt(sigma_sig**2 + sigma_ref**2)
+    snr2    = (sigs_avg_count2-refs_avg_count2) / np.sqrt(sigma_sig2**2 + sigma_ref2**2)
+    sigmaR  = np.sqrt(1+2/snr**2)
+    sigmaR2 = np.sqrt(1+2/snr2**2)
+
+    return x,y,sig,sig2,ref,ref2,sigmaR,sigmaR2,snr,snr2
 
 def readDataConfocalRRSingleRead(datafile):
     readfile = np.loadtxt(datafile)
@@ -509,7 +568,7 @@ def readDataLiveCounter(datafile, acqTimeMs=1, figsize=(4,4),
     return iter, sig
 
 def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=True, ifSinusoid=False,
-             ifFit=False, upperBounds=None, lowerBounds=None, endDataPoint=None, startDataPoint=None):
+             ifFit=False, upperBounds=None, lowerBounds=None, endDataPoint=None, startDataPoint=None, ifLog=False):
     readfile = np.loadtxt(datafile)
     x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
     ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
@@ -534,6 +593,11 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
         axs[0].set_ylabel("PL count rate (kc/s)")
         if type == 'T2E' or type == 'XY8': axs[0].set_xlabel(r"$\tau$ ($\mu$s)")
         axs[0].set_title(datafile.split('/')[4] + "/" + datafile.split('/')[5] + " - raw")
+
+        sorted_indices = np.argsort(x_s)
+        x_s = x_s[sorted_indices]
+        sig = sig[sorted_indices]
+        ref = ref[sorted_indices]
         
         if typeNorm == NO_MS_EQUALS_1:
             axs[1].plot(x_s, sig/ref, 'o-',markersize=3,  label='sig/ref', color='C0')
@@ -553,6 +617,7 @@ def readData(datafile, type=None, typeNorm=0, guess=None, ifPlot=True, ifPrint=T
         if type == 'T2E' or type == 'XY8': axs[1].set_xlabel(r"$\tau$ ($\mu$s)")
         if type == 'ODMR': axs[1].set_xlabel(r"$f$ (Hz)")
         axs[1].set_title(datafile.split('/')[4] + "/" + datafile.split('/')[5] + " - normalized")
+        if ifLog: axs[1].set_xscale('log')
 
     if type in ['Rabi', 'RabiDecay']and ifFit:
         fitFunc = fitSinusoid if type=='Rabi' else fitSinusoidDecay
@@ -831,8 +896,20 @@ def readDataNoPlotDual(datafile):
     sig = [xAxisAndResult[3] for xAxisAndResult in readfile]
     sig2 = [xAxisAndResult[4] for xAxisAndResult in readfile]
     ref2 = [xAxisAndResult[2] for xAxisAndResult in readfile]
+
+    return x_s, sig, ref, sig2, ref2
+
+def readDataNoPlotDualSingleDatapoint(datafile):
+    readfile = np.loadtxt(datafile)
+    
+    x_s = readfile[0]
+    ref = readfile[1]
+    sig = readfile[3]
+    sig2 = readfile[4]
+    ref2 = readfile[2]
     
     return x_s, sig, ref, sig2, ref2
+
 def readDataNoPlotWM(datafile):
     readfile = np.loadtxt(datafile)
     # print(readfile)
@@ -1275,7 +1352,8 @@ def plotAnalysisT1SCC(finalDataFolder, ifPlot=1, power589 = 2, power532 = 1400, 
     return tis, ths, fids, pms, snrs, gms, g0s, nms, n0s, nMeanms, nMean0s, thsref, fidsref, pmsref, snrsref, gmsref, g0sref, nmsref, n0sref, nMeanmsref, nMean0sref, sigmaSCC, sigavg, refavg, t1s, t1s_err
 
 def plotT1Simple(x, sig, ref, ifThres=1, ifContrastFirstThenAvg=0, thres=1, thresmax=2, ifPlot=1, power589 = 2, power532 = 1400, power635 = 9.5, power660=0,
-                t532 = 500e3, delay1 = 20e6, delay2 = 20, tsh = 100, delay3 = 600, ti=160, delay4 = 2e6, tr_ns = 250e6):
+                t532 = 500e3, delay1 = 20e6, delay2 = 20, tsh = 100, delay3 = 600, ti=160, delay4 = 2e6, 
+                tr_ns = 250e6,suptitle=None):
     
     fig, axs = plt.subplots(1,2, figsize=(6,3))
     a00 = axs[0]; a01 = axs[1]
@@ -1370,7 +1448,12 @@ def plotT1Simple(x, sig, ref, ifThres=1, ifContrastFirstThenAvg=0, thres=1, thre
     # plt.suptitle(s1  +  "\n" + s2, fontsize=9, y=0.935);
 
     s1 = "$P_{532}$ = %.0f $\mu$W. $P_{635}$ = %.0f nW. $P_{660}$ = %.1f mW. $t_{i}$ = %.2f $\mu$s. $t_R$ = %.1f ms" % (power532, power635, power660,ti/1e3, tr_ns/1e6)
-    plt.suptitle(s1, fontsize=9, y=0.935);
+    if suptitle is None:
+        sup = s1
+    else:
+        sup = suptitle + "\n" + s1
+    
+    plt.suptitle(sup, fontsize=8, y=0.935);
 
     plt.tight_layout()
     if ifPlot:
@@ -1378,7 +1461,7 @@ def plotT1Simple(x, sig, ref, ifThres=1, ifContrastFirstThenAvg=0, thres=1, thre
     else:
         plt.ioff(); plt.clf(); plt.close('all')
 
-    return t1s, t1s_err
+    return t1s, t1s_err, fig, axs
 
 def plotT2ESimple(x, sig, ref, xscale='linear', guess=(0.15,40e3,1,0), lowerBounds=(0, 0,0.1,-1), upperBounds=(np.inf,np.inf,4,1),
                 thresmax=2, ifPlot=1, power589 = 2, power532 = 1400, power635 = 9.5,

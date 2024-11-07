@@ -118,8 +118,8 @@ class T2R4point(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
 
         self.srs.disable_RFOutput()
         self.srs.disableModulation()

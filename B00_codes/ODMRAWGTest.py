@@ -40,19 +40,19 @@ if ifCW == 0:
     reps = 1
     for i in range(reps):
         # Test for Pulsed ODMR
-        start = 2800e6; stop = 2960e6; num_sweep_points = 81
+        start = 2550e6; stop = 3210e6; num_sweep_points = 166
         freqsArray = np.linspace(start, stop, num_sweep_points)
-        SDGnum=1; SRSnum=1; uwPower = -15; ifLooped = 1#(reps != 1)
+        SDGnum=1; SRSnum=1; uwPower = 0; ifLooped = 1#(reps != 1)
         laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18
 
-        num_loops                    = int(1e6)
+        num_loops                    = int(3e5)
         laser_init_delay             = 0;       laser_init_duration    = 0
-        pitime                       = 170;     laser_to_AWG_delay     = 0
+        pitime                       = 28;      laser_to_AWG_delay     = 0
         laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
         laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
         AWG_output_delay             = 1450;    AWGbuffer = 1
-        read_duration                = 300;     DAQ_to_laser_off_delay = 0.4e3
-        ifSingleGreenRead            = 1
+        read_duration                = 300;     DAQ_to_laser_off_delay = 400
+        ifSingleGreenRead            = 0
 
         if True:
             settings = {'num_loops':num_loops, 'freqsArray':freqsArray, 
@@ -70,14 +70,8 @@ if ifCW == 0:
             ODMRAWGObject = ODMRAWG(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
             ODMRAWGObject.runScan()
             print('Total time = ' + str(time.time() - start) + ' s')
-
-            dataFilename = ODMRAWGObject.getDataFilename()
-            guess=(-2e6, 2.87e9, 0.02e9, 1)
-            if not ifLooped: dataReader.readData(dataFilename, type='ODMR', ifFit=0, guess=guess)
             ODMRAWGObject.close()
 
-            # dataFilename = 'C:/Users/lukin2dmaterials/data/2024-04-22/#168_ODMRAWG_23-39-22/ODMRAWGObject_sig_set.dat'
-            # dataReader.readData(dataFilename)
 
 elif ifCW == 1:
     # Test for CW ODMR

@@ -29,7 +29,7 @@ class T2RAWG(Instrument):
     def __init__(self, name='T2RAWGObject', settings=None, ifPlotPulse=True, **kwargs) -> None:
         
         super().__init__(name, **kwargs)
-        self.clock_speed = 500 # MHz
+        self.clock_speed = 500 #MHz
         self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
         self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
@@ -104,12 +104,6 @@ class T2RAWG(Instrument):
             name = 'sig'
             )
         plot.add(data.T2RAWGObject_ref, name='ref')
-        # plot = QtPlot(
-        #     data.T2RObject_sigOverRef, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig/ref'
-        #     )
 
         loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
@@ -117,8 +111,8 @@ class T2RAWG(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
 
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
@@ -196,19 +190,20 @@ class Signal(Parameter):
         # Pulse parameters
         num_loops               = self.settings['num_loops']
         laser_init_delay        = self.settings['laser_init_delay'];        laser_init_duration = self.settings['laser_init_duration']
-        laser_to_AWG_delay      = self.settings['laser_to_AWG_delay'];      pi2time        = self.settings['pi2time']
+        laser_to_MW_delay       = self.settings['laser_to_MW_delay'];       pi2time        = self.settings['pi2time']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
-        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; AWG_output_delay = self.settings['AWG_output_delay']
-        AWG_buffer = self.settings['AWG_buffer'];                           read_offset_from_AWG_delay = self.settings['read_offset_from_AWG_delay']
+        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  AWG_output_delay = self.settings['AWG_output_delay']
+        AWG_buffer = self.settings['AWG_buffer'];                           #read_offset_from_AWG_delay = self.settings['read_offset_from_AWG_delay']
         MW_duration = int(2*int((AWG_buffer + 2*pi2time + tau_ns + 1)/2))
         
-        when_init_end = laser_init_delay + laser_init_duration
-        MW_delay     = when_init_end + laser_to_AWG_delay;     when_sigMW_end = MW_delay + AWG_output_delay + MW_duration 
-        global MW_del; MW_del = MW_delay+AWG_output_delay
+        when_init_end  = laser_init_delay + laser_init_duration
+        MW_delay       = when_init_end + laser_to_MW_delay
+        when_sigMW_end = MW_delay + AWG_output_delay + MW_duration 
+        global MW_del; MW_del = MW_delay + AWG_output_delay
 
-        read_offset = (laser_to_DAQ_delay-read_offset_from_AWG_delay)
+        # read_offset = (laser_to_DAQ_delay-read_offset_from_AWG_delay)
         
-        laser_read_signal_delay    = when_sigMW_end - read_offset
+        laser_read_signal_delay    = when_sigMW_end
         read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
@@ -221,16 +216,15 @@ class Signal(Parameter):
         when_read_ref_end    = read_ref_delay + read_ref_duration
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
 
-        sig_to_ref_wait = laser_read_signal_duration + (laser_read_signal_delay-2*pi2time-tau_ns)
-        # sig_to_ref_wait = laser_read_ref_delay - 2*MW_duration - MW_delay
-
+        sig_to_ref_wait = laser_read_ref_delay - 2*MW_duration - MW_del
         self.read_duration = read_signal_duration
 
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")
 
         global ch1plot; global ch2plot
-        ch1plot, ch2plot = AWG.send_T2R_seq(pi_2time=int(pi2time), tau = int(tau_ns), buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait))
+        ch1plot, ch2plot = AWG.send_T2R_seq(pi_2time=int(pi2time), tau = int(tau_ns), 
+                                            buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait))
 
         # Make pulse sequence
         pulse_sequence = []
@@ -288,7 +282,7 @@ class Signal(Parameter):
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
-        pb.turn_on_infinite(channels=channels)
+        # pb.turn_on_infinite(channels=channels)
 
 
 class Reference(Parameter):

@@ -280,7 +280,7 @@ class Signal(Parameter):
         ctrtask.close()
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
-        pb.turn_on_infinite(channels=channels)
+        # pb.turn_on_infinite(channels=channels)
 
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):

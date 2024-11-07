@@ -5,44 +5,41 @@ import numpy as np
 from nidaqmx.constants import *
 from B00_codes.PlotPulse import *
 from B00_codes.CalibRedRRIonizeRate import *
-import B00_codes.dataReader as dataReader
 
 ####################################################################################################################
-reps = -1
-# for LIT in np.array((20e3,15e3,10e3,8e3,6e3,5e3,4e3,3e3,2e3,1e3,5e2)):
-for iii in np.linspace(1,5,80):
+reps = 1
+for iii in np.linspace(1,reps,reps):
     # CalibRedRRIonizeRate
-    ifRandomized = 0;  ifPlotPulse = (reps==1); ifIonizedRef=0
-    laserInit_channel = 7; ifInitVpz   = 0; ifInitWvl = 0; ifNeedVel = 0
+    ifRandomized=0;  ifPlotPulse=(reps==1); ifAWG=0; ifMWDuringRead=0; ifMW2DuringRead=0
+    laserInit_channel=3; ifInitVpz=0; ifInitWvl=0; ifNeedVel=0
     if False: 
-        velNum = 1; vel_current = 62.2; vel_wvl = 637.22; vel_vpz_target = 72.3
-        ifMWDuringRead = 0
-        SRSnum = 1;  MWPower = -2.7; pi_time  = 44; MWFreq   = 2747.88e6   #NV D1 ms-1
-        MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2; laserRead_channel = 5
-        ifMW2DuringRead = 0
-        SRSnum2 = 3; MWPower2 = -6;  pi_time2 = 40; MWFreq2  = 3007.65e6   #NV D1 ms+1
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.20; vel_vpz_target = -1; laserRead_channel = 5
+        SRSnum = 1;  MWPower = -20; pi_time  = 20; MWFreq   = 2598.1e6   #NV D1 ms-1
+        SDGnum  = 1; AWG_channel = 18
+        MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
+        SRSnum2 = 3; MWPower2 = -14; pi_time2 = 62; MWFreq2 = 3162e6  #NV D1 ms+1
         MWI2_channel = 0; MWQ2_channel = 0; MWswitch2_channel = 15
     else:
-        velNum = 2; vel_current = 67; vel_wvl = 636.83; vel_vpz_target = 76.56
-        ifMWDuringRead = 0
-        SRSnum  = 2; MWPower = -1; pi_time  = 44; MWFreq   = 2838.26e6   #NV D2, ms-1
-        MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11; laserRead_channel = 14
-        ifMW2DuringRead = 0
-        SRSnum2 = 4; MWPower2 = 10;   pi_time2 = 40; MWFreq2  = 2932.8e6   #NV D2 ms+1 #power=10
+        velNum = 2; vel_current = 67; vel_wvl = 636.88; vel_vpz_target = -1; laserRead_channel = 14
+        SRSnum = 2; MWPower = -30; pi_time  = 20; MWFreq   = 2789.2e6   #NV D2, ms-1
+        SDGnum = 2; AWG_channel = 19
+        MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11; 
+        SRSnum2 = 4; MWPower2 = -4; pi_time2 = 74; MWFreq2 = 3037.2e6  #NV D2 ms+1 #power=10
         MWI2_channel = 0; MWQ2_channel = 0; MWswitch2_channel = 16
     
-    tr=300e3
+    tr=50e3
     start = tr; stop = tr; num_sweep_points = 1
     tausArray = np.linspace(start, stop, num_sweep_points)    
 
-    num_loops                    = int(5e3)
-    laser_init_delay             = 200;     laser_init_duration       = 3e3
+    num_loops                    = int(2e4)
+    laser_init_delay             = 1e2;     laser_init_duration       = 9e4
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1750, 14:   900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)       
-    laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
-    MW_to_read_delay             = 0;        DAQ_to_laser_off_delay    = 1e2
-    read_duration                = 1000;      ref_laser_to_read_delay   = 1e12
-    delay_between_reads          = 400;      laserRead_to_MWmix        = laser_to_DAQ_delay
+    laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 1e3
+    MW_to_read_delay             = 0;       DAQ_to_laser_off_delay    = 1e2
+    read_duration                = 400
+    delay_between_reads          = 300;     laserRead_to_MWmix        = laser_to_DAQ_delay
+    AWG_buffer                   = 40;      AWG_output_delay          = 1450  
     
     num_reads = int(start/(read_duration + delay_between_reads))
     settings = {'start': start, 'stop': stop, 'num_sweep_points': num_sweep_points,
@@ -59,10 +56,10 @@ for iii in np.linspace(1,5,80):
                 'laserRead_to_MWmix':     laserRead_to_MWmix,
                 'ifRandomized':           ifRandomized,            
                 'laserRead_channel':      laserRead_channel,       'laserInit_channel':   laserInit_channel,
-                'ifIonizedRef':        ifIonizedRef,
-                'ref_laser_to_read_delay':ref_laser_to_read_delay, 
                 'delay_between_reads': delay_between_reads,
-                'num_reads':              num_reads}
+                'num_reads':              num_reads,
+                'ifAWG': ifAWG,
+                'SDGnum': SDGnum,   'AWG_channel':AWG_channel,   'AWG_buffer':AWG_buffer,   'AWG_output_delay':AWG_output_delay,}
 
     start = time.time()
     CalibRedRRIonizeRateObject = CalibRedRRIonizeRate(settings=settings, ifPlotPulse=ifPlotPulse) # this is implemented as an Instrument

@@ -8,6 +8,7 @@ import numpy as np
 from qcodes_contrib_drivers.drivers.SpinAPI import SpinCore as spc
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
+from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
 from copy import deepcopy
 
 import nidaqmx, time
@@ -43,13 +44,15 @@ class ODMR_RR(Instrument):
         self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
         self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
         self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
+        self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
                           'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
-                          'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
-        self.settings = {**settings, **settings_extra}; self.RRtrackingSettings = self.settings['RRtrackingSettings']
+                          'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse,
+                          'AWG': self.AWGParam,}
+        self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
         self.readColor    = self.settings['LaserRead']['channel']
@@ -58,7 +61,7 @@ class ODMR_RR(Instrument):
         # Vpiezos, MW power, and MW frequency
         self.freqsArray = self.settings['freqsArray']
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']
-
+        self.SDGnum=self.settings['SDGnum']
         self.velNum = self.settings['velNum']; self.ifNeedVel = self.settings['ifNeedVel']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
         self.vel_vpz_target = self.settings['vel_vpz_target']
@@ -83,6 +86,12 @@ class ODMR_RR(Instrument):
         if (self.SRSnum != 3) and (self.SRSnum != 4):
             self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
+
+        # AWG object
+        ifAWG = self.settings['ifAWG']; self.ifAWG = ifAWG
+        if self.ifAWG:
+            self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+            global AWG; AWG = self.AWG
 
         # Velocity object
         if self.ifNeedVel:
@@ -158,33 +167,9 @@ class ODMR_RR(Instrument):
                 pulsePlotFilename = data.location + "/pulsePlot_" + str(index) + ".png"
                 fig.savefig(pulsePlotFilename)
 
-        # tracking at the end if needed
-        self.hasTracked = 0
-        if self.settings['laserRead_channel'] == 5 or self.settings['laserRead_channel'] == 14:
-            if self.RRtrackingSettings['if_tracking'] == 1:
-                threshold_scanVpz = self.RRtrackingSettings['threshold_scanVpz']
-                
-                datafile = self.getDataFilename()
-                x_s, sig, ref = dr.readDataNoPlot(datafile)
-                sig = np.array(sig); ref = np.array(ref)
-                contrast = sig/ref; contrast_avg = np.average(contrast)
-                self.vpz = self.vel_vpz_target
-
-                if np.max(ref) < threshold_scanVpz: 
-                    print()
-                    print('-----------------Start line tracking---------------------------')
-                    ScanRRFreqObject = ScanRRFreq(settings=self.RRtrackingSettings, ifPlotPulse=0)
-                    self.vpz = ScanRRFreqObject.runScanInPulseSequence()
-                    vel.set_vpiezo(self.vpz)
-                    vel.set_ready()
-                    print("Set Vpiezo to " + str(np.round(self.vpz,1)) + ' %') # set the Velocity's piezo voltage
-                    print('-----------------End line tracking---------------------------')
-                    print()
-                    self.timeLastRRtracking = time.time()
-                    self.hasTracked = 1
-        
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
+        if self.ifAWG: self.AWG.turn_off()
     
     def getDataFilename(self):
         return 'C:/Users/lukin2dmaterials/' + self.data.location + '/ODMR_RRObject_sig_set.dat'
@@ -198,9 +183,8 @@ class Signal(Parameter):
         self.settings = settings
         self.freqsArray = self.settings['freqsArray']
         self.ODMR_RRObject = measurementObject
-        self.RRtrackingSettings = self.settings['RRtrackingSettings']
-        self.timeLastRRtracking = time.time()
 
+        self.ifAWG = self.settings['ifAWG']
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
 
@@ -222,33 +206,7 @@ class Signal(Parameter):
         ref = rate[1::self.num_reads_per_iter]
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
-    
-        # Line tracking or piezo repumping for RO
-        if self.settings['laserRead_channel'] == 5 or self.settings['laserRead_channel'] == 14:
-            if self.RRtrackingSettings['if_tracking'] == 1:
-                threshold_repumpVpz = self.RRtrackingSettings['threshold_repumpVpz']
-                if ref_avg < threshold_repumpVpz:
-                    if np.mod(self.numOfRepumpVpz,6) == 0:
-                        print()
-                        print('-----------------Start resetting Vpiezo---------------------------')
-                        vel.set_vpiezo(50)
-                        vel.waitUntilComplete()
-                        vel.set_ready()
-                        time.sleep(0.7)
-                        vel.set_vpiezo(2)
-                        vel.waitUntilComplete()
-                        vel.set_ready()
-                        time.sleep(0.7)
-                        for i in range(1):
-                            vel.set_vpiezo(self.vel_vpz_target)
-                            vel.waitUntilComplete()
-                            vel.set_ready()
-                            time.sleep(0.7)
-                        print('-----------------End resetting Vpiezo---------------------------')
-                        print()
-                        self.timeLastRRtracking = time.time()
-                    self.numOfRepumpVpz += 1
-                    
+                
         return sig_avg
     
     def set_raw(self, value):
@@ -263,12 +221,24 @@ class Signal(Parameter):
         laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  MWI_duration        = self.settings['MWI_duration']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];  read_duration       = self.settings['read_duration']   
         read_laser_duration     = self.settings['read_laser_duration']; MW_to_read_delay    = self.settings['MW_to_read_delay']
-        
+        AWG_buffer              = self.settings['AWG_buffer'];          AWG_output_delay    = self.settings['AWG_output_delay']
+
         when_init_end              = laser_init_delay + laser_init_duration
-        MWI_delay                  = when_init_end    + laser_to_MWI_delay;  when_pulse_end = MWI_delay + MWI_duration
+        MWI_delay                  = when_init_end    + laser_to_MWI_delay; self.MWI_delay = MWI_delay
+        MWI_delay_for_AWG          = MWI_delay-AWG_output_delay
+        MWI_duration_for_AWG       = int(2*int((2*AWG_buffer + MWI_duration + 1)/2)) # to make it even
+
+        if self.ifAWG:
+            when_pulse_end = MWI_delay + MWI_duration_for_AWG
+        else:
+            when_pulse_end = MWI_delay + MWI_duration
         
-        laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay;           laser_read_signal_duration = read_laser_duration
-        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay;  read_signal_duration       = read_duration
+        when_pulse_end = MWI_delay + MWI_duration
+        
+        laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay
+        laser_read_signal_duration = read_laser_duration
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
+        read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
@@ -282,6 +252,9 @@ class Signal(Parameter):
 
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")    
+        if self.ifAWG:
+            global ch1plot; global ch2plot
+            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MWI_duration), buffer=int(AWG_buffer))
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
@@ -290,7 +263,10 @@ class Signal(Parameter):
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_ref_delay,    duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,               duration=int(MWI_duration))]
+        if self.ifAWG:
+            pulse_sequence += [spc.Pulse('AWG',          MWI_delay_for_AWG,    duration=50)]
+        else:
+            pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,            duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',      read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
         self.pulse_sequence = pulse_sequence
@@ -329,7 +305,10 @@ class Signal(Parameter):
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False,
                                             readColor=self.readColor, 
                                             initColor=self.initColor)
-                fig = plotPulseObject.makePulsePlot()
+                if self.ifAWG:
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.MWI_delay)
+                else:
+                    plotPulseObject.makePulsePlot()
             if self.loopCounter == 0 or self.loopCounter == len(self.freqsArray)-1: # only save first and last pulse sequence
                 self.ODMR_RRObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1

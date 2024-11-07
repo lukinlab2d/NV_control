@@ -5,52 +5,50 @@ import numpy as np
 from nidaqmx.constants import *
 from B00_codes.PlotPulse import *
 from B00_codes.T1SCCRRIrberDualNV import *
-import B00_codes.dataReader as dataReader
 from qcodes_contrib_drivers.drivers.Agilent.Agilent_33522A import AG33522A
-
 ###########################################################################################e#########################
-reps = -1
-for iii in range(int(1e5)):
+reps = 5e5
+for iii in range(int(reps)):
     # T1SCCRRIrberDualNV
-    ifRandomized = 1;  ifPlotPulse = (reps==1);  ifMWReadLowDutyCycle = 0; ifNeedVel = 0
-    ifFancySpinInit = 0; sweepWhich = 'pi_to_ion_delay'
-    ifMWDuringRead = 1; ifMW2DuringRead = 1
+    ifRandomized = 0;  ifPlotPulse=(reps==-1);  ifMWReadLowDutyCycle = 0; ifNeedVel = 0
+    ifFancySpinInit = 0; sweepWhich = 'pi_pulse'#'pi_to_ion_delay'
+    ifMWDuringRead=1; ifMW2DuringRead=1; ifAWG=1; ifIQ=ifAWG; ifHiloExtra=1
     laserInit_channel=3; laserIon_channel=10; hiLoMWPwr_channel=17; ifInitVpz=0; ifInitWvl=0
-    ifRndPhaseNoise = 0; AGBW = 50e3; AGfreq = 3e6; AGamp = 0.1 # beware of heating!!
+    ifRndPhaseNoise = 1; AGBW = 100e3; AGfreq = 1.5625e6; AGamp = 0.25 # beware of heating!!
     
-    tausArray = np.round(np.logspace(3,np.log10(100e6),21),-2) # sweep pi_to_ion_delay
-
+    tausArray = np.round(np.logspace(np.log10(3e3),np.log10(15e6),21),-2) # sweep pi_to_ion_delay
     ##############################################################################################################
     if True:
         # NV1
-        velNum = 1; vel_current = 62.2; vel_wvl = 637.22; vel_vpz_target = 72.3; laserRead_channel = 5
-
-        SRSnum  = 1; MWPower  = -2.7; pi_time  = 44; MWFreq   = 2747.88e6   #NV D1 ms-1
-        SRSnum3 = 3; MWPower3 = -6;   pi_time3 = 44; MWFreq3  = 3007.65e6   #NV D1 ms+1
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.20; vel_vpz_target = -1; laserRead_channel = 5
+        SRSnum  = 1; MWPower  = -6.4; pi_time  = -1;  MWFreq   = 2598.1e6 #NV D1 ms-1
+        SRSnum3 = 3; MWPower3 = 3;    pi_time3 = -1;  MWFreq3  = 3162e6   #NV D1 ms+1
         MWI_channel  = 1; MWQ_channel  = 0; MWswitch_channel  = 2; MWswitch3_channel = 15
-        
-        # NV2
-        velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.83; vel_vpz_target2 = 76.56; laserRead2_channel = 14
-        
-        SRSnum2 = 2; MWPower2 = -1;   pi_time2 = 44; MWFreq2  = 2838.26e6   #NV D2, ms-1
-        SRSnum4 = 4; MWPower4 = 10;   pi_time4 = 44; MWFreq4  = 2932.8e6    #NV D2 ms+1
-        MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11; MWswitch4_channel = 16
-    ##############################################################################################################
+        SDGnum = 1; AWG_channel = 18; srate = 2.5e8
 
-    num_loops                    = int(2e3);  nSpinInit                 = -1
-    laser_init_delay             = 1e3;       laser_init_duration       = int(1.3e6)
-    laserSwitch_delay_directory  = {3:850, 6:1150, 9:1150, 7:900, 5:1750, 10:120, 14:900}
+        # NV2
+        velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.88; vel_vpz_target2 = -1; laserRead2_channel = 14
+        SRSnum2 = 2; MWPower2 = -10.2; pi_time2 = -1;  MWFreq2  = 2789.2e6  #NV D2, ms-1
+        SRSnum4 = 4; MWPower4 = -4;    pi_time4 = -1;  MWFreq4  = 3037.2e6  #NV D2 ms+1
+        MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11; MWswitch4_channel = 16
+        SDGnum2 = 2; AWG2_channel = 19; srate2 = 2.5e8
+    ##############################################################################################################
+    num_loops                    = int(2e3);  nSpinInit                 = 0
+    laser_init_delay             = 1e2;       laser_init_duration       = int(2e6)
+    laserSwitch_delay_directory  = {3:850, 6:1150, 9:1150, 7:900, 5:1750, 10:170, 14:900}
     RRLaserSwitch_delay          = laserSwitch_delay_directory.get(laserRead_channel, 0)   
     RRLaser2Switch_delay         = laserSwitch_delay_directory.get(laserRead2_channel, 0)        
-    laser_to_pi_delay            = laserSwitch_delay_directory.get(laserInit_channel, 0) + 200
-    pi_to_ion_delay              = -1;        
-    ion_duration                 = 10500;     ion_duration2             = 17000
-    ion_to_read_delay            = 3e6;       DAQ_duration              = 2e6
-    DAQ_to_laser_off_delay       = 1e2;       laserRead_to_MWmix        = RRLaserSwitch_delay
+    laser_to_pi_delay            = laserSwitch_delay_directory.get(laserInit_channel, 0) + 5e2
+    pi_to_ion_delay              = 5e3;        pi_to_hilo_extra_delay    = 3.5e3
+    ion_duration                 = 4000;      ion_duration2             = 13e3
+    ion_to_read_delay            = 3e3;       DAQ_duration              = 28e5
+    DAQ_to_laser_off_delay       = 1e2;       shift_btwn_2NV_read       = DAQ_duration+3e3
+    AWG_buffer                   = 40;        AWG_output_delay          = 1450
     iznLaserSwitch_delay         = laserSwitch_delay_directory.get(laserIon_channel, 0)
-    spinInit_RR_duration         = 15e3;      spinInit_RR_to_pi_delay   = RRLaserSwitch_delay+200
-    spinInit_pi_to_RR_delay      = 50;        shift_btwn_2NV_read       = DAQ_duration+3e3
-    MWmix_duration_short         = -1;        delay_between_MWmix       = -1
+    laserRead_to_MWmix           = 0
+    spinInit_RR_duration         = 0;         spinInit_RR_to_pi_delay   = 0*(RRLaserSwitch_delay+200)
+    spinInit_pi_to_RR_delay      = 0;        
+    MWmix_duration_short         = 0;         delay_between_MWmix       = 0
 
     settings = {'tausArray': tausArray,
                 'num_loops':num_loops, 'MWPower':MWPower, 'MWFreq': MWFreq, 'SRSnum': SRSnum, 'ifMWDuringRead':ifMWDuringRead,
@@ -78,7 +76,11 @@ for iii in range(int(1e5)):
                 'MWPower4':MWPower4, 'MWFreq4': MWFreq4, 'SRSnum4': SRSnum4,
                 'MWswitch3_channel': MWswitch3_channel,'MWswitch4_channel': MWswitch4_channel,
                 'RRLaser2Switch_delay':RRLaser2Switch_delay,
-                'ifRndPhaseNoise':ifRndPhaseNoise, 'AGBW':AGBW, 'AGfreq':AGfreq, 'AGamp':AGamp}
+                'ifRndPhaseNoise':ifRndPhaseNoise, 'AGBW':AGBW, 'AGfreq':AGfreq, 'AGamp':AGamp,
+                'ifAWG':ifAWG, 'ifIQ':ifIQ, 'pi_to_hilo_extra_delay':pi_to_hilo_extra_delay,'ifHiloExtra':ifHiloExtra,
+                'SDGnum': SDGnum,   'AWG_channel':AWG_channel,   'AWG_buffer':AWG_buffer,   'AWG_output_delay':AWG_output_delay,
+                'SDGnum2': SDGnum2, 'AWG2_channel':AWG2_channel, 'srate':srate, 'srate2':srate2
+                }
 
     ####### Random-phase noise ######
     if ifRndPhaseNoise:
@@ -106,6 +108,6 @@ for iii in range(int(1e5)):
     dataFilename = T1SCCRRIrberDualNVObject.getDataFilename()
     T1SCCRRIrberDualNVObject.close()
 
-    if ifRndPhaseNoise:
-        AG.disable_PM()
-        AG.disable_RFOutput()
+    # if ifRndPhaseNoise:
+    #     AG.disable_PM()
+    #     AG.disable_RFOutput()

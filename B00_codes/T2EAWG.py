@@ -111,8 +111,8 @@ class T2EAWG(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
 
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
@@ -195,24 +195,27 @@ class Signal(Parameter):
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];     read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; AWG_output_delay    = self.settings['AWG_output_delay']
         AWG_buffer              = self.settings['AWG_buffer'];             phi_IQ              = self.settings['phi_IQ']
-        MW_duration = int(2*int((AWG_buffer + 2*pi2time + pitime + 2*tau_ns + 1)/2))
+        MW_duration = int(2*int((AWG_buffer + 2*pi2time + pitime + tau_ns + 1)/2))
         
-        when_init_end = laser_init_delay + laser_init_duration
-        MW_delay     = when_init_end + laser_to_AWG_delay;     when_sigMW_end = AWG_output_delay + MW_delay + MW_duration 
+        when_init_end  = laser_init_delay + laser_init_duration
+        MW_delay       = when_init_end + laser_to_AWG_delay
+        when_sigMW_end = AWG_output_delay + MW_delay + MW_duration 
         global MW_del; MW_del = MW_delay + AWG_output_delay
         
         laser_read_signal_delay    = when_sigMW_end
-        read_signal_delay          = when_sigMW_end + laser_to_DAQ_delay;   read_signal_duration = read_duration
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
+        read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
         laser_read_ref_delay = when_laser_read_signal_end + laser_read_signal_delay
-        read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  read_ref_duration    = read_duration; 
+        read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay
+        read_ref_duration    = read_duration; 
         when_read_ref_end    = read_ref_delay + read_ref_duration
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
-        self.read_duration = read_signal_duration
 
+        self.read_duration = read_signal_duration
         sig_to_ref_wait = laser_read_ref_delay - 2*MW_duration - MW_del
 
         if read_signal_duration != read_ref_duration:
@@ -223,7 +226,7 @@ class Signal(Parameter):
         Q = round(32767*np.sin(phi_IQ))
 
         global ch1plot; global ch2plot
-        ch1plot, ch2plot = AWG.send_T2E_seq(pi_2time=int(pi2time), pitime = int(pitime), tau = int(tau_ns),
+        ch1plot, ch2plot = AWG.send_T2E_seq(pi_2time=int(pi2time), pitime = int(pitime), tau = int(tau_ns/2),
                                              buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait),
                                              special_I=int(I), special_Q=int(Q))
 
@@ -283,7 +286,7 @@ class Signal(Parameter):
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
-        pb.turn_on_infinite(channels=channels)
+        # pb.turn_on_infinite(channels=channels)
 
 
 class Reference(Parameter):

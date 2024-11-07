@@ -20,16 +20,16 @@ THREE_PI_HALF_FINAL = 2
 ####################################################################################################################
 
 reps = 1
-ifLooped = True; f = 2844.03e6
+ifLooped = False; f = 2839.5e6
 for i in np.linspace(f-0e5, f+0e5, 1):
     # T2R
     tausArray = np.linspace(2, 202,51)
 
     # Params
     laserInit_channel            = 3;          laserRead_channel = 3 # 532 is 3, 589 is 6
-    num_loops                    = int(0.6e6)
+    num_loops                    = int(3e5)
     laser_init_delay             = 0;          laser_init_duration       = 0
-    pi2time                      = 28;         read_duration             = 300
+    pi2time                      = 40;         read_duration             = 300
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
     laser_to_AWG_delay           = 0

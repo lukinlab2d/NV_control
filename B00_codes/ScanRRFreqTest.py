@@ -8,34 +8,32 @@ from B00_codes.PlotPulse import *
 import dropbox
 
 ####################################################################################################################
-reps = 1; ifLooped = (reps != 1); ifFit = 0; laserInit_channel = 3; 
-ifAWG=1; SDGnum=1; AWG_channel = 18
-num_of_cavity_conditioning = 1; ifInitWvl = 1; timeSleepReadWvl = 0
-for i in np.linspace(1,reps,reps):
+reps = 1; ifLooped = (reps != 1); ifFit = 0; laserInit_channel = 3; ifAWG=1; ifIQ=ifAWG
+num_of_cavity_conditioning = 1; ifInitWvl = 0; timeSleepReadWvl = 0.5
+for i in np.linspace(637, 636, 1):
     # Test for ScanRRFreq
-    if True:
-        # velNum = 1; vel_current = 62.7; vel_wvl = 637.2; laserRead_channel = 5
-        velNum = 2; vel_current = 67; vel_wvl = 636.87; laserRead_channel = 14
-
-        SRSnum = 1; MWPower = -2; MWI_duration = 58; MWFreq  = 2843.87e6   #NV D1
+    if False:
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.2; laserRead_channel = 5
+        SRSnum = 1; MWPower = -5.6; MW_duration = 40; MWFreq  = 2598.1e6   #NV D1
+        SDGnum = 1; AWG_channel = 18
         MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
-        start = 0; stop = 100; num_sweep_points = 501 # slow scan
+        start = 14.45; stop = 15.05; num_sweep_points = int(41) # slow scan
     else:
-        velNum = 2; vel_current = 67; vel_wvl = 636.83; laserRead_channel = 14
-
-        SRSnum = 2; MWPower = -20;   MWI_duration = 44; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
+        velNum = 2; vel_current = 67; vel_wvl = 636.88; laserRead_channel = 14
+        SRSnum = 2; MWPower = -9.6; MW_duration = 40; MWFreq  = 2789.2e6   #NV D2
+        SDGnum = 2; AWG_channel = 19
         MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
-        start = 80; stop = 81; num_sweep_points = 11 # slow scan
+        start = 36.65; stop = 37.25; num_sweep_points = int(40+1) # slow scan
     vpzArray = np.linspace(start, stop, num_sweep_points)
 
-    num_loops                    = int(5e5);   ifInitVpz = 0
-    laser_init_delay             = 1e2;        laser_init_duration    = 1e3
-    MW_to_read_delay             = 0
-    laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1750, 14: 900}
+    num_loops                    = int(7e4);   ifInitVpz = 0
+    laser_init_delay             = 1e2;        laser_init_duration    = 15e3
+    MW_to_read_delay             = 1e2
+    laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1800, 14: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
     laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
-    read_duration                = 2000;       read_laser_duration    = 2000
-    AWGbuffer                    = 10;         AWG_output_delay      = 1450      
+    read_duration                = 2e3;        read_laser_duration    = read_duration
+    AWG_buffer                   = 10;         AWG_output_delay       = 1450      
 
     # Create a Dropbox client
     tkFile = 'C:/Users/lukin2dmaterials/data/tk.txt'; lines = []
@@ -56,16 +54,16 @@ for i in np.linspace(1,reps,reps):
     settings = {'vpzArray': vpzArray,    'num_loops':num_loops,  'MWPower':MWPower,    'MWFreq': MWFreq,
                 'SRSnum':   SRSnum,      'dbx':dbx,
                 'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,
-                'laser_to_MWI_delay':     laser_to_MWI_delay ,   'MWI_duration':        MWI_duration,
+                'laser_to_MWI_delay':     laser_to_MWI_delay ,   'MW_duration':        MW_duration,
                 'laser_to_DAQ_delay':     laser_to_DAQ_delay ,   'read_duration':       read_duration,
                 'laserInit_channel':      laserInit_channel,     'laserRead_channel':   laserRead_channel,
                 'read_laser_duration':    read_laser_duration,
                 'MW_to_read_delay':       MW_to_read_delay,   
                 'vel_current':            vel_current,           'vel_wvl':             vel_wvl, 'velNum': velNum,
                 'ifInitVpz':ifInitVpz,   'num_of_cavity_conditioning': num_of_cavity_conditioning,
-                'ifInitWvl':ifInitWvl,
+                'ifInitWvl':ifInitWvl, 'ifIQ':ifIQ,
                 'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,
-                'timeSleepReadWvl': timeSleepReadWvl, 'ifAWG': ifAWG, 'AWGbuffer':AWGbuffer, 'AWG_output_delay':AWG_output_delay,
+                'timeSleepReadWvl': timeSleepReadWvl, 'ifAWG': ifAWG, 'AWG_buffer':AWG_buffer, 'AWG_output_delay':AWG_output_delay,
                 'SDGnum': SDGnum, 'AWG_channel':AWG_channel
                 }
 

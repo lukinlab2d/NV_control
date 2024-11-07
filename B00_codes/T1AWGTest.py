@@ -3,18 +3,11 @@ This file is part of B00 codes based on b26_toolkit. Questions are addressed to 
 """
 import numpy as np
 from nidaqmx.constants import *
-from nidaqmx.constants import(
-    Edge,
-    CountDirection,
-    AcquisitionType,
-    FrequencyUnits
-)
 from B00_codes.PlotPulseNew import *
 from B00_codes.T1AWG import *
 import B00_codes.dataReader as dataReader
 
 ####################################################################################################################
-
 # T1
 laserInit_channel = 3; laserRead_channel   = 3; laserTrack_channel = 3 # 532 is 3, S589 is 6, W589 is 9
 ifRandomized = 0; ifLooped = 0; ifPlotPulse=0

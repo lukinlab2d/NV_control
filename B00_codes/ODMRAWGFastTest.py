@@ -35,26 +35,18 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
                     'z_minus_range':          z_minus_range ,        'z_plus_range':           z_plus_range,
                     'xz_displacement_limit':  xz_displacement_limit,}
 
-ifCW = 0
-if ifCW == 0:
+IF_CW = 0
+if IF_CW == 0:
     reps = 1
     for i in range(reps):
         # Test for Pulsed ODMR Fast
-        a1 = 2834e6; b1 = 2854e6; num_sweep_points = 21
-        f1 = np.linspace(a1, b1, num_sweep_points)
-        a2 = 2912e6; b2 = 2932e6; num_sweep_points = 21
-        f2 = np.linspace(a2, b2, num_sweep_points)
-        f3 = np.linspace(2795e6,a1-3e6,4); f4 = np.linspace(b2+3e6,2975e6,4)
-        f5 = np.linspace(b1+3e6,a2-3e6, 4)
-        freqsArray = np.concatenate((f3,f1,f5,f2,f4))
+        freqsArray = np.linspace(2585e6,2605e6,41)
 
-        # freqsArray = np.linspace(2800e6,2960e6,89)
-
-        SDGnum=1; SRSnum=1; uwPower = -2; ifLooped = 1#(reps != 1)
+        SDGnum=1; SRSnum=1; uwPower = -12; ifLooped = 1#(reps != 1)
         laserInit_channel=3; laserRead_channel=3; AWG_channel=18
 
         pi_increment = 0
-        num_loops                    = int(2e5);          pitime                 = 78
+        num_loops                    = int(4e5);          pitime                 = 128
         laser_init_delay             = 0;                 laser_init_duration    = 0
         laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}   
         AWG_output_delay             = 1450;              AWGbuffer              = 1
@@ -83,21 +75,18 @@ if ifCW == 0:
             # if not ifLooped: dataReader.readData(dataFilename, type='ODMR', ifFit=0, guess=guess)
             ODMRAWGFastObject.close()
 
-            # dataFilename = 'C:/Users/lukin2dmaterials/data/2024-04-22/#168_ODMRAWGFast_23-39-22/ODMRAWGFastObject_sig_set.dat'
-            # dataReader.readData(dataFilename)
-
-elif ifCW == 1:
+elif IF_CW == 1:
     # Test for CW ODMR
     reps = 1
     for i in range(reps):
-        start = 2767e6; stop = 2797e6; num_sweep_points = 41
+        start = 2550e6; stop = 3210e6; num_sweep_points = 166
         freqsArray = np.linspace(start, stop, num_sweep_points)
         uwPower = -8; ifLooped = 1#(reps != 1)
         laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18
         SRSnum = 1; SDGnum = 1
 
-        num_loops = int(10e5); wait_btwn_sig_ref = 1e3; AWGbuffer = 1
-        AWG_output_delay = 1445; MW_duration = 1e3
+        num_loops = int(2e5); wait_btwn_sig_ref = 1e3; AWGbuffer = 1
+        AWG_output_delay = 1450; MW_duration = 1e3
         laser_delay = 10; MW_off_to_read_signal_off = 0
         
         if True:
@@ -114,18 +103,7 @@ elif ifCW == 1:
             ODMRAWGObject = ODMR_CWAWG(settings=settings, ifPlotPulse=not(ifLooped)) # implemented as Instrument. Turn of plot if pulse length > 1e5 ns
             ODMRAWGObject.runScan()
             print('Total time = ' + str(time.time() - start) + ' s')
-
-            dataFilename = ODMRAWGObject.getDataFilename()
-            guess=(-2e6, 2.87e9, 0.02e9, 1)
-            if not ifLooped: dataReader.readData(dataFilename, type='ODMR', ifFit=0, guess=guess)
             ODMRAWGObject.close()
-
-            # dataFilename = 'C:/Users/lukin2dmaterials/data/2024-04-22/#083_ODMR_CWAWG_13-01-12/ODMRAWGObject_sig_set.dat'
-            # dataReader.readData(dataFilename)
-        
-        
-
-
 
 
 

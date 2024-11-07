@@ -11,47 +11,46 @@ import B00_codes.dataReader as dataReader
 NO_MS_EQUALS_1 = 0
 Q_FINAL = 1
 THREE_PI_HALF_FINAL = 2
-
+pi = np.pi
 ####################################################################################################################
 reps = 5;  ifRandomized = 0; ifLooped = (reps!=1); normalized_style = Q_FINAL
-laserInit_channel = 7;   ifScanVpz         = 0;    
+ifAWG=1;   laserInit_channel = 3;      ifScanVpz = 0;    
 vel_vpz_start     = 57;  vel_vpz_end       = 62
 vel_vpz_step      = 0.1; vel_vpz_step_time = 0.3; 
 
 # T2ERR   
-taus1 = np.linspace(70,2070,51)
-# taus2 = np.linspace(210000, 490000, 15)
-tausArray = taus1
+tausArray = np.round(np.logspace(2,np.log10(2e6),101),-1)
 
 if True:
-    velNum = 1; vel_current = 56.5; vel_wvl = 637.22; laserRead_channel = 5
-    vel_vpz_target    = 78.52;   ifInitVpz   = 1;     ifInitWvl = 0
+    velNum    = 1; vel_current = 62.7; vel_wvl   = 637.2; laserRead_channel = 5
+    ifNeedVel = 0; ifInitVpz   = 0;    ifInitWvl = 0;     vel_vpz_target    = 78.52;   
 else:
     velNum = 2; vel_current = 67; vel_wvl = 636.83; laserRead_channel = 14
     vel_vpz_target    = 79.2; ifInitVpz   = 1
 if True: 
-    SRSnum = 1; MWPower = -20; pi_half = 34; MWFreq  = 2747.88e6   #NV D1
+    SRSnum = 1; MWPower = 0; pi_half = 10; MWFreq  = 2597.9e6   #NV D1
+    SDGnum = 1; AWG_channel = 18 
     MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
 else:
-    SRSnum = 2; MWPower = -17; pi_half = 26; MWFreq  = 2838.26e6   #NV D2, 2nd MW path
+    SRSnum = 2; MWPower = -17; pi_half = 26; MWFreq  = 2785.2e6   #NV D2, 2nd MW path
     MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
 
 # Params
-num_loops                    = int(1e4)
+num_loops                    = int(1e5);   phi_IQ                 = pi/2 #rad, angle of last pi/2
 laser_init_delay             = 1e2;        laser_init_duration    = 8e3
 MW_to_read_delay             = 1e2;        MWI_to_switch_delay    = 10
 laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14:900}
 laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
 laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
-read_duration                = 300;        read_laser_duration    = 200
+read_duration                = 2e3;        read_laser_duration    = 2e3
+AWG_buffer                   = 1;          AWG_output_delay       = 1450  
 
-if_tracking = 1; threshold_repumpVpz = 20; threshold_scanVpz = 17
+if_tracking = 0; threshold_repumpVpz = 20; threshold_scanVpz = 17
 num_loops_track = 5e3; fracOfTausArray = 0.6; num_of_cavity_conditioning = 1 # if already cond' for many times, use more avgs. Not that longer
 start = vel_vpz_target - 1.6; stop = vel_vpz_target + 1.6; num_sweep_points = 65; 
 vpzArray = np.linspace(start, stop, num_sweep_points)
 
 for i in np.linspace(1,reps,reps):
-    
     RRtrackingSettings = {'if_tracking': if_tracking, 'threshold_repumpVpz': threshold_repumpVpz, 'threshold_scanVpz': threshold_scanVpz,
                     'fracOfTausArray': fracOfTausArray,
                 'vpzArray': vpzArray,    'num_loops':num_loops_track,  'MWPower':MWPower,    'MWFreq': MWFreq,
@@ -78,7 +77,8 @@ for i in np.linspace(1,reps,reps):
                 'vel_vpz_step': vel_vpz_step, 'vel_vpz_step_time': vel_vpz_step_time, 'ifScanVpz': ifScanVpz, 
                 'ifInitVpz':ifInitVpz, 'ifInitWvl':ifInitWvl,
                 'MWI_channel': MWI_channel,  'MWQ_channel': MWQ_channel,  'MWswitch_channel': MWswitch_channel,
-                'RRtrackingSettings': RRtrackingSettings, 'ifRandomized': ifRandomized }
+                'RRtrackingSettings': RRtrackingSettings, 'ifRandomized': ifRandomized,'ifNeedVel':ifNeedVel, 'phi_IQ':phi_IQ,
+                'ifAWG': ifAWG, 'SDGnum': SDGnum, 'AWG_channel':AWG_channel, 'AWG_buffer':AWG_buffer, 'AWG_output_delay':AWG_output_delay  }
 
     start = time.time()
     print(MWFreq)
