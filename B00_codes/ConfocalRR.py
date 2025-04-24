@@ -52,9 +52,10 @@ class ConfocalRR(Instrument):
         self.MWI2Param =         {'delay_time': 2, 'channel':settings['MWI2_channel']}
         self.MWQ2Param =         {'delay_time': 2, 'channel':settings['MWQ2_channel']}
         self.MWswitch2Param =    {'delay_time': 2, 'channel':settings['MWswitch2_channel']}
+        self.hiLoMWPwrParam =    {'delay_time': 2, 'channel':settings['hiLoMWPwr_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
-        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
+        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 'hiLoMWPwr': self.hiLoMWPwrParam,
                           'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,'AWG': self.AWGParam,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                           'LaserRead2': self.LaserRead2Param, 'LaserInit': self.LaserInitParam,
@@ -233,8 +234,8 @@ class ConfocalRR(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
         
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
@@ -268,6 +269,7 @@ class Signal2(Parameter):
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
         self.ifAWG = self.settings['ifAWG']
+        self.ifHiloExtra  = self.settings['ifHiloExtra']
 
         self.vel_vpz_target = self.settings['vel_vpz_target']
         self.vel_vpz_target2 = self.settings['vel_vpz_target2']
@@ -309,6 +311,8 @@ class Signal2(Parameter):
         read_signal_delay2          = laser_read_signal_delay2 + laser_to_DAQ_delay2
         read_signal_duration2       = read_duration
         when_read_signal_end2       = read_signal_delay2 + read_signal_duration2
+
+        hilo_duration = when_laser_read_signal_end2 - laser_init_delay
         
         # laser_init_ref_delay        = np.max((when_read_signal_end2, when_read_signal_end)) + laser_init_delay
         # when_init_ref_end           = laser_init_ref_delay + laser_init_duration
@@ -350,7 +354,7 @@ class Signal2(Parameter):
         # pulse_sequence += [spc.Pulse('MWswitch2',     MWI_delay2,               duration=int(MWI_duration))]
         pulse_sequence += [spc.Pulse('Counter',       read_signal_delay2,       duration=int(read_signal_duration2))] 
         # pulse_sequence += [spc.Pulse('Counter',       read_ref_delay2,          duration=int(read_ref_duration2))] 
-        
+        pulse_sequence += [spc.Pulse('hiLoMWPwr', laser_init_delay, duration=int(hilo_duration))]
         self.pulse_sequence = pulse_sequence; self.num_loops = num_loops
 
         num_reads_per_iter = 0

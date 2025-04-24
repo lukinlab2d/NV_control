@@ -16,27 +16,32 @@ REF_MINUS_SIG  = 3
 reps = 1
 for i in range(reps):
     # RabiAWG
-    start = 2; stop = 122; num_sweep_points = 31; ifLooped =1#(reps != 1)
+    start = 4; stop = 80; num_sweep_points = 20; ifLooped=(reps != 1)
     tausArray = np.linspace(start, stop, num_sweep_points)
-    SDGnum=1; SRSnum=1; uwPower = 0; uwFreq = 2785.2e6; print(uwFreq)
-    laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18
+    SDGnum=1; SRSnum=1; uwPower = -5.7; uwFreq = 2598.44e6; print(uwFreq)
+    laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18; ifFakeRabi=1e5
 
-    num_loops               = int(5e5);  AWGbuffer               = 10
-    laser_init_delay        = 0;         laser_init_duration     = 0
+    num_loops               = int(1e5);  AWGbuffer               = 10
+    laser_init_delay        = 0;         laser_init_duration     = 500
     laser_to_AWG_delay      = 0;         AWG_output_delay        = 1450      
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
     laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)
     read_duration           = 300;       DAQ_to_laser_off_delay  = 400
-
+    MWI_duration            = 40
     if True:
-        settings = {'num_loops':num_loops, 'tausArray':tausArray,
+        if ifFakeRabi>0:
+            start = 1; stop = int(ifFakeRabi); num_sweep_points = int(ifFakeRabi)
+            tausArray = np.linspace(start, stop, num_sweep_points)
+            num_loops = int(1e5)
+
+        settings = {'num_loops':num_loops, 'tausArray':tausArray, 'MWI_duration':MWI_duration,
                     'SRSnum':SRSnum, 'uwPower':uwPower, 'uwFreq': uwFreq, 'SDGnum':SDGnum,
                     'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,
                     'laser_to_AWG_delay':     laser_to_AWG_delay,    'AWGbuffer':           AWGbuffer,
                     'laser_to_DAQ_delay':     laser_to_DAQ_delay,    'read_duration':       read_duration,
                     'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'AWG_output_delay':    AWG_output_delay,
                     'laserInit_channel':      laserInit_channel,     'laserRead_channel':   laserRead_channel,
-                    'AWG_channel':            AWG_channel}
+                    'AWG_channel':            AWG_channel,           'ifFakeRabi': ifFakeRabi, }
 
         start = time.time()
         RabiAWGObject = RabiAWG(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument

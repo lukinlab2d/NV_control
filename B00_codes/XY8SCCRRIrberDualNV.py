@@ -257,6 +257,8 @@ class Signal(Parameter):
         self.tausArray = self.settings['tausArray']
         self.RRtrackingSettings  = self.settings['RRtrackingSettings']
         self.RRtrackingSettings2 = self.settings['RRtrackingSettings2']
+        self.ifHiloExtra = self.settings['ifHiloExtra']
+        self.ifDiffFreqExp = self.settings['ifDiffFreqExp']
 
     def set_raw(self, tau_ns):
         NO_MS_EQUALS_1 = 0
@@ -282,19 +284,41 @@ class Signal(Parameter):
         normalized_style       = self.settings['normalized_style'];       shift_btwn_2NV_read    = self.settings['shift_btwn_2NV_read']
         shift_btwn_2NV_MW      = self.settings['shift_btwn_2NV_MW'];      ifStartInY             = self.settings['ifStartInY']
         AWG_buffer             = self.settings['AWG_buffer'];             AWG_output_delay       = self.settings['AWG_output_delay']  
-        NXY8                   = self.settings['NXY8'];                   sweepWhich             = self.settings['sweepWhich']
+        NXY81                  = self.settings['NXY81'];                  NXY82                  = self.settings['NXY82']; 
+        sweepWhich             = self.settings['sweepWhich']
         phi_IQ                 = self.settings['phi_IQ'];                 phi_IQ2                = self.settings['phi_IQ2']
         phi_IQ_antiCorrPulse   = self.settings['phi_IQ_antiCorrPulse'];   tauExtra               = self.settings['tauExtra']
         amp_MW_mix             = self.settings['amp_MW_mix'];             amp_MW_mix2            = self.settings['amp_MW_mix2']
-        pi = pi_time; pi_half=pi/2
-        # MW_duration_for_AWG     = int(2*int((AWG_buffer + 2*pi_half + NXY8*tau_ns*8 + NXY8*pi*8 + tauExtra)/2))
-
+        MWPnoOvlap             = self.settings['MWPnoOvlap'];             MWPnoOvlap2            = self.settings['MWPnoOvlap2']
+        MWPower                = self.settings['MWPower'];                MWPower2               = self.settings['MWPower2']
+        pi = pi_time; pi_half=pi/2; tau_ns2 = tau_ns
+        
         if sweepWhich=='shift_btwn_2NV_MW':
             shift_btwn_2NV_MW = tau_ns
-            tau_ns = self.settings['tau']
+            tau_ns = tau_ns2 = self.settings['tau']
+
+            if self.ifDiffFreqExp==1:
+                tau_ns2 = self.settings['tau2']
+            
+            # tau_true = tau_ns + pi_time
+            # srs = self.XY8SCCRRIrberDualNVObject.srs
+            # srs2 = self.XY8SCCRRIrberDualNVObject.srs2
+            # if np.mod(shift_btwn_2NV_MW,tau_true)!=0:
+            #     srs.set_RFAmplitude(MWPnoOvlap) #dBm
+            #     srs2.set_RFAmplitude(MWPnoOvlap2) #dBm
+            # else:
+            #     print('Using overlapping MW power')
+            #     srs.set_RFAmplitude(MWPower) #dBm
+            #     srs2.set_RFAmplitude(MWPower2) #dBm
+                
         elif sweepWhich=='N':
-            NXY8 = int(tau_ns)
-            tau_ns              = self.settings['tau']
+            NXY81 = NXY82 = int(tau_ns)
+            tau_ns = tau_ns2 = self.settings['tau']
+
+        else:
+            if self.ifDiffFreqExp==1:
+                tau_ns2 = int(tau_ns) # sweep NV2's probing frequency
+                tau_ns = self.settings['tau'] # fix NV1's probing frequency
 
         if self.ifMWReadLowDutyCycle: nMWread   = int(DAQ_duration/(MWmix_duration_short + delay_between_MWmix))
         self.num_loops = num_loops
@@ -311,28 +335,30 @@ class Signal(Parameter):
         spinInit_duration_each  = spinInit_RR_duration + spinInit_RR_to_pi_delay + pi_time3 + spinInit_pi_to_RR_delay
         spinInit_duration_total = nSpinInit*spinInit_duration_each
         spinInit_lastRR_delay   = spinInit_delay + spinInit_duration_total
-        spinInit_lastMW_delay   = spinInit_lastRR_delay + spinInit_RR_duration + spinInit_RR_to_pi_delay
+        when_spinInit_lastRR_end= spinInit_lastRR_delay + spinInit_RR_duration
+
+        spinInit_lastMW_delay   = when_spinInit_lastRR_end + spinInit_RR_to_pi_delay ## Last MW is to init at ms=0 ##
         when_spinInit_lastMW_end= spinInit_lastMW_delay + pi_time
         self.delay_for_plot     = spinInit_lastMW_delay
         ################## XY8 ##########################################################################
         ###### NV1 ######################################
-        MWI_delay               = when_spinInit_lastMW_end + spinInit_RR_to_pi_delay
+        MWI_delay               = when_spinInit_lastMW_end + spinInit_RR_to_pi_delay #this should be an independent spinInitMWtopidelay, but just recycling unimportant variables here
         MW_delays     = []
         MW_delays.append(MWI_delay)         
-        MW_delays.append(MW_delays[0] + pi_half + tau_ns/2)
-        for i in range(2,NXY8*8+1):
+        MW_delays.append(MW_delays[0] + pi_half + (tau_ns-0*pi_half)/2)
+        for i in range(2,NXY81*8+1):
             MW_delays.append(MW_delays[i-1] + pi + tau_ns)
-        MW_delays.append(MW_delays[NXY8*8] + pi + tau_ns/2 + tauExtra)
-        when_pulse_end = MW_delays[NXY8*8+1] + pi_half
+        MW_delays.append(MW_delays[NXY81*8] + pi + (tau_ns-0*pi_half)/2 + tauExtra)
+        when_pulse_end = MW_delays[NXY81*8+1] + pi_half
         ###### NV2 ######################################
         MWI_delay2              = MWI_delay + shift_btwn_2NV_MW    
         MW_delays2     = []
         MW_delays2.append(MWI_delay2)         
-        MW_delays2.append(MW_delays2[0] + pi_half + tau_ns/2)
-        for i in range(2,NXY8*8+1):
-            MW_delays2.append(MW_delays2[i-1] + pi + tau_ns)
-        MW_delays2.append(MW_delays2[NXY8*8] + pi + tau_ns/2 + tauExtra)
-        when_pulse_end2 = MW_delays2[NXY8*8+1] + pi_half 
+        MW_delays2.append(MW_delays2[0] + pi_half + (tau_ns2-0*pi_half)/2)
+        for i in range(2,NXY82*8+1):
+            MW_delays2.append(MW_delays2[i-1] + pi + tau_ns2)
+        MW_delays2.append(MW_delays2[NXY82*8] + pi + (tau_ns2-0*pi_half)/2 + tauExtra)
+        when_pulse_end2 = MW_delays2[NXY82*8+1] + pi_half 
         ################## Ionization ###################################################################
         ion_RR_delay            = np.max((when_pulse_end,when_pulse_end2)) + pi_to_ion_delay               
         when_ion_RR_end         = ion_RR_delay + ion_duration
@@ -382,22 +408,22 @@ class Signal(Parameter):
 
         MW_ref_delays     = []
         MW_ref_delays.append(MWI_ref_delay)         
-        MW_ref_delays.append(MW_ref_delays[0] + pi_half + tau_ns/2)
-        for i in range(2,NXY8*8+1):
+        MW_ref_delays.append(MW_ref_delays[0] + pi_half + (tau_ns-0*pi_half)/2)
+        for i in range(2,NXY81*8+1):
             MW_ref_delays.append(MW_ref_delays[i-1] + pi + tau_ns)
-        MW_ref_delays.append(MW_ref_delays[NXY8*8] + pi + tau_ns/2 + tauExtra)
-        when_pulse_ref_end = MW_ref_delays[NXY8*8+1] + pi_half
+        MW_ref_delays.append(MW_ref_delays[NXY81*8] + pi + (tau_ns-0*pi_half)/2 + tauExtra)
+        when_pulse_ref_end = MW_ref_delays[NXY81*8+1] + pi_half
         
         ###### NV2 ######################################
         MWI_ref_delay2               = MWI_ref_delay + shift_btwn_2NV_MW
      
         MW_ref_delays2     = []
         MW_ref_delays2.append(MWI_ref_delay2)         
-        MW_ref_delays2.append(MW_ref_delays2[0] + pi_half + tau_ns/2)
-        for i in range(2,NXY8*8+1):
-            MW_ref_delays2.append(MW_ref_delays2[i-1] + pi + tau_ns)
-        MW_ref_delays2.append(MW_ref_delays2[NXY8*8] + pi + tau_ns/2 + tauExtra)
-        when_pulse_ref_end2 = MW_ref_delays2[NXY8*8+1] + pi_half
+        MW_ref_delays2.append(MW_ref_delays2[0] + pi_half + (tau_ns2-0*pi_half)/2 )
+        for i in range(2,NXY82*8+1):
+            MW_ref_delays2.append(MW_ref_delays2[i-1] + pi + tau_ns2)
+        MW_ref_delays2.append(MW_ref_delays2[NXY82*8] + pi + (tau_ns2-0*pi_half)/2 + tauExtra)
+        when_pulse_ref_end2 = MW_ref_delays2[NXY82*8+1] + pi_half
         ################## Ionization ##################################################################
         ion_ref_RR_delay        = np.max((when_pulse_ref_end, when_pulse_ref_end2)) + pi_to_ion_delay
         when_ion_ref_RR_end     = ion_ref_RR_delay + ion_duration
@@ -421,9 +447,10 @@ class Signal(Parameter):
         DAQ_ref_NV2_delay        = DAQ_ref_delay + shift_btwn_2NV_read
         MWmix_ref_NV2_delay      = MWmix_ref_delay + shift_btwn_2NV_read
 
+        ####################################################################################################
         MW_delay_for_AWG        = spinInit_lastMW_delay - AWG_output_delay - AWG_buffer
         pulse_to_MWmix_wait     = MWmix_delay - when_pulse_end
-        MWmix_to_pulseRef_wait  = spinInit_lastMW_ref_delay - MWmix_delay - MWmix_duration
+        MWmix_to_pulseRef_wait  = spinInit_lastMW_ref_delay - (MWmix_delay + MWmix_duration)
         
         MW_delay_for_AWG2        = MW_delay_for_AWG # the shift_btwn_2NV_MW will be incorporated to the sequence
         pulse_to_MWmix_wait2     = MWmix_NV2_delay - when_pulse_end2
@@ -445,7 +472,7 @@ class Signal(Parameter):
             ch1plot, ch2plot = AWG.send_XY8SCCRRIrber_seq(int(MWmix_duration), int(AWG_buffer),
                             MWmix_to_pulseRef_wait=int(MWmix_to_pulseRef_wait), pitime=int(pi_time), 
                             pulse_to_MWmix_wait=int(pulse_to_MWmix_wait), sleepTime=1,
-                            tau=int(tau_ns), numxy8=NXY8, mode=self.ifSinDetect, shift_MW=0,
+                            tau=int(tau_ns), numxy8=NXY81, mode=self.ifSinDetect, shift_MW=0,
                             ifJustRef_CorrACorr=self.ifJustRef_CorrACorr,
                             ifAntiCorrel=self.ifAntiCorrel,
                             rest_after_first_pulse=spinInit_RR_to_pi_delay,
@@ -457,7 +484,7 @@ class Signal(Parameter):
             ch1plot2, ch2plot2 = AWG2.send_XY8SCCRRIrber_seq(int(MWmix_duration), int(AWG_buffer),
                             MWmix_to_pulseRef_wait=int(MWmix_to_pulseRef_wait2), pitime=int(pi_time), 
                             pulse_to_MWmix_wait=int(pulse_to_MWmix_wait2), sleepTime=sleepTime,
-                            tau=int(tau_ns), numxy8=NXY8, mode=self.ifSinDetect, shift_MW=shift_btwn_2NV_MW,
+                            tau=int(tau_ns2), numxy8=NXY82, mode=self.ifSinDetect, shift_MW=shift_btwn_2NV_MW,
                             ifJustRef_CorrACorr=self.ifJustRef_CorrACorr,
                             ifAntiCorrel=self.ifAntiCorrel,
                             rest_after_first_pulse=spinInit_RR_to_pi_delay,
@@ -548,7 +575,10 @@ class Signal(Parameter):
 
         if self.ifMWReadLowDutyCycle == 0:
             pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_delay,         duration=int(hilo_duration))]
-
+        if self.ifHiloExtra==1:
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    laser_init_delay,   duration=int(laser_init_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    ion_strong_delay,   duration=int(ion_strong_duration))] 
+        
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_delay,        duration=int(DAQ_signal_duration))] 
         
         ########################### Read sig NV2 ###########################
@@ -568,9 +598,6 @@ class Signal(Parameter):
                     pulse_sequence += [spc.Pulse('MWswitch4',  delay,         duration=int(MWmix_duration_short))] 
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_NV2_delay,         duration=int(MWmix_duration))]
-
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    MWmix_NV2_delay,         duration=int(MWmix_duration))]
 
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_NV2_delay,        duration=int(DAQ_signal_duration))] 
         
@@ -661,7 +688,10 @@ class Signal(Parameter):
                 pulse_sequence += [spc.Pulse('MWswitch3',MWmix_ref_delay,  duration=int(MWmix_ref_duration))]
         
         if self.ifMWReadLowDutyCycle == 0:
-            pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_ref_delay,  duration=int(hilo_ref_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', hilo_ref_delay,       duration=int(hilo_ref_duration))]
+        if self.ifHiloExtra==1:
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', laser_init_ref_delay, duration=int(laser_init_ref_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', ion_ref_strong_delay, duration=int(ion_strong_duration))] 
         
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_delay,        duration=int(DAQ_ref_duration))] 
 
@@ -682,15 +712,25 @@ class Signal(Parameter):
                     pulse_sequence += [spc.Pulse('MWswitch4', delay,       duration=int(MWmix_duration_short))] 
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_ref_NV2_delay,  duration=int(MWmix_ref_duration))]
-        
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    MWmix_ref_NV2_delay,  duration=int(MWmix_ref_duration))]
-        
+       
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_NV2_delay,        duration=int(DAQ_ref_duration))] 
+
+        # ########################### Make hilo pulse ###########################
+        # if self.ifHiloExtra==1:
+        #     plotPulseObject = PlotPulse(pulseSequence=pulse_sequence, ifSave=False)
+        #     _, ch11, ch21 = plotPulseObject.makeTraceAWG(ch1plot, ch2plot, self.delay_for_plot)
+        #     _, ch12, ch22 = plotPulseObject.makeTraceAWG(ch1plot2, ch2plot2, self.delay_for_plot)
+        #     all_ch = ch11 + ch21 + ch12 + ch22
+        #     zeroSegments = plotPulseObject.find_zero_segments(all_ch)
+        #     for start, length in zeroSegments:
+        #         margin_start = self.settings['hilo_margin_start']; margin_end = self.settings['hilo_margin_end']
+        #         hilo_delay = start + margin_start
+        #         hilo_duration = length - (margin_start + margin_end)
+        #         if hilo_duration >= self.settings['hilo_min']:
+        #             pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]
+                    
 ##################################################################################################################################################################################
 ##################################################################################################################################################################################
-
-
         self.read_duration = DAQ_signal_duration
     
         self.pulse_sequence = pulse_sequence
@@ -723,8 +763,14 @@ class Signal(Parameter):
 
         if sweepWhich=='shift_btwn_2NV_MW':
             print('Set shift_btwn_2NV_MW to ' + str(shift_btwn_2NV_MW) + " ns")
+            if self.ifDiffFreqExp==1:
+                print('Set tau to ' + str(tau_ns) + " ns")
+                print('Set tau2 to ' + str(tau_ns2) + " ns")
         elif sweepWhich=='N':
-            print('Set N to ' + str(NXY8))
+            print('Set N to ' + str((NXY81+NXY82)/2))
+        elif self.ifDiffFreqExp==1:
+            print('Set tau to ' + str(tau_ns) + " ns")
+            print('Set tau2 to ' + str(tau_ns2) + " ns")
         else:
             print('Set tau to ' + str(tau_ns) + " ns")
         if not self.settings['ifPlotPulse']: self.loopCounter += 1

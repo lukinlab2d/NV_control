@@ -14,38 +14,40 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 pi = np.pi
 ####################################################################################################################
-reps=int(1);  ifLooped=(reps!=1); laserInit_channel=3; normalized_style=Q_FINAL; 
-ifInitWvl=0; ifInitVpz=0; ifNeedVel1=0; ifNeedVel2=0
-ifRandomized=0; if_tracking=0; ifAWG=1
-ifRndPhaseNoise = 0; AGBW = 50e3; AGfreq = 3.3e6; AGamp = 0.2 # beware of heating!!
+reps=int(1e4);  ifLooped=(reps!=-1); laserInit_channel=3; normalized_style=Q_FINAL; 
+ifInitWvl=0; ifInitVpz=0; ifNeedVel1=0; ifNeedVel2=0; hiLoMWPwr_channel=17
+ifRandomized=0; if_tracking=0; ifAWG=1; ifHiloExtra=1
+ifRndPhaseNoise = 0; AGBW = 50e3; AGfreq = 3.3e6; AGamp = 0*0.2 # beware of heating!!
 for i in np.linspace(1, reps, reps):
     # T2RRRDualNV_NewTrack
-    tausArray = np.linspace(4,15004,376)
+    # tausArray = np.linspace(10,200010,2001)
+    tausArray = np.round(np.logspace(np.log10(5e4),np.log10(1e6),15),-1)
 
-    num_loops                    = int(1e5)
-    laser_init_delay             = 1e2;        laser_init_duration    = 8e3
+    num_loops                    = int(4e4)
+    laser_init_delay             = 5e2;        laser_init_duration    = 30e3
     MW_to_read_delay             = 1e2;        MWI_to_switch_delay    = 30
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14:900}
     laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
     read_duration                = 2e3;        read_laser_duration    = read_duration
     read_duration2               = 2e3;        read_laser_duration2   = read_duration2
-    shift_btwn_2NV_MW            = 0;          shift_btwn_2NV_read    = read_duration+1.7e3
-    AWG_buffer                   = 1;          AWG_output_delay       = 1450  
-    AWG_buffer2                  = 1;          AWG_output_delay2      = 1450  
+    shift_btwn_2NV_MW            = 80;         shift_btwn_2NV_read    = read_duration+1.7e3
+    AWG_buffer                   = 10;         AWG_output_delay       = 1450  
+    AWG_buffer2                  = 10;         AWG_output_delay2      = 1450
+    hilo_margin_start = 40; hilo_margin_end = 40; hilo_min = 60  
 
     if True:
         ########### NV1 ##############
-        velNum = 1; vel_current = 62.7; vel_wvl = 637.20; vel_vpz_target = -1; laserRead_channel = 5
-        SRSnum  = 1; MWPower  = 0.7; pi_half  = 10; MWFreq   = 2598.1e6   #NV D1 ms-1
-        SRSnum3 = 3; MWPower3 = -80; pi_half3 = 10; MWFreq3  = 3000e6     #NV D1 ms+1
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.22; vel_vpz_target = -1; laserRead_channel = 5
+        SRSnum  = 1; MWPower  = -6.2; pi_half  = 20; MWFreq   = 2598.44e6 #2953.76e6 #2886.745e6   #NV D1 ms-1
+        SRSnum3 = 3; MWPower3 = -107; pi_half3 = 20; MWFreq3  = 3161.27e6     #NV D1 ms+1
         SDGnum  = 1; AWG_channel = 18 
         MWI_channel  = 1; MWQ_channel  = 0; MWswitch_channel  = 2; MWswitch3_channel = 15
         laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
 
         ############ NV2 #############
         velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.88; vel_vpz_target2 = -1; laserRead2_channel = 14
-        SRSnum2 = 2; MWPower2 = -2.2; pi_half2  = 10; MWFreq2  = 2788.9e6   #NV D2, ms-1
-        SRSnum4 = 4; MWPower4 = -80;  pi_half4  = 10; MWFreq4  = 3100e6     #NV D2, ms+1
+        SRSnum2 = 2; MWPower2 = -8.8; pi_half2  = 20; MWFreq2  = 2788.70e6   #NV D2, ms-1
+        SRSnum4 = 4; MWPower4 = -107; pi_half4  = 20; MWFreq4  = 3037.20e6     #NV D2, ms+1
         SDGnum2 = 2; AWG2_channel = 19
         MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11; MWswitch4_channel = 16
         laser_to_DAQ_delay2 = laser_to_DAQ_delay_directory.get(laserRead2_channel, 0) 
@@ -114,6 +116,7 @@ for i in np.linspace(1, reps, reps):
                 'laser_to_DAQ_delay':     laser_to_DAQ_delay,    'read_duration':             read_duration,
                 'MW_to_read_delay':       MW_to_read_delay,      'read_laser_duration':       read_laser_duration,
                 'laserInit_channel':      laserInit_channel,     'laserRead_channel':         laserRead_channel, 
+                'hiLoMWPwr_channel':      hiLoMWPwr_channel,
                 'laser_to_DAQ_delay2':    laser_to_DAQ_delay2,   'laserRead2_channel':        laserRead2_channel,
                 'normalized_style':       normalized_style,      'pi_half': pi_half, 'pi_half2': pi_half2,
                 'vel_current':  vel_current, 'vel_wvl': vel_wvl, 'velNum': velNum, 'ifNeedVel1': ifNeedVel1,
@@ -126,13 +129,16 @@ for i in np.linspace(1, reps, reps):
                 'shift_btwn_2NV_MW':shift_btwn_2NV_MW, 'shift_btwn_2NV_read': shift_btwn_2NV_read, 'ifAWG':ifAWG,
                 'SDGnum': SDGnum,   'AWG_channel':AWG_channel,   'AWG_buffer':AWG_buffer,   'AWG_output_delay':AWG_output_delay,
                 'SDGnum2': SDGnum2, 'AWG2_channel':AWG2_channel, 'AWG_buffer2':AWG_buffer2, 'AWG_output_delay2':AWG_output_delay2,
-                'read_duration2':read_duration2, 'read_laser_duration2':read_laser_duration2,}
+                'read_duration2':read_duration2, 'read_laser_duration2':read_laser_duration2,
+                'ifHiloExtra':ifHiloExtra,'hilo_margin_start':hilo_margin_start,
+                'hilo_margin_end':hilo_margin_end,'hilo_min':hilo_min}
 
     ####### Random-phase noise ######
     if ifRndPhaseNoise:
         AG = AG33522A()
-        AG.disable_PM()
-        AG.disable_RFOutput()
+        AG.disable_PM(channel=1); AG.disable_PM(channel=2)
+        AG.disable_RFOutput(channel=1); AG.disable_RFOutput(channel=2)
+        time.sleep(1)
         
         AG.set_PMsource()
         AG.set_PMfunction(function='NOIS')
@@ -141,6 +147,11 @@ for i in np.linspace(1, reps, reps):
 
         AG.apply(function='SIN', freq=AGfreq, amplitude=AGamp, DCoffset=0)
         AG.enable_PM()
+    else:
+        AG = AG33522A()
+        AG.disable_PM(channel=1); AG.disable_PM(channel=2)
+        AG.disable_RFOutput(channel=1); AG.disable_RFOutput(channel=2)
+        time.sleep(1)
     #################################
     start = time.time()
     T2RRRDualNV_NewTrackObject = T2RRRDualNV_NewTrack(settings=settings, ifPlotPulse=not(ifLooped)) 
@@ -149,5 +160,6 @@ for i in np.linspace(1, reps, reps):
     T2RRRDualNV_NewTrackObject.close()
 
     if ifRndPhaseNoise:
-        AG.disable_PM()
-        AG.disable_RFOutput()
+        AG.disable_PM(channel=1); AG.disable_PM(channel=2)
+        AG.disable_RFOutput(channel=1); AG.disable_RFOutput(channel=2)
+        time.sleep(1)

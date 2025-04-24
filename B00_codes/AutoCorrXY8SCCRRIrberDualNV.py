@@ -257,6 +257,7 @@ class Signal(Parameter):
         self.tausArray = self.settings['tausArray']
         self.RRtrackingSettings  = self.settings['RRtrackingSettings']
         self.RRtrackingSettings2 = self.settings['RRtrackingSettings2']
+        self.ifHiloExtra = self.settings['ifHiloExtra']
 
     def set_raw(self, tcorr):
         NO_MS_EQUALS_1 = 0
@@ -569,9 +570,6 @@ class Signal(Parameter):
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_NV2_delay,         duration=int(MWmix_duration))]
 
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    MWmix_NV2_delay,         duration=int(MWmix_duration))]
-
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_NV2_delay,        duration=int(DAQ_signal_duration))] 
         
 ########################################################### Reference #######################################################################################################################
@@ -683,10 +681,22 @@ class Signal(Parameter):
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_ref_NV2_delay,  duration=int(MWmix_ref_duration))]
         
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    MWmix_ref_NV2_delay,  duration=int(MWmix_ref_duration))]
-        
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_NV2_delay,        duration=int(DAQ_ref_duration))] 
+
+        ########################### Make hilo pulse ###########################
+        if self.ifHiloExtra==1:
+            plotPulseObject = PlotPulse(pulseSequence=pulse_sequence, ifSave=False)
+            _, ch11, ch21 = plotPulseObject.makeTraceAWG(ch1plot, ch2plot, self.delay_for_plot)
+            _, ch12, ch22 = plotPulseObject.makeTraceAWG(ch1plot2, ch2plot2, self.delay_for_plot)
+            all_ch = ch11 + ch21 + ch12 + ch22
+            zeroSegments = plotPulseObject.find_zero_segments(all_ch)
+            for start, length in zeroSegments:
+                margin_start = self.settings['hilo_margin_start']; margin_end = self.settings['hilo_margin_end']
+                hilo_delay = start + margin_start
+                hilo_duration = length - (margin_start + margin_end)
+                if hilo_duration >= self.settings['hilo_min']:
+                    pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]       
+        
 ##################################################################################################################################################################################
 ##################################################################################################################################################################################
 

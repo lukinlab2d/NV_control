@@ -298,9 +298,11 @@ class Signal(Parameter):
         spinInit_lastRR_delay   = spinInit_delay + spinInit_duration_total
         when_spinInit_lastRR_end= spinInit_lastRR_delay + spinInit_RR_duration
         #########################################
-        pi_delay                = when_spinInit_lastRR_end + spinInit_RR_to_pi_delay; self.delay_for_plot = pi_delay
+        pi_delay                = when_spinInit_lastRR_end + spinInit_RR_to_pi_delay
+        self.delay_for_plot     = pi_delay
         when_pi_end             = pi_delay + pi_time
-        pi_delay2               = pi_delay + shift_btwn_2NV_MW; self.delay_for_plot2 = pi_delay2
+        pi_delay2               = pi_delay + shift_btwn_2NV_MW
+        self.delay_for_plot2    = pi_delay2
         when_pi_end2            = pi_delay2 + pi_time
 
         ion_RR_delay            = np.max((when_pi_end,when_pi_end2)) + pi_to_ion_delay                 
@@ -385,7 +387,7 @@ class Signal(Parameter):
         pi_to_MWmix_wait        = MWmix_delay - pi_delay - pi_time
         sig_to_ref_wait         = MWmix_ref_delay - MWmix_delay - MWmix_duration
         
-        MW_delay_for_AWG2        = pi_delay - AWG_output_delay
+        MW_delay_for_AWG2        = pi_delay - AWG_output_delay # trigger 2 AWGs at the same time
         pi_to_MWmix_wait2        = MWmix_NV2_delay - pi_delay - pi_time
         sig_to_ref_wait2         = MWmix_ref_NV2_delay - MWmix_NV2_delay - MWmix_duration
 
@@ -448,10 +450,13 @@ class Signal(Parameter):
 
         if self.ifMWReadLowDutyCycle == 0:
             pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_delay,         duration=int(hilo_duration))]
+        if self.ifHiloExtra==1:
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    laser_init_delay,   duration=int(laser_init_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    ion_strong_delay,   duration=int(ion_strong_duration))]
 
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_delay,        duration=int(DAQ_signal_duration))] 
-        if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
-            pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_extra_delay,         duration=int(hilo_extra_duration))]
+        # if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
+        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_extra_delay,         duration=int(hilo_extra_duration))]
 
         # Read sig NV2
         pulse_sequence += [spc.Pulse('LaserRead2', laser_read_signal_NV2_delay, duration=int(laser_read_signal_duration))] 
@@ -470,9 +475,6 @@ class Signal(Parameter):
                     pulse_sequence += [spc.Pulse('MWswitch4',  delay,         duration=int(MWmix_duration_short))] 
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_NV2_delay,         duration=int(MWmix_duration))]
-
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_NV2_delay,         duration=int(hilo_duration))]
 
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_NV2_delay,        duration=int(DAQ_signal_duration))] 
         
@@ -520,10 +522,13 @@ class Signal(Parameter):
         
         if self.ifMWReadLowDutyCycle == 0:
             pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_ref_delay,  duration=int(hilo_ref_duration))]
+        if self.ifHiloExtra==1:
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', laser_init_ref_delay, duration=int(laser_init_ref_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', ion_ref_strong_delay, duration=int(ion_strong_duration))] 
         
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_delay,        duration=int(DAQ_ref_duration))]
-        if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
-            pulse_sequence += [spc.Pulse('hiLoMWPwr',hilo_extra_ref_delay, duration=int(hilo_extra_duration))] 
+        # if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
+        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',hilo_extra_ref_delay, duration=int(hilo_extra_duration))] 
 
         # Read ref NV2
         pulse_sequence += [spc.Pulse('LaserRead2',    laser_read_ref_NV2_delay, duration=int(laser_read_ref_duration))] 
@@ -542,11 +547,22 @@ class Signal(Parameter):
                     pulse_sequence += [spc.Pulse('MWswitch4', delay,       duration=int(MWmix_duration_short))] 
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_ref_NV2_delay,  duration=int(MWmix_ref_duration))]
-        
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_ref_NV2_delay,  duration=int(hilo_ref_duration))]
-        
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_NV2_delay,        duration=int(DAQ_ref_duration))] 
+
+        # ########################### Make hilo pulse ###########################
+        # if self.ifHiloExtra==1:
+        #     plotPulseObject = PlotPulse(pulseSequence=pulse_sequence, ifSave=False)
+        #     _, ch11, ch21 = plotPulseObject.makeTraceAWG(ch1plot, ch2plot, self.delay_for_plot)
+        #     _, ch12, ch22 = plotPulseObject.makeTraceAWG(ch1plot2, ch2plot2, self.delay_for_plot2)
+        #     all_ch = ch11 + ch21 + ch12 + ch22
+        #     zeroSegments = plotPulseObject.find_zero_segments(all_ch)
+        #     for start, length in zeroSegments:
+        #         margin_start = self.settings['hilo_margin_start']; margin_end = self.settings['hilo_margin_end']
+        #         hilo_delay = start + margin_start
+        #         hilo_duration = length - (margin_start + margin_end)
+        #         if hilo_duration >= self.settings['hilo_min']:
+        #             pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]
+                           
 ##############################################################################################################################
 ##############################################################################################################################
         self.read_duration = DAQ_signal_duration

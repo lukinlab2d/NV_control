@@ -60,9 +60,12 @@ class T1RRDualNV(Instrument):
         self.metadata.update(self.settings)
 
         self.tausArray = self.settings['tausArray']
+        self.ifGHzNoise = self.settings['ifGHzNoise']
 
         ifRandomized = self.settings['ifRandomized']
         if ifRandomized: np.random.shuffle(self.tausArray)
+
+        pi_pulse_bf_read = self.settings['pi_pulse_bf_read']
 
         self.SRSnum = self.settings['SRSnum'];   MWPower = self.settings['MWPower'];   MWFreq = self.settings['MWFreq']
         self.SRSnum2 = self.settings['SRSnum2']; MWPower2 = self.settings['MWPower2']; MWFreq2 = self.settings['MWFreq2']
@@ -122,7 +125,10 @@ class T1RRDualNV(Instrument):
             self.srs3.set_RFAmplitude(MWPower3) #dBm
             if (self.SRSnum3 != 3) and (self.SRSnum3 != 4):
                 self.srs3.enableIQmodulation()
-            self.srs3.disable_RFOutput()
+            self.srs3.enable_RFOutput()
+            if self.ifGHzNoise==1 or self.ifGHzNoise==12:
+                self.srs3.enableNoiseModulation()
+                self.srs3.enable_RFOutput()
             global srs3; srs3 = self.srs3
 
             self.srs4 = SRS(SRSnum=self.SRSnum4)
@@ -130,7 +136,10 @@ class T1RRDualNV(Instrument):
             self.srs4.set_RFAmplitude(MWPower4) #dBm
             if (self.SRSnum4 != 3) and (self.SRSnum4 != 4):
                 self.srs4.enableIQmodulation()
-            self.srs4.disable_RFOutput()
+            self.srs4.enable_RFOutput()
+            if self.ifGHzNoise==2 or self.ifGHzNoise==12:
+                self.srs4.enableNoiseModulation()
+                self.srs4.enable_RFOutput()
             global srs4; srs4 = self.srs4
 
         # Velocity object
@@ -229,6 +238,8 @@ class Signal(Parameter):
         self.tausArray = self.settings['tausArray']
         self.ifAWG = self.settings['ifAWG']
         self.ifAWG2 = self.settings['ifAWG2']
+        self.ifHiloExtra = self.settings['ifHiloExtra']
+        self.ifGHzNoise = self.settings['ifGHzNoise']
 
     def set_raw(self, tau_ns):
         # Make pulses, program Pulse Blaster
@@ -239,15 +250,17 @@ class Signal(Parameter):
         laser_init_delay        = self.settings['laser_init_delay'];       laser_init_duration    = self.settings['laser_init_duration']
         laser_to_pi_delay       = self.settings['laser_to_pi_delay']
         pi_time                 = self.settings['pi_time'];                pi_time2               = self.settings['pi_time2'] 
-        pi_to_ion_delay         = self.settings['pi_to_ion_delay'];        
-        RRLaserSwitch_delay     = self.settings['RRLaserSwitch_delay'];    read_duration           = self.settings['read_duration']
+        pi_to_ion_delay         = self.settings['pi_to_ion_delay'];        pi_to_hilo_extra_delay = self.settings['pi_to_hilo_extra_delay']
+        RRLaserSwitch_delay     = self.settings['RRLaserSwitch_delay'];    
+        read_duration           = self.settings['read_duration'];          read_duration2         = self.settings['read_duration2']
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; RRLaser2Switch_delay   = self.settings['RRLaser2Switch_delay']
-        nSpinInit               = self.settings['nSpinInit']
+        nSpinInit               = self.settings['nSpinInit'];              shift_btwn_2NV_MW      = self.settings['shift_btwn_2NV_MW']
         spinInit_RR_duration    = self.settings['spinInit_RR_duration'];   spinInit_RR_to_pi_delay= self.settings['spinInit_RR_to_pi_delay']
         pi_time3                = self.settings['pi_time3'];               spinInit_pi_to_RR_delay= self.settings['spinInit_pi_to_RR_delay']
         sweepWhich              = self.settings['sweepWhich'];             shift_btwn_2NV_read    = self.settings['shift_btwn_2NV_read']
         AWG_buffer              = self.settings['AWG_buffer'];             AWG_output_delay    = self.settings['AWG_output_delay']  
         AWG_buffer2             = self.settings['AWG_buffer2'];            AWG_output_delay2   = self.settings['AWG_output_delay2']         
+        pi_pulse_bf_read        = self.settings['pi_pulse_bf_read']
         MW_duration_for_AWG = int(2*int((2*AWG_buffer + pi_time + 1)/2))
         MW_duration_for_AWG2 = int(2*int((2*AWG_buffer2 + pi_time2 + 1)/2))
 
@@ -272,7 +285,10 @@ class Signal(Parameter):
         when_spinInit_lastRR_end= spinInit_lastRR_delay + spinInit_RR_duration
         #########################################
         pi_delay                = when_spinInit_lastRR_end + spinInit_RR_to_pi_delay
+        pi_delay2               = pi_delay + shift_btwn_2NV_MW
+
         global MW_del;   MW_del = pi_delay + AWG_output_delay
+        global MW_del2;   MW_del2 = pi_delay2 + AWG_output_delay
         end1 = MW_del + MW_duration_for_AWG
         end2 = pi_delay + pi_time
         if (self.ifAWG==1) or (self.ifAWG2==1):
@@ -280,7 +296,7 @@ class Signal(Parameter):
         else:
             when_pi_end = end2
         
-        laser_read_signal_delay    = when_pi_end + pi_to_ion_delay
+        laser_read_signal_delay    = when_pi_end + shift_btwn_2NV_MW + pi_to_ion_delay
         DAQ_signal_delay           = laser_read_signal_delay + RRLaserSwitch_delay
         DAQ_signal_duration        = read_duration
         when_DAQ_signal_end        = DAQ_signal_delay + DAQ_signal_duration 
@@ -289,10 +305,22 @@ class Signal(Parameter):
 
         laser_read_signal_NV2_delay = laser_read_signal_delay + shift_btwn_2NV_read
         DAQ_signal_NV2_delay        = laser_read_signal_NV2_delay + RRLaser2Switch_delay
-        when_laser_read_signal_NV2_end = laser_read_signal_NV2_delay + laser_read_signal_duration
-        when_DAQ_signal_NV2_end        = DAQ_signal_NV2_delay + DAQ_signal_duration
+        DAQ_signal_duration2        = read_duration2
+        when_DAQ_signal_NV2_end     = DAQ_signal_NV2_delay + DAQ_signal_duration2
+        when_laser_read_signal_NV2_end = when_DAQ_signal_NV2_end + DAQ_to_laser_off_delay
+        laser_read_signal_duration2 = when_laser_read_signal_NV2_end - laser_read_signal_NV2_delay
 
+        pi_bf_read_sig_delay = laser_read_signal_delay - 2*pi_time3
+        rest_btwn_pi_and_pi_bf_readsig = pi_bf_read_sig_delay - when_pi_end
+        
         when_everything_sig_end = np.max((when_laser_read_signal_NV2_end, when_DAQ_signal_NV2_end))
+        ####### noise during sig #######
+        noise_delay = when_pi_end + pi_to_hilo_extra_delay; noise_delay2 = noise_delay + shift_btwn_2NV_MW
+        when_noise_end = laser_read_signal_delay - pi_to_hilo_extra_delay
+        noise_duration = when_noise_end - noise_delay; noise_duration2 = when_noise_end - noise_delay2
+
+        hilo_extra_delay = noise_delay2
+        hilo_extra_duration = noise_duration2
         ###################################################################################################################################
         ###################################################################################################################################
         ###################################################################################################################################
@@ -324,12 +352,34 @@ class Signal(Parameter):
         laser_read_ref_NV2_delay = laser_read_ref_delay + shift_btwn_2NV_read
         DAQ_ref_NV2_delay        = laser_read_ref_NV2_delay + RRLaser2Switch_delay
 
+        pi_bf_read_ref_delay = laser_read_ref_delay - 2*pi_time3
+        rest_btwn_pi_bf_readsig_and_pi_bf_readref = pi_bf_read_ref_delay - pi_bf_read_sig_delay + pi_time3
+
+        ####### noise during ref #######
+        noise_ref_delay = when_pi_ref_end + pi_to_hilo_extra_delay; noise_ref_delay2 = noise_ref_delay + shift_btwn_2NV_MW
+        when_noise_ref_end = laser_read_ref_delay - pi_to_hilo_extra_delay
+        noise_ref_duration = when_noise_ref_end - noise_ref_delay; noise_ref_duration2 = when_noise_ref_end - noise_ref_delay2
+
+        hilo_extra_ref_delay = noise_ref_delay2
+        hilo_extra_ref_duration = noise_ref_duration2
+
+        if self.loopCounter==0: sleepTime = 12
+        else: sleepTime = 3
+
         if self.ifAWG:
             global ch1plot; global ch2plot
-            ch1plot, ch2plot = AWG.send_T1_seq(pitime = int(pi_time), buffer=int(AWG_buffer))
+            ch1plot, ch2plot = AWG.send_T1_seq(pitime = int(pi_time), buffer=int(AWG_buffer),
+                                               pi_pulse_bf_read=pi_pulse_bf_read,
+                                               rest_btwn_pi_and_pi_bf_readsig=rest_btwn_pi_and_pi_bf_readsig,
+                                               rest_btwn_pi_bf_readsig_and_pi_bf_readref=rest_btwn_pi_bf_readsig_and_pi_bf_readref,
+                                               sleepTime=1)
         if self.ifAWG2:
             global ch1plot2; global ch2plot2
-            ch1plot2, ch2plot2 = AWG2.send_T1_seq(pitime = int(pi_time2), buffer=int(AWG_buffer2))
+            ch1plot2, ch2plot2 = AWG2.send_T1_seq(pitime = int(pi_time2), buffer=int(AWG_buffer2),
+                                                  pi_pulse_bf_read=pi_pulse_bf_read,
+                                                  rest_btwn_pi_and_pi_bf_readsig=rest_btwn_pi_and_pi_bf_readsig,
+                                                  rest_btwn_pi_bf_readsig_and_pi_bf_readref=rest_btwn_pi_bf_readsig_and_pi_bf_readref,
+                                                  sleepTime=sleepTime)
         
 ##########################################################################################################
 ##########################################################################################################
@@ -352,18 +402,32 @@ class Signal(Parameter):
             else:
                 pulse_sequence += [spc.Pulse('MWswitch',      pi_delay,            duration=int(pi_time))] 
             if self.ifAWG2:
-                pulse_sequence += [spc.Pulse('AWG2',     pi_delay,     duration=pi_time)]
+                pulse_sequence += [spc.Pulse('AWG2',     pi_delay2,     duration=pi_time)]
             else:
-                pulse_sequence += [spc.Pulse('MWswitch2',     pi_delay,            duration=int(pi_time))]
+                pulse_sequence += [spc.Pulse('MWswitch2',     pi_delay2,            duration=int(pi_time))]
         
+        if self.ifGHzNoise==1:
+            pulse_sequence += [spc.Pulse('MWswitch3', noise_delay2,  duration=int(noise_duration2))] 
+        elif self.ifGHzNoise==2:
+            pulse_sequence += [spc.Pulse('MWswitch4', noise_delay2, duration=int(noise_duration2))] 
+        elif self.ifGHzNoise==12:
+            pulse_sequence += [spc.Pulse('MWswitch3', noise_delay2, duration=int(noise_duration2))] 
+            pulse_sequence += [spc.Pulse('MWswitch4', noise_delay2, duration=int(noise_duration2))] 
+
+        # if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
+        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_extra_delay,         duration=int(hilo_extra_duration))]
+
         # Read sig NV1
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] 
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_delay,        duration=int(DAQ_signal_duration))] 
         
         # Read sig NV2
-        pulse_sequence += [spc.Pulse('LaserRead2', laser_read_signal_NV2_delay, duration=int(laser_read_signal_duration))] 
-        pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_NV2_delay,        duration=int(DAQ_signal_duration))] 
+        pulse_sequence += [spc.Pulse('LaserRead2',   laser_read_signal_NV2_delay, duration=int(laser_read_signal_duration2))] 
+        pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_NV2_delay,        duration=int(DAQ_signal_duration2))] 
         
+        if pi_pulse_bf_read == 'plus':
+            pulse_sequence += [spc.Pulse('MWswitch3',  pi_bf_read_sig_delay, duration=int(pi_time3))]
+            pulse_sequence += [spc.Pulse('MWswitch4',  pi_bf_read_sig_delay+shift_btwn_2NV_MW, duration=int(pi_time3))]
 ##############################################################################################################################
 ##############################################################################################################################
         if not laser_init_delay == 0:
@@ -384,18 +448,53 @@ class Signal(Parameter):
             if not self.ifAWG2:
                 pulse_sequence += [spc.Pulse('MWswitch2',     pi_ref_delay,         duration=int(pi_time))]
         
+        if self.ifGHzNoise==1:
+            pulse_sequence += [spc.Pulse('MWswitch3', noise_ref_delay2,  duration=int(noise_ref_duration2))] 
+        elif self.ifGHzNoise==2:
+            pulse_sequence += [spc.Pulse('MWswitch4', noise_ref_delay2, duration=int(noise_ref_duration2))] 
+        elif self.ifGHzNoise==12:
+            pulse_sequence += [spc.Pulse('MWswitch3', noise_ref_delay2, duration=int(noise_ref_duration2))] 
+            pulse_sequence += [spc.Pulse('MWswitch4', noise_ref_delay2, duration=int(noise_ref_duration2))]
+
+        # if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
+        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',hilo_extra_ref_delay, duration=int(hilo_extra_ref_duration))]  
+
         # Read ref NV1
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay, duration=int(laser_read_ref_duration))] 
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_delay,        duration=int(DAQ_ref_duration))] 
 
         # Read ref NV2
-        pulse_sequence += [spc.Pulse('LaserRead2',    laser_read_ref_NV2_delay, duration=int(laser_read_ref_duration))] 
-        pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_NV2_delay,        duration=int(DAQ_ref_duration))] 
+        pulse_sequence += [spc.Pulse('LaserRead2',   laser_read_ref_NV2_delay, duration=int(laser_read_signal_duration2))] 
+        pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_NV2_delay,        duration=int(DAQ_signal_duration2))] 
+
+        if pi_pulse_bf_read == 'plus':
+            pulse_sequence += [spc.Pulse('MWswitch3',  pi_bf_read_ref_delay, duration=int(pi_time3))]
+            pulse_sequence += [spc.Pulse('MWswitch4',  pi_bf_read_ref_delay+shift_btwn_2NV_MW, duration=int(pi_time3))]
+
+        ########################### Make hilo pulse ###########################
+        if self.ifHiloExtra==1:
+            plotPulseObject = PlotPulse(pulseSequence=pulse_sequence, ifSave=False)
+            _, ch11, ch21 = plotPulseObject.makeTraceAWG(ch1plot, ch2plot, MW_del)
+            _, ch12, ch22 = plotPulseObject.makeTraceAWG(ch1plot2, ch2plot2, MW_del2)
+            if pi_pulse_bf_read == 'plus':
+                _, MW34  = plotPulseObject.findTraceMW34()
+                all_ch = ch11 + ch21 + ch12 + ch22 + MW34
+            else:
+                all_ch = ch11 + ch21 + ch12 + ch22
+            zeroSegments = plotPulseObject.find_zero_segments(all_ch)
+            for start, length in zeroSegments:
+                margin_start = self.settings['hilo_margin_start']; margin_end = self.settings['hilo_margin_end']
+                hilo_delay = start + margin_start
+                hilo_duration = length - (margin_start + margin_end)
+                if hilo_duration >= self.settings['hilo_min']:
+                    pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]
+                    
+##########################################################################################################
 ##############################################################################################################################
 ##############################################################################################################################
 
         self.read_duration = DAQ_signal_duration
-        self.read_duration2 = DAQ_signal_duration
+        self.read_duration2 = DAQ_signal_duration2
     
         self.pulse_sequence = pulse_sequence
         self.ifPrintTime = True
@@ -457,13 +556,13 @@ class Signal(Parameter):
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False, readColor=self.readColor)
                 if (self.ifAWG) and (self.ifAWG2):
                     fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, MW_del, label1='ch1-AWG1', label2='ch2-AWG1')
-                    fig = plotPulseObject.makePulsePlotAWG(ch1plot2,ch2plot2, MW_del,
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot2,ch2plot2, MW_del2,
                                                            fig=fig, offset1=17.75, offset2=17.5, label1='ch1-AWG2', label2='ch2-AWG2')
                 else:
                     if self.ifAWG:
                         fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, MW_del, label1='ch1-AWG1', label2='ch2-AWG1')
                     elif self.ifAWG2:
-                        fig = plotPulseObject.makePulsePlotAWG(ch1plot2,ch2plot2, MW_del,
+                        fig = plotPulseObject.makePulsePlotAWG(ch1plot2,ch2plot2, MW_del2,
                                                            offset1=17.75, offset2=17.5, label1='ch1-AWG2', label2='ch2-AWG2')
                     else:
                         fig = plotPulseObject.makePulsePlot()

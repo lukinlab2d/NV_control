@@ -267,18 +267,21 @@ class Signal(Parameter):
         laserRead_to_MWmix      = self.settings['laserRead_to_MWmix'];     ion_to_read_delay      = self.settings['ion_to_read_delay']
         iznLaserSwitch_delay    = self.settings['iznLaserSwitch_delay'];   RRLaser2Switch_delay   = self.settings['RRLaser2Switch_delay']
         MWmix_duration_short    = self.settings['MWmix_duration_short'];   delay_between_MWmix    = self.settings['delay_between_MWmix']
-        nSpinInit               = self.settings['nSpinInit']
+        nSpinInit               = self.settings['nSpinInit'];              shift_btwn_2NV_MW      = self.settings['shift_btwn_2NV_MW']
         spinInit_RR_duration    = self.settings['spinInit_RR_duration'];   spinInit_RR_to_pi_delay= self.settings['spinInit_RR_to_pi_delay']
         pi_time2                = self.settings['pi_time2'];               spinInit_pi_to_RR_delay= self.settings['spinInit_pi_to_RR_delay']
         sweepWhich              = self.settings['sweepWhich'];             shift_btwn_2NV_read    = self.settings['shift_btwn_2NV_read']
         AWG_buffer              = self.settings['AWG_buffer'];             AWG_output_delay       = self.settings['AWG_output_delay']  
-        
+        amp_MW_mix              = self.settings['amp_MW_mix'];             amp_MW_mix2            = self.settings['amp_MW_mix2']
+        pi_pulse_bf_read        = self.settings['pi_pulse_bf_read'];       pi_time3               = self.settings['pi_time3']
+        ifIznNV2later           = self.settings['ifIznNV2later']
         if sweepWhich == 'ti':
-            ion_duration = tau_ns
-        elif sweepWhich == 'pi_to_ion_delay':
+            ion_duration         = tau_ns
+            ion_duration2        = tau_ns
+        elif sweepWhich == 'tinit':
+            laser_init_duration  = tau_ns
+        else:
             pi_to_ion_delay = int(tau_ns)
-        elif sweepWhich == 'pi_pulse'
-            pi_time = pi_time2 = int(tau_ns)
 
         if self.ifMWReadLowDutyCycle: nMWread = int(DAQ_duration/(MWmix_duration_short + delay_between_MWmix))
         self.num_loops = num_loops
@@ -294,17 +297,33 @@ class Signal(Parameter):
         spinInit_lastRR_delay   = spinInit_delay + spinInit_duration_total
         when_spinInit_lastRR_end= spinInit_lastRR_delay + spinInit_RR_duration
         #########################################
-        pi_delay                = when_spinInit_lastRR_end + spinInit_RR_to_pi_delay; self.delay_for_plot = pi_delay
+        pi_delay                = when_spinInit_lastRR_end + spinInit_RR_to_pi_delay
+        self.delay_for_plot     = pi_delay
         when_pi_end             = pi_delay + pi_time
-        ion_RR_delay            = when_pi_end + pi_to_ion_delay                 
+
+        pi_delay2               = pi_delay + shift_btwn_2NV_MW
+        self.delay_for_plot2    = pi_delay2
+        when_pi_end2            = pi_delay2 + pi_time
+
+        ion_RR_delay            = when_pi_end2 + pi_to_ion_delay                 
         when_ion_RR_end         = ion_RR_delay + ion_duration
         ion_strong_delay        = ion_RR_delay + RRLaserSwitch_delay - iznLaserSwitch_delay
         ion_RR2_delay           = ion_RR_delay + RRLaserSwitch_delay - RRLaser2Switch_delay
         ion_strong_duration     = np.max((ion_duration, ion_duration2))
         when_ion_strong_end     = ion_strong_delay + ion_strong_duration
+
+        if ifIznNV2later==1:
+            ion_RR2_delay       = ion_RR2_delay + ion_duration + 1e3
+            when_ion_RR2_end    = ion_RR2_delay + ion_duration2
+            ion_strong_duration = when_ion_RR2_end - ion_strong_delay
+            when_ion_strong_end = ion_strong_delay + ion_strong_duration
+
+        pi_bf_read_sig_delay    = ion_RR_delay - 2*pi_time3 - shift_btwn_2NV_MW
+        pi_bf_read_sig_delay2   = pi_bf_read_sig_delay + shift_btwn_2NV_MW
+        rest_btwn_pi_and_pi_bf_readsig = pi_bf_read_sig_delay - when_pi_end
         
         laser_read_signal_delay    = when_ion_strong_end + ion_to_read_delay
-        DAQ_signal_delay           = laser_read_signal_delay + RRLaserSwitch_delay
+        DAQ_signal_delay           = laser_read_signal_delay
         DAQ_signal_duration        = DAQ_duration
         when_DAQ_signal_end        = DAQ_signal_delay + DAQ_signal_duration 
         when_laser_read_signal_end = when_DAQ_signal_end + DAQ_to_laser_off_delay
@@ -324,8 +343,13 @@ class Signal(Parameter):
         hilo_NV2_delay                 = MWmix_NV2_delay - 0.2*ion_to_read_delay
         hilo_duration                  = when_MWmix_NV2_end - hilo_delay # for both NVs
 
+        rest_btwn_pi_bf_readsig_and_MWmix  = MWmix_delay - pi_bf_read_sig_delay + pi_time3
+        rest_btwn_pi_bf_readsig_and_MWmix2 = MWmix_NV2_delay - pi_bf_read_sig_delay2 + pi_time3
+
         hilo_extra_delay           = when_pi_end + pi_to_hilo_extra_delay
-        when_hilo_extra_end        = ion_RR_delay - 1e3
+        when_hilo_extra_end        = ion_RR_delay + 2e3
+        if pi_pulse_bf_read == 'minus':
+            when_hilo_extra_end    = pi_bf_read_sig_delay - 1e2
         hilo_extra_duration        = when_hilo_extra_end - hilo_extra_delay
 
         when_everything_sig_end = np.max((when_laser_read_signal_NV2_end, when_DAQ_signal_NV2_end, when_MWmix_NV2_end))
@@ -344,15 +368,24 @@ class Signal(Parameter):
         when_spinInit_lastRR_ref_end = spinInit_lastRR_ref_delay + spinInit_RR_duration
         #########################################
         pi_ref_delay            = when_spinInit_lastRR_ref_end + spinInit_RR_to_pi_delay
+        pi_ref_delay2           = pi_ref_delay + shift_btwn_2NV_MW
         when_pi_ref_end         = pi_ref_delay + pi_time
-        ion_ref_RR_delay        = when_pi_ref_end + pi_to_ion_delay
+        when_pi_ref_end2        = pi_ref_delay2 + pi_time
+
+        ion_ref_RR_delay        = when_pi_ref_end2 + pi_to_ion_delay
         when_ion_ref_RR_end     = ion_ref_RR_delay + ion_duration
         ion_ref_strong_delay    = ion_ref_RR_delay + RRLaserSwitch_delay - iznLaserSwitch_delay
         ion_ref_RR2_delay       = ion_ref_RR_delay + RRLaserSwitch_delay - RRLaser2Switch_delay
         when_ion_ref_strong_end = ion_ref_strong_delay + ion_strong_duration
 
+        if ifIznNV2later==1:
+            ion_ref_RR2_delay       = ion_ref_RR2_delay + ion_duration + 1e3
+
+        pi_bf_read_ref_delay    = ion_ref_RR_delay - 2*pi_time3 - shift_btwn_2NV_MW
+        pi_bf_read_ref_delay2   = pi_bf_read_ref_delay + shift_btwn_2NV_MW
+        
         laser_read_ref_delay    = when_ion_ref_strong_end + ion_to_read_delay
-        DAQ_ref_delay           = laser_read_ref_delay + RRLaserSwitch_delay
+        DAQ_ref_delay           = laser_read_ref_delay
         DAQ_ref_duration        = DAQ_duration
         when_DAQ_ref_end        = DAQ_ref_delay + DAQ_ref_duration
         when_laser_read_ref_end = when_DAQ_ref_end + DAQ_to_laser_off_delay
@@ -369,27 +402,36 @@ class Signal(Parameter):
         hilo_ref_NV2_delay       = hilo_ref_delay + shift_btwn_2NV_read
 
         hilo_extra_ref_delay    = when_pi_ref_end + pi_to_hilo_extra_delay
-        when_hilo_extra_ref_end = ion_ref_RR_delay - 1e3
+        when_hilo_extra_ref_end = ion_ref_RR_delay + 2e3
+        if pi_pulse_bf_read == 'minus':
+            when_hilo_extra_ref_end = pi_bf_read_ref_delay - 1e2
 
         MW_delay_for_AWG        = pi_delay - AWG_output_delay
         pi_to_MWmix_wait        = MWmix_delay - pi_delay - pi_time
         sig_to_ref_wait         = MWmix_ref_delay - MWmix_delay - MWmix_duration
         
-        MW_delay_for_AWG2        = pi_delay - AWG_output_delay
-        pi_to_MWmix_wait2        = MWmix_NV2_delay - pi_delay - pi_time
+        MW_delay_for_AWG2        = pi_delay2 - AWG_output_delay
+        pi_to_MWmix_wait2        = MWmix_NV2_delay - pi_delay2 - pi_time
         sig_to_ref_wait2         = MWmix_ref_NV2_delay - MWmix_NV2_delay - MWmix_duration
 
-        if self.loopCounter==0: sleepTime = 10
-        else: sleepTime = 1
+        if self.loopCounter==0: sleepTime = 15
+        else: sleepTime = 6
+        if tau_ns>=30e6: sleepTime = 20
         if self.ifAWG:
             global ch1plot; global ch2plot
             ch1plot, ch2plot = AWG.send_SCCRRPhotonStatIrber_seq(int(MWmix_duration), int(AWG_buffer),
                             int(sig_to_ref_wait), pitime=int(pi_time), pi_to_MWmix_wait=int(pi_to_MWmix_wait),
-                            sleepTime=1)
+                            sleepTime=1,amp_MW_mix=amp_MW_mix,
+                            pi_pulse_bf_read=pi_pulse_bf_read,
+                            rest_btwn_pi_and_pi_bf_readsig=rest_btwn_pi_and_pi_bf_readsig,
+                            rest_btwn_pi_bf_readsig_and_MWmix=rest_btwn_pi_bf_readsig_and_MWmix)
             global ch1plot2; global ch2plot2
             ch1plot2, ch2plot2 = AWG2.send_SCCRRPhotonStatIrber_seq(int(MWmix_duration), int(AWG_buffer),
                             int(sig_to_ref_wait2), pitime=int(pi_time), pi_to_MWmix_wait=int(pi_to_MWmix_wait2),
-                            sleepTime=sleepTime)
+                            sleepTime=sleepTime,amp_MW_mix=amp_MW_mix2,
+                            pi_pulse_bf_read=pi_pulse_bf_read,
+                            rest_btwn_pi_and_pi_bf_readsig=rest_btwn_pi_and_pi_bf_readsig,
+                            rest_btwn_pi_bf_readsig_and_MWmix=rest_btwn_pi_bf_readsig_and_MWmix2)
 ##########################################################################################################
 ##########################################################################################################
         if not laser_init_delay == 0:
@@ -441,8 +483,11 @@ class Signal(Parameter):
 
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_delay,        duration=int(DAQ_signal_duration))] 
         if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
-            pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_extra_delay,         duration=int(hilo_extra_duration))]
-
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_extra_delay,   duration=int(hilo_extra_duration))]
+        if self.ifHiloExtra==1:
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    laser_init_delay,   duration=int(laser_init_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    ion_strong_delay,   duration=int(ion_strong_duration))] 
+        
         # Read sig NV2
         pulse_sequence += [spc.Pulse('LaserRead2', laser_read_signal_NV2_delay, duration=int(laser_read_signal_duration))] 
         if self.ifMWDuringRead:
@@ -461,11 +506,11 @@ class Signal(Parameter):
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_NV2_delay,         duration=int(MWmix_duration))]
 
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_NV2_delay,         duration=int(hilo_duration))]
-
         pulse_sequence += [spc.Pulse('Counter',      DAQ_signal_NV2_delay,        duration=int(DAQ_signal_duration))] 
         
+        if pi_pulse_bf_read == 'plus':
+            pulse_sequence += [spc.Pulse('MWswitch3',  pi_bf_read_sig_delay,  duration=int(pi_time3))]
+            pulse_sequence += [spc.Pulse('MWswitch4',  pi_bf_read_sig_delay2, duration=int(pi_time3))]
 ##############################################################################################################################
 ##############################################################################################################################
         if not laser_init_delay == 0:
@@ -514,7 +559,10 @@ class Signal(Parameter):
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_delay,        duration=int(DAQ_ref_duration))]
         if hilo_extra_duration >= 1e2 and self.ifHiloExtra:
             pulse_sequence += [spc.Pulse('hiLoMWPwr',hilo_extra_ref_delay, duration=int(hilo_extra_duration))] 
-
+        if self.ifHiloExtra==1:
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', laser_init_ref_delay, duration=int(laser_init_ref_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', ion_ref_strong_delay, duration=int(ion_strong_duration))] 
+        
         # Read ref NV2
         pulse_sequence += [spc.Pulse('LaserRead2',    laser_read_ref_NV2_delay, duration=int(laser_read_ref_duration))] 
         if self.ifMWDuringRead:
@@ -532,11 +580,27 @@ class Signal(Parameter):
                     pulse_sequence += [spc.Pulse('MWswitch4', delay,       duration=int(MWmix_duration_short))] 
             else:
                 pulse_sequence += [spc.Pulse('MWswitch4',MWmix_ref_NV2_delay,  duration=int(MWmix_ref_duration))]
-        
-        # if self.ifMWReadLowDutyCycle == 0:
-        #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_ref_NV2_delay,  duration=int(hilo_ref_duration))]
-        
+           
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_NV2_delay,        duration=int(DAQ_ref_duration))] 
+
+        if pi_pulse_bf_read == 'plus':
+            pulse_sequence += [spc.Pulse('MWswitch3',  pi_bf_read_ref_delay,  duration=int(pi_time3))]
+            pulse_sequence += [spc.Pulse('MWswitch4',  pi_bf_read_ref_delay2, duration=int(pi_time3))]
+
+        # ########################### Make hilo pulse ###########################
+        # if self.ifHiloExtra==1:
+        #     plotPulseObject = PlotPulse(pulseSequence=pulse_sequence, ifSave=False)
+        #     _, ch11, ch21 = plotPulseObject.makeTraceAWG(ch1plot, ch2plot, self.delay_for_plot)
+        #     _, ch12, ch22 = plotPulseObject.makeTraceAWG(ch1plot2, ch2plot2, self.delay_for_plot)
+        #     all_ch = ch11 + ch21 + ch12 + ch22
+        #     zeroSegments = plotPulseObject.find_zero_segments(all_ch)
+        #     for start, length in zeroSegments:
+        #         margin_start = self.settings['hilo_margin_start']; margin_end = self.settings['hilo_margin_end']
+        #         hilo_delay = start + margin_start
+        #         hilo_duration = length - (margin_start + margin_end)
+        #         if hilo_duration >= self.settings['hilo_min']:
+        #             pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]
+
 ##############################################################################################################################
 ##############################################################################################################################
         self.read_duration = DAQ_signal_duration
@@ -601,7 +665,7 @@ class Signal(Parameter):
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False, readColor=self.readColor)
                 if self.ifAWG:
                     fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.delay_for_plot, label1='ch1-AWG1', label2='ch2-AWG1')
-                    fig = plotPulseObject.makePulsePlotAWG(ch1plot2,ch2plot2,self.delay_for_plot,
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot2,ch2plot2,self.delay_for_plot2,
                                                            fig=fig, offset1=17.75, offset2=17.5, label1='ch1-AWG2', label2='ch2-AWG2')
                 else:
                     fig = plotPulseObject.makePulsePlot()

@@ -18,7 +18,7 @@ for iii in range(int(reps)):
     # AutoCorrXY8SCCRRIrberDualNV
     ifRandomized=0; ifPlotPulse=(reps==-1); ifMWReadLowDutyCycle=0; ifNeedVel=0; ifStartInY=0
     ifFancySpinInit=0; normalized_style = Q_FINAL; ifAntiCorrel=0; ifSinDetect=1; ifAWG=1
-    ifMWDuringRead=1; ifMW2DuringRead=1; ifJustRef_CorrACorr=1; if_tracking=0 # ifSinDetect, specify phase of last pulse
+    ifMWDuringRead=1; ifMW2DuringRead=1; ifJustRef_CorrACorr=1; if_tracking=0; ifHiloExtra=1 # ifSinDetect, specify phase of last pulse
     laserInit_channel=3; laserIon_channel=10; hiLoMWPwr_channel=17; ifInitVpz=0; ifInitWvl=0
     ifTestSig=1; ifRndPhaseNoise=1; AGBW = 100e3; AGfreq = 1.5625e6; AGamp = 0.18 # beware of heating!!
     sweepWhich='shift_btwn_2NV_MW'; NXY8=3
@@ -27,15 +27,15 @@ for iii in range(int(reps)):
     ##############################################################################################################
     if True:
         # NV1
-        velNum = 1; vel_current = 62.7; vel_wvl = 637.20; vel_vpz_target = -1; laserRead_channel = 5
-        SRSnum  = 1; MWPower  = -6.0; pi_time  = 40;  MWFreq   = 2598.1e6 #NV D1 ms-1
-        SRSnum3 = 3; MWPower3 = 3;    pi_time3 = -1;  MWFreq3  = 3162e6   #NV D1 ms+1
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.22; vel_vpz_target = -1; laserRead_channel = 5
+        SRSnum  = 1; MWPower  = -6.0; pi_time  = 40;  MWFreq   = 2598.44e6 #NV D1 ms-1
+        SRSnum3 = 3; MWPower3 = 3;    pi_time3 = -1;  MWFreq3  = 3161.27e6   #NV D1 ms+1
         MWI_channel  = 1; MWQ_channel  = 0; MWswitch_channel  = 2; MWswitch3_channel = 15
         SDGnum = 1; AWG_channel = 18; srate = 2.5e8; amp_MW_mix = 1#0.83
         # NV2
         velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.88; vel_vpz_target2 = -1; laserRead2_channel = 14
-        SRSnum2 = 2; MWPower2 = -9.8;  pi_time2 = 40;  MWFreq2  = 2789.2e6  #NV D2, ms-1
-        SRSnum4 = 4; MWPower4 = -4;    pi_time4 = -1;  MWFreq4  = 3037.2e6  #NV D2 ms+1
+        SRSnum2 = 2; MWPower2 = -9.7;  pi_time2 = 40;  MWFreq2  = 2788.70e6  #NV D2, ms-1
+        SRSnum4 = 4; MWPower4 = -4;    pi_time4 = -1;  MWFreq4  = 3037.20e6  #NV D2 ms+1
         MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11; MWswitch4_channel = 16
         SDGnum2 = 2; AWG2_channel = 19; srate2 = 2.5e8; amp_MW_mix2 = 1#0.83
     ##############################################################################################################
@@ -150,7 +150,7 @@ for iii in range(int(reps)):
                 'ifAWG':ifAWG,'SDGnum': SDGnum,   'AWG_channel':AWG_channel,   'AWG_buffer':AWG_buffer,   'AWG_output_delay':AWG_output_delay,
                 'SDGnum2': SDGnum2, 'AWG2_channel':AWG2_channel, 'srate':srate, 'srate2':srate2,
                 'phi_IQ':phi_IQ, 'phi_IQ2':phi_IQ2, 'phi_IQ_antiCorrPulse':phi_IQ_antiCorrPulse,
-                'tauExtra':tauExtra, 'tcorr':tcorr,
+                'tauExtra':tauExtra, 'tcorr':tcorr, 'ifHiloExtra':ifHiloExtra,
                 'ifRndPhaseNoise':ifRndPhaseNoise, 'AGBW':AGBW, 'AGfreq':AGfreq, 'AGamp':AGamp,'ifTestSig':ifTestSig,
                 'tau':tau, 'sweepWhich':sweepWhich,'amp_MW_mix':amp_MW_mix,'amp_MW_mix2':amp_MW_mix2}
     ####### Random-phase noise ######

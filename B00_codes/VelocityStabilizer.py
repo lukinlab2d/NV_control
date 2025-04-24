@@ -214,7 +214,7 @@ if __name__ == '__main__':
     lockStatusParam = np.loadtxt(lockStatusFile)
     setpoint = lockStatusParam[1]; vpz_old = lockStatusParam[2]
 
-    pid = PID(p=2,i=1,d=0,setpoint=setpoint,memory=20)
+    pid = PID(p=2,i=2,d=0,setpoint=setpoint,memory=20)
     factor=25
 
     print('Setpoint = ' + str(setpoint) + '. Vpz guess = ' + str(vpz_old))

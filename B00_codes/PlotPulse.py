@@ -70,7 +70,7 @@ class PulseTrace:
         elif "MW_Q" in name: 
             self.vert_offset = 3.5; self.color = 'C1'
 
-        elif name == "MWswitch": 
+        elif name == "MWswitch" or name == "noise": 
             self.vert_offset = 2; self.color = 'C3'
         elif "MWswitch3" in name: 
             self.vert_offset = 1.5; self.color = 'C4'
@@ -78,7 +78,7 @@ class PulseTrace:
         elif "Counter" in name: 
             self.vert_offset = 0; self.color = 'k'
 
-        self.arr = [x + self.vert_offset for x in arr]
+        self.arr = arr + self.vert_offset
         self.length = len(arr)
 
 
@@ -100,10 +100,12 @@ class PlotPulse():
             if plotFilename is not None: self.plotFilename = plotFilename
             else:
                 raise Exception("Filename for pulse plot missing")
+        self.makeTraceDict()
 
     def makeTraceDict(self):
         for pulse in self.pulse_sequence:
             channel_id = pulse.channel_id
+            # print(channel_id)
             trace_array = np.concatenate((np.zeros(int(pulse.start_time)),
                                     np.ones(int(pulse.duration)),
                                     np.zeros(int(self.maxLength - pulse.start_time - pulse.duration))))
@@ -114,7 +116,7 @@ class PlotPulse():
                 self.pulseTrace[channel_id].arr = np.add(self.pulseTrace[channel_id].arr, trace_array)
     
     def makePulsePlot(self):
-        self.makeTraceDict()
+        # self.makeTraceDict()
 
         fig = plt.figure(1)
         ax = fig.gca()
@@ -144,12 +146,11 @@ class PlotPulse():
                 plt.show(block=False)
                 plt.pause(0.05)
 
-
         return fig
     
     def makePulsePlotAWG(self, ch1plot, ch2plot, MW_del, fig=None,
                          offset1=16.75, offset2=16.5, label1='MW1', label2='MW2'):
-        self.makeTraceDict()
+        # self.makeTraceDict()
 
         if fig is None:
             fig = plt.figure(1)
@@ -192,14 +193,13 @@ class PlotPulse():
             if diff >= 0:
                 ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot, np.zeros(int(diff)))) + offset1
                 ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot, np.zeros(int(diff)))) + offset2
-                ax.plot(x_axis, ch1, label=label1)
-                ax.plot(x_axis, ch2, label=label2)
             else:
                 ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot)) + offset1
                 ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot)) + offset2
-                x_axis_new = np.array(range(len(ch1)))/1e9*1e6
-                ax.plot(x_axis_new, ch1, label=label1)
-                ax.plot(x_axis_new, ch2, label=label2)
+                x_axis = np.array(range(len(ch1)))/1e9*1e6
+                
+            ax.plot(x_axis, ch1, label=label1)
+            ax.plot(x_axis, ch2, label=label2)
 
             ax.legend(loc='right', bbox_to_anchor=(1.35, 0.5))
             plt.tight_layout()
@@ -219,6 +219,71 @@ class PlotPulse():
                 plt.pause(0.05)
 
         return fig
+    
+    def makeTraceAWG(self, ch1plot, ch2plot, MW_del):
+        
+        tr = next(iter(self.pulseTrace.values()))
+        x_axis = np.array(range(tr.length))/1e9*1e6
+        
+        if len(x_axis)>=(len(ch1plot)+int(MW_del)):
+            diff = len(x_axis) - len(ch1plot) - int(MW_del)
+            ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot, np.zeros(int(diff))))
+            ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot, np.zeros(int(diff))))
+        else:
+            diff = (len(ch1plot) + int(MW_del)) - len(x_axis)
+            ch1 = np.concatenate((np.zeros(int(MW_del)), ch1plot))
+            ch2 = np.concatenate((np.zeros(int(MW_del)), ch2plot))
+            step_x = x_axis[1] - x_axis[0]
+            next_x = x_axis[-1] + step_x
+            extra_xs = np.linspace(next_x, next_x+(diff-1)*step_x ,diff)
+            x_axis = np.concatenate((x_axis, extra_xs))
+
+        return x_axis, ch1, ch2
+    
+    def findTraceMW34(self):
+        MW34 = None
+        for channel_id in self.pulseTrace:
+            if channel_id == 'MWswitch3' or channel_id == 'MWswitch4':
+                tr = self.pulseTrace[channel_id]
+                x_axis = np.array(range(tr.length))/1e9*1e6
+                if MW34 is None:
+                    MW34 = tr.arr - np.min(tr.arr)
+                else:
+                    MW34 = MW34 + tr.arr - np.min(tr.arr)
+        
+        return x_axis, MW34
+
+    def find_zero_segments(self,arr):
+        # Step 1: Create a boolean array where True represents zero and False represents non-zero
+        is_zero = arr == 0
+        
+        # Step 2: Find the indices where the value changes (from non-zero to zero and vice versa)
+        diff = np.diff(is_zero.astype(int))  # Convert boolean to int, then calculate the difference
+        
+        # Step 3: Find start and end points of zero segments
+        starts = np.where(diff == 1)[0] + 1  # Where zero starts (after a non-zero)
+        ends = np.where(diff == -1)[0]       # Where zero ends (before a non-zero)
+        
+        # If the array starts with zeros, include the first segment
+        if is_zero[0]:
+            starts = np.insert(starts, 0, 0)
+        
+        # If the array ends with zeros, include the last segment
+        if is_zero[-1]:
+            ends = np.append(ends, len(arr) - 1)
+        
+        # Step 4: Calculate lengths of zero segments
+        lengths = ends - starts + 1
+        
+        return list(zip(starts, lengths))
+
+        # # Example usage:
+        # arr = np.array([1, 0, 0, 2, 0, 3, 0, 0, 0, 4, 0])
+        # segments = find_zero_segments(arr)
+
+        # print("Zero segments (start index, length):")
+        # for start, length in segments:
+        #     print(f"Start: {start}, Length: {length}")
 
     def showPulsePlot(self):
         img = Image.open(self.plotFilename)

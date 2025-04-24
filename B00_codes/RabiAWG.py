@@ -129,6 +129,8 @@ class Signal(Parameter):
         self.RabiAWGObject = measurementObject
         self.loopCounter = 0
         self.tausArray = self.settings['tausArray']
+        self.ifFakeRabi = self.settings['ifFakeRabi']
+        self.timeNow = time.time()
 
     def get_raw(self):
         self.ctrtask.start()
@@ -151,7 +153,10 @@ class Signal(Parameter):
 
     def set_raw(self, tau_ns):
         # Make pulses, program Pulse Blaster
-        print("Loop " + str(self.loopCounter))
+        if self.ifFakeRabi:
+            print("Time from last loop = " + str(time.time()-self.timeNow))
+        else:
+            print("Loop " + str(self.loopCounter))
         
         # Pulse parameters
         num_loops               = self.settings['num_loops'];               AWGbuffer           = self.settings['AWGbuffer']
@@ -159,6 +164,10 @@ class Signal(Parameter):
         laser_to_AWG_delay      = self.settings['laser_to_AWG_delay'];      MW_duration         = int(2*int((2*AWGbuffer + tau_ns + 1)/2)) # to make it even
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  AWG_output_delay    = self.settings['AWG_output_delay']
+
+        if self.ifFakeRabi:
+            tau_ns              = self.settings['MWI_duration']
+            MW_duration         = int(2*int((2*AWGbuffer + tau_ns + 1)/2)) # to make it even
 
         when_init_end   = laser_init_delay + laser_init_duration
         MW_delay        = when_init_end + laser_to_AWG_delay;               when_pulse_end = MW_delay+MW_duration+AWG_output_delay

@@ -12,6 +12,7 @@ import math
 import scipy
 from scipy import integrate
 from scipy.special import jn
+from scipy.special import j0
 from scipy.special import iv
 import pandas as pd
 
@@ -26,19 +27,33 @@ def cosTwo(t, A, f1, p1, B,f2,p2,D):
     return A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2)  + D
 def cosThree(t, A, f1, p1, B,f2,p2, C, f3,p3,D):
     return A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2) + C*np.cos(2*np.pi*f3*t + p3) + D
+def cosThreeSimple(t, A, f1,f2,f3,C):
+    return A*(np.cos(2*np.pi*f1*t) + np.cos(2*np.pi*f2*t) + np.cos(2*np.pi*f3*t)) + C
+def cosThreeExpo(t, A, f1, p1, B,f2,p2, C, f3,p3,D, T2):
+    return np.exp(-t/T2)*(A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2) + C*np.cos(2*np.pi*f3*t + p3)) + D
+def cosThreeExpoSimple(t, A, f1,f2,f3,C, T2):
+    return A*np.exp(-t/T2)*(np.cos(2*np.pi*f1*t) + np.cos(2*np.pi*f2*t) + np.cos(2*np.pi*f3*t)) + C
 def cosFour(t, A, f1, p1, B,f2,p2, C, f3,p3, D,f4,p4, E):
     return A*np.cos(2*np.pi*f1*t + p1) + B*np.cos(2*np.pi*f2*t + p2) + C*np.cos(2*np.pi*f3*t + p3) + D*np.cos(2*np.pi*f4*t + p4) + E
 def linear(x, a,b):
     return a*x+b
 def sinusoidDecay(t, A, Tpi, phi,C, T2):
     return A*np.cos(np.pi/Tpi*t + phi)*np.exp(-t/T2) + C
+def besselNormedConstant(t,a,c):
+    return 0.5* (1+ j0(a*t))+c
+def besselNormed(t,a):
+    return 0.5* (1+ j0(a*t))
 def saturation(P,I0,Ps):
     return I0*(P/Ps)/(1 + P/Ps)
 def saturationQuad(P,a,Ps):
     return a*(P**2)/(1 + P/Ps)
-def decay(t, A ,C, T2):
-    return A*np.exp(-t/T2) + C
-def strDecay(t, A, T2, n, C):
+def decay(t, A ,C, T1):
+    return A*np.exp(-t/T1) + C
+def sumDecay(t, A, T1, B, T2, C):
+    return A*np.exp(-t/T1) + B*np.exp(-t/T2) + C
+def risedecay(t, A ,T1, T2, C):
+    return A*(np.exp(-t/T1) - np.exp(-t/T2)) + C
+def strDecay(t, A, C, T2, n):
     return A*np.exp(-(t/T2)**n) + C
 def strDecaySinusoid(t, A, T2, n, Tosc, phi, B, C):
     return A*np.exp(-(t/T2)**n)*np.cos(2*np.pi/Tosc*t + phi) + B*np.exp(-(t/T2)**n) + C
@@ -108,6 +123,8 @@ def pms(ns, gm, g0, nm, n0, tr):
         result = pm(n, gm, g0, nm, n0, tr)
         p_arr.append(result)
     return np.array(p_arr)
+def corrT1(x, A, ga, gb):
+    return A*(-np.exp(-ga*x) + 1/2*(np.exp(-(ga+gb)*x) + np.exp(-(ga-gb)*x)))
 
 def fitTwoPois(xdata, ydata, guess=None):
     lowerBounds = (0,0,0,0)
@@ -132,6 +149,36 @@ def fitSinusoid(xdata, ydata, guess=None):
     yfit = sinusoid(xfit, *popt)
     return xfit, yfit, popt, perr
 
+def fitBesselNormed(xdata, ydata, guess=None):
+    lowerBounds = (-np.inf)
+    upperBounds = (np.inf)
+    popt, pcov = curve_fit(besselNormed, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = besselNormed(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitBesselNormedConstant(xdata, ydata, guess=None):
+    lowerBounds = (-np.inf, -np.inf)
+    upperBounds = (np.inf, np.inf)
+    popt, pcov = curve_fit(besselNormedConstant, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = besselNormedConstant(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitCorrT1(xdata, ydata, guess=None, logx=1):
+    lowerBounds = (-np.inf,-10,-10)
+    upperBounds = (np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(corrT1, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    if logx==1:
+        xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
+    else:
+        xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = corrT1(xfit, *popt)
+    return xfit, yfit, popt, perr
+
 def fitCosTwo(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
     if lowerBounds is None: lowerBounds = (0, 0,-np.pi, 0, 0,-np.pi, -np.inf)
     if upperBounds is None: upperBounds = (1, np.inf, np.pi, 1, np.inf, np.pi,  np.inf)
@@ -148,6 +195,33 @@ def fitCosThree(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
     perr = np.sqrt(np.diag(pcov))
     xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = cosThree(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitCosThreeSimple(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0, 0,0,0,-np.inf)
+    if upperBounds is None: upperBounds = (1, np.inf, np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(cosThreeSimple, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = cosThreeSimple(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitCosThreeExpo(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0, 0,-np.pi, 0, 0,-np.pi, 0, 0,-np.pi, -np.inf, 0)
+    if upperBounds is None: upperBounds = (1, np.inf, np.pi, 1, np.inf, np.pi, 1, np.inf, np.pi, np.inf, np.inf)
+    popt, pcov = curve_fit(cosThreeExpo, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = cosThreeExpo(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitCosThreeExpoSimple(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0, 0,0,0,-np.inf, 0)
+    if upperBounds is None: upperBounds = (1, np.inf, np.inf, np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(cosThreeExpoSimple, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = cosThreeExpoSimple(xfit, *popt)
     return xfit, yfit, popt, perr
 
 def fitCosFour(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
@@ -168,14 +242,40 @@ def fitSinusoidDecay(xdata, ydata, guess=None):
     yfit = sinusoidDecay(xfit, *popt)
     return xfit, yfit, popt, perr
 
-def fitDecay(xdata, ydata, guess=None, upperBounds=None,lowerBounds=None):
+def fitDecay(xdata, ydata, guess=None, upperBounds=None,lowerBounds=None, logx=1):
     lowerBounds = (-np.inf, -np.inf,0)
     upperBounds = (np.inf, np.inf, 1e8)
     popt, pcov = curve_fit(decay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
-    # xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
-    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    if logx==1:
+        xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
+    else:
+        xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = decay(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitSumDecay(xdata, ydata, guess=None, upperBounds=None,lowerBounds=None, logx=1):
+    lowerBounds = (-np.inf, 0,   -np.inf,0,  -np.inf)
+    upperBounds = (np.inf,  1e6, np.inf, 1e8,np.inf)
+    popt, pcov = curve_fit(sumDecay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    if logx==1:
+        xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
+    else:
+        xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = sumDecay(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitRisedecay(xdata, ydata, guess=None, upperBounds=None,lowerBounds=None, logx=1):
+    lowerBounds = (-np.inf, -np.inf, -np.inf,0)
+    upperBounds = (np.inf, np.inf, np.inf,1e8)
+    popt, pcov = curve_fit(risedecay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    if logx==1:
+        xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 2001)
+    else:
+        xfit = np.linspace(xdata[0], xdata[-1], 2001)
+    yfit = risedecay(xfit, *popt)
     return xfit, yfit, popt, perr
 
 def fitSaturation(xdata, ydata, guess=None):
@@ -204,8 +304,8 @@ def fitLinear(xdata, ydata, guess=None):
     return xfit, yfit, popt, perr
 
 def fitStrDecay(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
-    if lowerBounds is None: lowerBounds = (-np.pi, 0, 0, -np.inf)
-    if upperBounds is None: upperBounds = (np.inf, np.inf, 5, np.inf)
+    if lowerBounds is None: lowerBounds = (-np.pi, -np.inf, 0,      0)
+    if upperBounds is None: upperBounds = (np.inf, np.inf,  np.inf, 4.2)
     popt, pcov = curve_fit(strDecay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
 
@@ -225,7 +325,7 @@ def fitStrDecaySinusoid(xdata, ydata, guess=None, upperBounds=None, lowerBounds=
 
 def fitLor(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     if lowerBounds is None: lowerBounds = (-np.inf,0,0,0)
-    if upperBounds is None: upperBounds = (0, np.inf, np.inf, np.inf)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf, np.inf)
     popt, pcov = curve_fit(lor, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
 
@@ -235,7 +335,7 @@ def fitLor(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
 
 def fitLorTwo(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     if lowerBounds is None: lowerBounds = (-np.inf,0,0,-np.inf,0,0,0)
-    if upperBounds is None: upperBounds = (0, np.inf, np.inf,  0, np.inf, np.inf, np.inf)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf,  np.inf, np.inf, np.inf, np.inf)
     popt, pcov = curve_fit(lorTwo, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
 
@@ -335,7 +435,7 @@ def readDataConfocalSCCRR(datafile):
     sigmaR  = np.sqrt(1+2/snr**2)
     sigmaR2 = np.sqrt(1+2/snr2**2)
 
-    return x,y,sig,sig2,ref,ref2,sigmaR,sigmaR2,snr,snr2
+    return x,y,sig,sig2,ref,ref2,sigmaR,sigmaR2,snr,snr2, sigFull, sigFull2, refFull, refFull2
 
 def readDataConfocalRRSingleRead(datafile):
     readfile = np.loadtxt(datafile)
@@ -420,7 +520,7 @@ def readDataFullDataDualNV(datafile, num_of_bins=10, binwidth=0, plot_hist_every
     if ifRealTimeMonitor: 
         num_of_iter_same_tau = num_of_iter
     else: 
-        num_of_iter_same_tau = np.count_nonzero(tau == np.min(tau))
+        num_of_iter_same_tau = np.count_nonzero(tau == np.max(tau))
     num_of_different_tau = int(len(tau)/num_of_iter_same_tau)
 
     sig = np.reshape(sig,(num_of_different_tau, num_of_iter_same_tau))
@@ -428,6 +528,8 @@ def readDataFullDataDualNV(datafile, num_of_bins=10, binwidth=0, plot_hist_every
     sig2 = np.reshape(sig2,(num_of_different_tau, num_of_iter_same_tau))
     ref2 = np.reshape(ref2,(num_of_different_tau, num_of_iter_same_tau))
     tau = np.reshape(tau,(num_of_different_tau, num_of_iter_same_tau))
+
+    # print(np.shape(sig))
     
     return tau, sig, sig2, ref, ref2
 
@@ -549,6 +651,116 @@ def readDataFullData(datafile, num_of_bins=10, binwidth=0, plot_hist_every=5,
         fig.colorbar(plot, orientation='vertical')
 
     return sig, ref, hist2DArray_sig, hist2DArray_ref, xplot, yplot, bins1DArray
+
+def readDataFullDataChargeCheck(datafile, num_of_bins=10, binwidth=0, plot_hist_every=5, 
+                     ifDataSavedAsCountRate=False, ifLogColor=False, ifSubtractRef=False, ifPlotRef=False,
+                     ifRealTimeMonitor=False, ifPlot=True, num_of_iter=0):
+    readfile = np.loadtxt(datafile)
+    # print(readfile)
+    check1     = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    check1_ref = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    check2     = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    check2_ref = [xAxisAndResult[4] for xAxisAndResult in readfile]
+    tau = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[6] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[8] for xAxisAndResult in readfile]
+
+    tau = np.array(tau); sig = np.array(sig); ref = np.array(ref)
+    if ifRealTimeMonitor: 
+        num_of_iter_same_tau = num_of_iter
+    else: 
+        num_of_iter_same_tau = np.count_nonzero(tau == np.min(tau))
+    num_of_different_tau = int(len(tau)/num_of_iter_same_tau)
+
+    sig = np.reshape(sig,(num_of_different_tau, num_of_iter_same_tau))
+    ref = np.reshape(ref,(num_of_different_tau, num_of_iter_same_tau))
+    check1 = np.reshape(check1,(num_of_different_tau, num_of_iter_same_tau))
+    check2 = np.reshape(check2,(num_of_different_tau, num_of_iter_same_tau))
+    check1_ref = np.reshape(check1_ref,(num_of_different_tau, num_of_iter_same_tau))
+    check2_ref = np.reshape(check2_ref,(num_of_different_tau, num_of_iter_same_tau))
+
+    if math.isnan(np.max(sig)): sig[-1] = np.zeros(num_of_iter_same_tau)
+    if math.isnan(np.max(ref)): ref[-1] = np.zeros(num_of_iter_same_tau)
+
+    if ifSubtractRef: sig = sig-ref
+
+    xplot = np.linspace(1,num_of_iter_same_tau,num_of_iter_same_tau)
+    yplot = tau[::num_of_iter_same_tau]
+    Xplot, Yplot = np.meshgrid(xplot,yplot)
+
+    if ifDataSavedAsCountRate:
+        for i in range(num_of_different_tau):
+            sig[i] = sig[i]*1e3*yplot[i]/1e9
+            ref[i] = sig[i]*1e3*yplot[i]/1e9
+
+    if ifPlot:
+        fig,ax = plt.subplots()
+        plot = ax.pcolormesh(Xplot, Yplot/1e3, sig, cmap='inferno')
+        ax.set_xlabel(r"Iterations")
+        ax.set_ylabel(r"Readout time ($\mu$s)")
+        ax.set_title("Signal")
+        fig.colorbar(plot, orientation='vertical')
+
+    if ifPlotRef:
+        fig,ax = plt.subplots()
+        plot = ax.pcolormesh(Xplot, Yplot/1e3, ref, cmap='inferno')
+        ax.set_xlabel(r"Iterations")
+        ax.set_ylabel(r"Readout time ($\mu$s)")
+        ax.set_title("Reference")
+        fig.colorbar(plot, orientation='vertical')
+
+    if binwidth == 0: num_of_bins = num_of_bins
+    else: num_of_bins = int((np.max(sig)-np.min(sig))/binwidth)
+    # print("num of bins = " + str(num_of_bins))
+    bins1DArray = np.linspace(np.min(sig), np.max(sig), num_of_bins+1)
+    hist2DArray_sig = np.zeros((num_of_different_tau,num_of_bins))
+    hist2DArray_ref = np.zeros((num_of_different_tau,num_of_bins))
+    
+
+    for i in range(num_of_different_tau):
+        # Create a histogram
+        hist, bins = np.histogram(sig[i], bins=bins1DArray)
+        hist2DArray_sig[i] = hist
+        if np.max(hist) == num_of_iter_same_tau: hist2DArray_sig[i] = np.zeros(len(hist)) # get rid of unfinished line scan
+
+        hist, bins = np.histogram(ref[i], bins=bins1DArray)
+        hist2DArray_ref[i] = hist
+        # if np.max(hist) == num_of_iter_same_tau: hist2DArray_ref[i] = np.zeros(len(hist)) # get rid of unfinished line scan
+
+        if np.mod(i, plot_hist_every) == 0:
+            if ifPlot:
+                fig,ax = plt.subplots(figsize=(2.5,2.5))
+                ax.hist(sig[i], bins=bins1DArray, edgecolor='black', density=True)
+                ax.set_xlabel(r"Count")
+                ax.set_ylabel(r"Probability")
+                if ifSubtractRef: text = " ms. Sig-ref. "
+                else: text = " ms. Signal. "
+                ax.set_title(r"$\tau$ = " + str(np.round(yplot[i]/1e6,2)) + text + str(np.round(num_of_iter_same_tau/1e5,1)) + "e5 iters", 
+                            fontsize=10)
+            if ifPlotRef:
+                fig,ax = plt.subplots(figsize=(2.5,2.5))
+                ax.hist(ref[i], bins=bins1DArray, edgecolor='black', density=True)
+                ax.set_xlabel(r"Count")
+                ax.set_ylabel(r"Probability")
+                ax.set_title(r"$\tau$ = " + str(np.round(yplot[i]/1e6,2)) + " ms. Ref. " + str(np.round(num_of_iter_same_tau/1e5,1)) + "e5 iters", 
+                            fontsize=10)
+
+    # Plot the histogram
+    binsMidPoint = (bins1DArray[0:-1] + bins1DArray[1:])/2
+    binPlot, Yplot = np.meshgrid(binsMidPoint,yplot)
+    norm = colors.LogNorm(vmin=hist2DArray_sig.min()+0.01, vmax=hist2DArray_sig.max()) # Create a logarithmic color scale
+
+    if ifPlot:
+        fig,ax = plt.subplots()
+        if ifLogColor: plot = ax.pcolormesh(binPlot, Yplot/1e3, hist2DArray_sig, cmap='inferno', norm=norm)
+        else: plot = ax.pcolormesh(binPlot, Yplot/1e3, hist2DArray_sig, cmap='inferno')
+        ax.set_xlabel(r"Count")
+        ax.set_ylabel(r"Readout time ($\mu$s)")
+        if ifSubtractRef: ax.set_title("Histogram of counts - sig-ref")
+        else: ax.set_title("Histogram of counts - sig")
+        fig.colorbar(plot, orientation='vertical')
+
+    return sig, ref, hist2DArray_sig, hist2DArray_ref, xplot, yplot, bins1DArray, check1, check2, check1_ref, check2_ref
 
 def readDataLiveCounter(datafile, acqTimeMs=1, figsize=(4,4),
                      correctionFactor=1, ifLogColor=False, ifSubtractRef=False):
@@ -893,11 +1105,28 @@ def readDataNoPlotDual(datafile):
     
     x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
     ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    ref2 = [xAxisAndResult[2] for xAxisAndResult in readfile]
     sig = [xAxisAndResult[3] for xAxisAndResult in readfile]
     sig2 = [xAxisAndResult[4] for xAxisAndResult in readfile]
-    ref2 = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    
 
     return x_s, sig, ref, sig2, ref2
+
+def readDataNoPlotDual4point(datafile):
+    readfile = np.loadtxt(datafile)
+    
+    x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    ref2 = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    refx = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    refx2 = [xAxisAndResult[4] for xAxisAndResult in readfile]
+    refxm = [xAxisAndResult[5] for xAxisAndResult in readfile]
+    refxm2 = [xAxisAndResult[6] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[7] for xAxisAndResult in readfile]
+    sig2 = [xAxisAndResult[8] for xAxisAndResult in readfile]
+    
+
+    return x_s, sig, ref, refx, refxm, sig2, ref2, refx2, refxm2
 
 def readDataNoPlotDualSingleDatapoint(datafile):
     readfile = np.loadtxt(datafile)
@@ -1351,7 +1580,8 @@ def plotAnalysisT1SCC(finalDataFolder, ifPlot=1, power589 = 2, power532 = 1400, 
 
     return tis, ths, fids, pms, snrs, gms, g0s, nms, n0s, nMeanms, nMean0s, thsref, fidsref, pmsref, snrsref, gmsref, g0sref, nmsref, n0sref, nMeanmsref, nMean0sref, sigmaSCC, sigavg, refavg, t1s, t1s_err
 
-def plotT1Simple(x, sig, ref, ifThres=1, ifContrastFirstThenAvg=0, thres=1, thresmax=2, ifPlot=1, power589 = 2, power532 = 1400, power635 = 9.5, power660=0,
+def plotT1Simple(x, sig, ref, ifThres=1, ifContrastFirstThenAvg=0, thres=1, thresmax=2, 
+                ifPlot=1, power589 = 2, power532 = 1400, power635 = 9.5, power660=0,
                 t532 = 500e3, delay1 = 20e6, delay2 = 20, tsh = 100, delay3 = 600, ti=160, delay4 = 2e6, 
                 tr_ns = 250e6,suptitle=None):
     
@@ -1373,19 +1603,18 @@ def plotT1Simple(x, sig, ref, ifThres=1, ifContrastFirstThenAvg=0, thres=1, thre
     a = np.max(y)
 
     guess = (a,0,1e6)
-    xfit, yfit, popt, perr = fitDecay(x,y,guess=guess)
-    s = "$T_{1}$=%.2f$\pm$%.2f ms" % (popt[2]/1e6, perr[2]/1e6)
-
     a00.plot(x,y, 'o-', linewidth=0.5, markersize=3, label="$C_{tot}$", color='C0')
+
+    xfit, yfit, popt, perr = fitDecay(x,y,guess=guess)
+    s = "$T_{1}$=%.2f$\pm$%.2f ms" % (popt[2]/1e6, perr[2]/1e6)    
     a00.plot(xfit,yfit, color='C0')
+    t1s.append(popt[2]/1e6); t1s_err.append(perr[2]/1e6)
+
     a00.set_ylabel("Contrast")
     a00.legend(fontsize=7, loc='lower left')
     a00.set_xscale('log')
     a00.set_title(s, fontsize=7)
     a00.set_xlabel("$\\tau$ (ns)")
-
-    t1s.append(popt[2]/1e6); t1s_err.append(perr[2]/1e6)
-
     ######################################################################################################################
     if ifThres:
         ratios = []

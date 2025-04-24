@@ -41,6 +41,7 @@ class RabiRRDualNV(Instrument):
         self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
         self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.LaserRead2Param =   {'delay_time': 2, 'channel':settings['laserRead2_channel']}
+        self.LaserIonParam =    {'delay_time': 2, 'channel':settings['laserIon_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
         self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
         self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
@@ -50,13 +51,14 @@ class RabiRRDualNV(Instrument):
         self.MWQ2Param =         {'delay_time': 2, 'channel':settings['MWQ2_channel']}
         self.MWswitch2Param =    {'delay_time': 2, 'channel':settings['MWswitch2_channel']}
         self.AWG2Param =         {'delay_time': 2, 'channel':settings['AWG2_channel']}
+        self.hiLoMWPwrParam =    {'delay_time': 2, 'channel':settings['hiLoMWPwr_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
-                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,'hiLoMWPwr': self.hiLoMWPwrParam,
                           'AWG': self.AWGParam, 'AWG2': self.AWG2Param,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
-                          'LaserRead2': self.LaserRead2Param, 'LaserInit': self.LaserInitParam,
+                          'LaserRead2': self.LaserRead2Param, 'LaserInit': self.LaserInitParam,'LaserIon': self.LaserIonParam,
                           'MW_I2': self.MWI2Param, 'MW_Q2': self.MWQ2Param, 'MWswitch2': self.MWswitch2Param,
                           'min_pulse_dur': int(5*1e3/self.clock_speed), 'ifPlotPulse': ifPlotPulse}
         self.settings = {**settings, **settings_extra}; self.RRtrackingSettings = self.settings['RRtrackingSettings']; self.RRtrackingSettings2 = self.settings['RRtrackingSettings2']
@@ -195,7 +197,6 @@ class RabiRRDualNV(Instrument):
         # Make Pulse Blaster, Counter, SRS global objects
         global pb
         global srs; srs = self.srs; global srs2; srs2 = self.srs2
-       
     
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
@@ -232,8 +233,8 @@ class RabiRRDualNV(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
         
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
@@ -247,11 +248,12 @@ class RabiRRDualNV(Instrument):
                 threshold_scanVpz = self.RRtrackingSettings['threshold_scanVpz']
                 threshold_scanVpz2 = self.RRtrackingSettings2['threshold_scanVpz']
                 
-                datafile = self.getDataFilename()
-                x_s, sig, ref, sig2, ref2 = dr.readDataNoPlotDual(datafile)
-                ref = np.array(ref); ref2 = np.array(ref2)
-                
-                self.vpz = self.vel_vpz_target; self.vpz2 = self.vel_vpz_target2
+                if self.RRtrackingSettings['if_tracking'] == 1:
+                    datafile = self.getDataFilename()
+                    x_s, sig, ref, sig2, ref2 = dr.readDataNoPlotDual(datafile)
+                    ref = np.array(ref); ref2 = np.array(ref2)
+                    
+                    self.vpz = self.vel_vpz_target; self.vpz2 = self.vel_vpz_target2
 
                 if self.RRtrackingSettings['if_tracking'] == 1 and np.max(ref) < threshold_scanVpz: 
                     print()
@@ -308,10 +310,12 @@ class Signal2(Parameter):
         self.initColor    = self.settings['LaserInit']['channel']
         self.ifAWG = self.settings['ifAWG']
         self.ifAWG2 = self.settings['ifAWG2']
+        self.ifHiloExtra = self.settings['ifHiloExtra']
 
         self.vel_vpz_target = self.settings['vel_vpz_target']
         self.vel_vpz_target2 = self.settings['vel_vpz_target2']
         self.ifFakeRabi = self.settings['ifFakeRabi']
+        self.ifIonInit = self.settings['ifIonInit']
         self.timeNow = time.time()
 
     def get_raw(self):
@@ -397,7 +401,9 @@ class Signal2(Parameter):
 
         # Pulse parameters
         num_loops               = self.settings['num_loops']
-        laser_init_delay        = self.settings['laser_init_delay'];    laser_init_duration = self.settings['laser_init_duration']
+        laser_init_delay        = self.settings['laser_init_delay'];    laser_ionInit_duration = self.settings['laser_ionInit_duration']
+        laser_ionInit_to_green_delay=self.settings['laser_ionInit_to_green_delay']
+        laser_init_duration     = self.settings['laser_init_duration']; iznLaserSwitch_delay= self.settings['iznLaserSwitch_delay']
         laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  laser_to_DAQ_delay  = self.settings['laser_to_DAQ_delay']
         read_duration           = self.settings['read_duration'];       read_laser_duration = self.settings['read_laser_duration']
         read_duration2          = self.settings['read_duration2'];      read_laser_duration2= self.settings['read_laser_duration2']
@@ -413,9 +419,15 @@ class Signal2(Parameter):
         else:
             MWI_duration        = tau_ns
             MWI_duration2       = tau_ns
+        
+        if self.ifIonInit==1:
+            laser_init_green_delay = laser_init_delay + laser_ionInit_duration + iznLaserSwitch_delay + laser_ionInit_to_green_delay - laser_to_MWI_delay
+            when_init_end          = laser_init_green_delay + laser_init_duration
+        else:
+            laser_init_green_delay = laser_init_delay
+            when_init_end          = laser_init_green_delay + laser_init_duration + laser_to_MWI_delay
 
-        when_init_end              = laser_init_delay + laser_init_duration
-        MWI_delay                  = when_init_end    + laser_to_MWI_delay; self.MWI_delay = MWI_delay
+        MWI_delay                  = when_init_end; self.MWI_delay = MWI_delay
         MW_delay_for_AWG           = MWI_delay - AWG_output_delay
         MW_duration_for_AWG        = int(2*int((2*AWG_buffer + MWI_duration + 1)/2)) # to make it even
 
@@ -423,15 +435,8 @@ class Signal2(Parameter):
             when_pulse_end = MWI_delay + MW_duration_for_AWG
         else:
             when_pulse_end = MWI_delay + MWI_duration
-     
-        laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay
-        laser_read_signal_duration = read_laser_duration
-        when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
-        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
-        read_signal_duration       = read_duration
-        when_read_signal_end       = read_signal_delay + read_signal_duration
 
-        MWI_delay2                  = when_init_end   + laser_to_MWI_delay + shift_btwn_2NV_MW; self.MWI_delay2 = MWI_delay2
+        MWI_delay2                  = when_init_end  + shift_btwn_2NV_MW; self.MWI_delay2 = MWI_delay2
         MW_delay_for_AWG2           = MWI_delay2 - AWG_output_delay2
         MW_duration_for_AWG2        = int(2*int((2*AWG_buffer2 + MWI_duration2 + 1)/2)) # to make it even
 
@@ -440,28 +445,49 @@ class Signal2(Parameter):
         else:
             when_pulse_end2 = MWI_delay2 + MWI_duration2
         
-        laser_read_signal_delay2    = when_pulse_end2 + MW_to_read_delay + shift_btwn_2NV_read
+        laser_read_signal_delay    = np.max((when_pulse_end,when_pulse_end2))   + MW_to_read_delay
+        laser_read_signal_duration = read_laser_duration
+        when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
+        read_signal_duration       = read_duration
+        when_read_signal_end       = read_signal_delay + read_signal_duration
+        
+        laser_read_signal_delay2    = laser_read_signal_delay + shift_btwn_2NV_read
         laser_read_signal_duration2 = read_laser_duration2
         when_laser_read_signal_end2 = laser_read_signal_delay2 + laser_read_signal_duration2
         read_signal_delay2          = laser_read_signal_delay2 + laser_to_DAQ_delay2
         read_signal_duration2       = read_duration2
         when_read_signal_end2       = read_signal_delay2 + read_signal_duration2
-        
+
+        hilo_delay = laser_read_signal_delay
+        hilo_duration = when_read_signal_end2 - hilo_delay
+
+        ######################################## Reference ####################################################
         laser_init_ref_delay        = np.max((when_read_signal_end2, when_read_signal_end)) + laser_init_delay
-        when_init_ref_end           = laser_init_ref_delay + laser_init_duration
-        laser_read_ref_delay        = when_init_ref_end + laser_to_MWI_delay + MWI_duration + MW_to_read_delay
+        
+        if self.ifIonInit==1:
+            laser_init_green_ref_delay = laser_init_ref_delay + laser_ionInit_duration + iznLaserSwitch_delay + laser_ionInit_to_green_delay - laser_to_MWI_delay
+            when_init_ref_end          = laser_init_green_ref_delay + laser_init_duration
+        else:
+            laser_init_green_ref_delay = laser_init_ref_delay
+            when_init_ref_end          = laser_init_green_ref_delay + laser_init_duration + laser_to_MWI_delay
+
+        laser_read_ref_delay        = when_init_ref_end + shift_btwn_2NV_MW + MWI_duration + MW_to_read_delay
         laser_read_ref_duration     = read_laser_duration
         when_laser_read_ref_end     = laser_read_ref_delay + laser_read_ref_duration
         read_ref_delay              = laser_read_ref_delay + laser_to_DAQ_delay;  
         read_ref_duration           = read_duration
         when_read_ref_end           = read_ref_delay + read_ref_duration
 
-        laser_read_ref_delay2    = when_init_ref_end + laser_to_MWI_delay + shift_btwn_2NV_MW + MWI_duration + MW_to_read_delay + shift_btwn_2NV_read
+        laser_read_ref_delay2    = laser_read_ref_delay + shift_btwn_2NV_read
         laser_read_ref_duration2 = read_laser_duration2
         when_laser_read_ref_end2 = laser_read_ref_delay2 + laser_read_ref_duration2
         read_ref_delay2          = laser_read_ref_delay2 + laser_to_DAQ_delay2
         read_ref_duration2       = read_duration2
         when_read_ref_end2       = read_ref_delay2 + read_ref_duration2
+
+        hilo_ref_delay = laser_read_ref_delay
+        hilo_ref_duration = when_laser_read_ref_end2 - hilo_ref_delay
 
         self.read_duration = read_signal_duration
         self.read_duration2 = read_signal_duration2
@@ -477,9 +503,14 @@ class Signal2(Parameter):
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
+        if self.ifIonInit == 1:
+            pulse_sequence += [spc.Pulse('LaserIon',laser_init_delay,        duration=int(laser_ionInit_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('LaserIon',laser_init_ref_delay,    duration=int(laser_ionInit_duration))] # times are in ns
         if not laser_init_delay == 0:
-            pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
-            pulse_sequence += [spc.Pulse('LaserInit',laser_init_ref_delay,    duration=int(laser_init_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('LaserInit',laser_init_green_delay,        duration=int(laser_init_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('LaserInit',laser_init_green_ref_delay,    duration=int(laser_init_duration))] # times are in ns
+            # pulse_sequence += [spc.Pulse('hiLoMWPwr',laser_init_green_delay,        duration=int(laser_init_duration))] # times are in ns
+            # pulse_sequence += [spc.Pulse('hiLoMWPwr',laser_init_green_ref_delay,    duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
         pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
@@ -498,6 +529,12 @@ class Signal2(Parameter):
             pulse_sequence += [spc.Pulse('AWG2',          MW_delay_for_AWG2,    duration=50)]
         else:
             pulse_sequence += [spc.Pulse('MWswitch2',     MWI_delay2,           duration=int(MWI_duration2))]
+        
+        if hilo_duration >= 1e2 and self.ifHiloExtra:
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_delay,         duration=int(hilo_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_ref_delay,     duration=int(hilo_ref_duration))]
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',laser_init_green_delay,        duration=int(laser_init_duration+0*5e3))] # times are in ns
+            pulse_sequence += [spc.Pulse('hiLoMWPwr',laser_init_green_ref_delay,    duration=int(laser_init_duration+0*5e3))] # times are in ns
 
         self.pulse_sequence = pulse_sequence
 

@@ -13,8 +13,8 @@ from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
 
 for SRSnum in np.array((1,2,3,4)):
     srs = SRS(SRSnum=SRSnum)
-    srs.set_freq(2870e6) #Hz
-    srs.set_RFAmplitude(-80) #dBm
+    srs.set_freq(2000e6) #Hz
+    srs.set_RFAmplitude(-105) #dBm
     srs.disable_RFOutput()
     srs.disableModulation()
     print('SRS %.0f turned off' % SRSnum)
@@ -26,9 +26,10 @@ for SDGnum in np.array((1,2)):
     AWG.turn_off()
     print('SDG %.0f turned off' % SDGnum)
 
-# # Turn off test source
-# AG = AG33522A()
-# AG.disable_PM()
-# AG.disable_RFOutput()
-# print('Agilent turned off')
+# Turn off test source
+AG = AG33522A()
+AG.disable_PM(channel=1);       AG.disable_PM(channel=2)
+AG.disable_RFOutput(channel=1); AG.disable_RFOutput(channel=2)
+print('Agilent turned off')
+
 

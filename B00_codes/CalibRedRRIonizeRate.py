@@ -41,9 +41,10 @@ class CalibRedRRIonizeRate(Instrument):
         self.MWQ2Param =         {'delay_time': 2, 'channel':settings['MWQ2_channel']}
         self.MWswitch2Param =    {'delay_time': 2, 'channel':settings['MWswitch2_channel']}
         self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
+        self.hiLoMWPwrParam =    {'delay_time': 2, 'channel':settings['hiLoMWPwr_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
 
-        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 
+        settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam, 'hiLoMWPwr': self.hiLoMWPwrParam,
                           'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam, 'AWG': self.AWGParam,
                         'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                         'MW_I2': self.MWI2Param, 'MW_Q2': self.MWQ2Param, 'MWswitch2': self.MWswitch2Param,
@@ -183,14 +184,13 @@ class Signal(Parameter):
         self.ifMWDuringRead = self.settings['ifMWDuringRead']
         self.ifMW2DuringRead = self.settings['ifMW2DuringRead']
         self.ifAWG = self.settings['ifAWG']
+        self.ifHiloExtra = self.settings['ifHiloExtra']
         start = self.settings['start']; stop = self.settings['stop']; num_sweep_points = self.settings['num_sweep_points']
         self.tausArray = np.linspace(start, stop, num_sweep_points)
 
     def set_raw(self, tau_ns):
         # Make pulses, program Pulse Blaster
 
-        # if np.mod(self.loopCounter,100) == 0:
-        #     print("Loop " + str(self.loopCounter))
         print("Loop " + str(self.loopCounter))
         
         # Pulse parameters
@@ -226,14 +226,16 @@ class Signal(Parameter):
         when_laser_read_signal_end = when_read_signal_end + DAQ_to_laser_off_delay
 
         MWmix_delay                = laser_read_signal_delay + laserRead_to_MWmix
-        MWmix_duration             = laser_read_signal_duration - laserRead_to_MWmix + laser_to_DAQ_delay
+        # MWmix_duration             = laser_read_signal_duration - laserRead_to_MWmix + laser_to_DAQ_delay
+        MWmix_duration             = when_read_signal_end - MWmix_delay
 
         MWmix_delay_for_AWG        = MWmix_delay - AWG_output_delay; self.MWmix_delay= MWmix_delay
         MWmix_duration_for_AWG     = int(2*int((2*AWG_buffer + MWmix_duration + 1)/2)) # to make it even
 
         if self.ifAWG:
             global ch1plot; global ch2plot
-            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MWmix_duration), buffer=int(AWG_buffer))
+            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MWmix_duration), buffer=int(AWG_buffer),
+                                                     amp_MW_mix=self.settings['amp_MW_mix'])
 
         if not laser_init_delay == 0:
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,        duration=int(laser_init_duration))] # times are in ns
@@ -249,6 +251,14 @@ class Signal(Parameter):
             delay = first_read_signal_delay + i*(read_signal_duration + delay_between_reads)
             pulse_sequence += [spc.Pulse('Counter',  delay,             duration=int(read_signal_duration))] # times are in ns
         
+        ########################### Make hilo pulse ###########################
+        if self.ifHiloExtra==1:
+            hilo_delay = laser_init_delay
+            end = when_laser_read_signal_end
+            hilo_duration = end-hilo_delay
+            pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]
+                    
+        #######################################################################################################
         self.read_duration = read_signal_duration
     
         self.pulse_sequence = pulse_sequence

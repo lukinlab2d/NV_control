@@ -20,25 +20,25 @@ tausArray = np.linspace(4,15004,376)
 
 if False:
     velNum = 1; vel_current = 62.7; vel_wvl = 637.20; laserRead_channel = 5
-    SRSnum = 1; MWPower = 0.5; pi_half = 10; MWFreq  = 2597.9e6   #NV D1
+    SRSnum = 1; MWPower = 0.5; pi_half = 10; MWFreq  = 2598.44e6   #NV D1
     SDGnum = 1; AWG_channel = 18 
     MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
     
 else:
     velNum = 2; vel_current = 67; vel_wvl = 636.88; laserRead_channel = 14
-    SRSnum = 2; MWPower = -2; pi_half = 10; MWFreq  = 2789.2e6   #NV D2, 2nd MW path
+    SRSnum = 2; MWPower = -9.5; pi_half = 20; MWFreq  = 2788.7e6   #NV D2, 2nd MW path
     SDGnum = 2; AWG_channel = 19
     MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11  
 
 # Params
-num_loops                    = int(0.7e5)
-laser_init_delay             = 1e2;        laser_init_duration    = 8e3
-MW_to_read_delay             = 1e2;        MWI_to_switch_delay    = 10
+num_loops                    = int(7e4)
+laser_init_delay             = 1e2;        laser_init_duration    = 30e3
+MW_to_read_delay             = 1e2;        MWI_to_switch_delay    = 30
 laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14:900}
 laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
 laser_to_MW_delay            = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
 read_duration                = 2e3;        read_laser_duration    = read_duration
-AWG_buffer                   = 1;          AWG_output_delay       = 1450     
+AWG_buffer                   = 10;         AWG_output_delay       = 1450     
 
 for i in np.linspace(1,reps,reps):
     

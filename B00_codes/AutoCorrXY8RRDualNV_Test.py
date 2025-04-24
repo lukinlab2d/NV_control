@@ -15,8 +15,8 @@ REF_MINUS_SIG = 3; pi = np.pi
 ####################################################################################################################
 reps=int(1); ifLooped=(reps!=1); laserInit_channel=3; normalized_style=Q_FINAL; ifStartInY=0
 ifInitWvl=0; ifInitVpz=0; ifNeedVel1=0; ifNeedVel2=0; ifAntiCorrel=0; ifJustRef_CorrACorr=0
-ifRandomized=0; ifSinDetect=1; if_tracking=0; ifAWG=1 # ifSinDetect, specify phase of last pulse
-ifSweepPhaseLastPiHalf=0; ifSweepPhaseLastPiHalfSig=ifSweepPhaseLastPiHalf; ifTestSig=1
+ifRandomized=0; ifSinDetect=1; if_tracking=0; ifAWG=1; ifHiloExtra=1 # ifSinDetect, specify phase of last pulse
+ifSweepPhaseLastPiHalf=0; ifSweepPhaseLastPiHalfSig=0; ifTestSig=1; hiLoMWPwr_channel=17
 ifRndPhaseNoise=1; AGBW = 100e3; AGfreq = 1.5625e6; AGampmax = 0.25; AGampArr = np.linspace(0,AGampmax,26)
 for i in np.linspace(1,reps,reps):
     AGamp = AGampmax;print('AGamp: ', AGamp)
@@ -35,18 +35,19 @@ for i in np.linspace(1,reps,reps):
     AWG_buffer2                  = 10;         AWG_output_delay2      = 1450 
     phi_IQ = 0.05*pi; phi_IQ2    = 0.05*pi;    tau                    = int(1/(2*AGfreq)*1e9-40)
     rest_after_first_pulse       = 40;         phi_IQ_antiCorrPulse   = 0.5*pi
-    tauExtra                     = 0
+    tauExtra                     = 0;          srate                  = 2.5e8
+    hilo_margin_start = 200; hilo_margin_end = 100; hilo_min = 300
     if True:
         ########### NV1 ##############
         velNum = 1; vel_current = 62.7; vel_wvl = 637.20; vel_vpz_target = -1; laserRead_channel = 5
-        SRSnum = 1; MWPower     = -6.0; pi_half = 20;     MWFreq         = 2598.1e6   #NV D1 ms-1
+        SRSnum = 1; MWPower     = -6.0; pi_half = 20;     MWFreq         = 2598.44e6   #NV D1 ms-1
         SDGnum = 1; AWG_channel = 18 
         MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
         laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
         last_pi_2time      = pi_half
         ############ NV2 #############
         velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.88; vel_vpz_target2 = -1; laserRead2_channel = 14
-        SRSnum2 = 2; MWPower2   = -9.8; pi_half2 = 20;    MWFreq2        = 2789.2e6   #NV D2 ms-1
+        SRSnum2 = 2; MWPower2   = -9.7; pi_half2 = 20;    MWFreq2        = 2788.70e6   #NV D2 ms-1
         SDGnum2 = 2; AWG2_channel = 19
         MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11
         laser_to_DAQ_delay2 = laser_to_DAQ_delay_directory.get(laserRead2_channel, 0) 
@@ -117,6 +118,7 @@ for i in np.linspace(1,reps,reps):
                 'laser_to_DAQ_delay':     laser_to_DAQ_delay,    'read_duration':             read_duration,
                 'MW_to_read_delay':       MW_to_read_delay,      'read_laser_duration':       read_laser_duration,
                 'laserInit_channel':      laserInit_channel,     'laserRead_channel':         laserRead_channel, 
+                'hiLoMWPwr_channel':      hiLoMWPwr_channel,
                 'laser_to_DAQ_delay2':    laser_to_DAQ_delay2,   'laserRead2_channel':        laserRead2_channel,
                 'normalized_style':       normalized_style,      'pi_half': pi_half, 'pi_half2': pi_half2,
                 'vel_current':  vel_current, 'vel_wvl': vel_wvl, 'velNum': velNum, 'ifNeedVel1': ifNeedVel1,
@@ -136,7 +138,9 @@ for i in np.linspace(1,reps,reps):
                 'ifSweepPhaseLastPiHalfSig':ifSweepPhaseLastPiHalfSig, 'ifAntiCorrel':ifAntiCorrel,
                 'ifJustRef_CorrACorr':ifJustRef_CorrACorr, 'rest_after_first_pulse':rest_after_first_pulse,
                 'last_pi_2time':last_pi_2time, 'phi_IQ_antiCorrPulse':phi_IQ_antiCorrPulse,'tauExtra':tauExtra,
-                'AGampArr':AGampArr,'ifTestSig':ifTestSig}
+                'AGampArr':AGampArr,'ifTestSig':ifTestSig,'ifHiloExtra':ifHiloExtra,
+                'hilo_margin_start':hilo_margin_start, 'hilo_margin_end':hilo_margin_end,'hilo_min':hilo_min,
+                'srate':srate}
 
     ####### Random-phase noise ######
     if ifTestSig==1:

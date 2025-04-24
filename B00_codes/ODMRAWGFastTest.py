@@ -42,14 +42,14 @@ if IF_CW == 0:
         # Test for Pulsed ODMR Fast
         freqsArray = np.linspace(2585e6,2605e6,41)
 
-        SDGnum=1; SRSnum=1; uwPower = -12; ifLooped = 1#(reps != 1)
+        SDGnum=1; SRSnum=1; uwPower = -5.7; ifLooped = (reps != 1)
         laserInit_channel=3; laserRead_channel=3; AWG_channel=18
 
         pi_increment = 0
-        num_loops                    = int(4e5);          pitime                 = 128
+        num_loops                    = int(4e5);          pitime                 = 40
         laser_init_delay             = 0;                 laser_init_duration    = 0
-        laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}   
-        AWG_output_delay             = 1450;              AWGbuffer              = 1
+        laser_to_DAQ_delay_directory = {3:860, 6:1160, 9:1160, 7:900, 5:1660, 10:170, 14:800}
+        AWG_output_delay             = 1450;              AWGbuffer              = 10
         read_duration                = 300;               DAQ_to_laser_off_delay = 400
         padding                      = 900+pi_increment;  MW_to_DAQ_delay        = 0
         padding_green1               = 100;               AWG_delay              = 1800

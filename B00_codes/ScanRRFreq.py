@@ -47,6 +47,8 @@ class ScanRRFreq(Instrument):
         # clock speed is in MHz - is 'status' needed in the dictionary?
         super().__init__(name, **kwargs)
         self.clock_speed = 500 # MHz
+        self.if2sources   = settings['if2sources']
+
         self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
         self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
@@ -54,12 +56,16 @@ class ScanRRFreq(Instrument):
         self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
         self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
         self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
+        if self.if2sources:
+            self.AWGParam2 =         {'delay_time': 2, 'channel':settings['AWG_channel2']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
                           'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam, 'AWG': self.AWGParam,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                           'min_pulse_dur': int(5*1e3/self.clock_speed)}
+        if self.if2sources:
+            settings_extra['AWG2'] = self.AWGParam2
         self.settings = {**settings, **settings_extra}
         self.metadata.update(self.settings)
 
@@ -68,10 +74,14 @@ class ScanRRFreq(Instrument):
 
         # Vpiezos, MW power, and MW frequency
         self.vpzArray = self.settings['vpzArray']
-        self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
+        self.SRSnum = self.settings['SRSnum'];   MWPower = self.settings['MWPower'];   MWFreq = self.settings['MWFreq']
+        if self.if2sources:
+            self.SRSnum2 = self.settings['SRSnum2']; MWPower2 = self.settings['MWPower2']; MWFreq2 = self.settings['MWFreq2']
+            self.SDGnum2 = self.settings['SDGnum2']
         self.velNum = self.settings['velNum']; self.ifInitVpz = self.settings['ifInitVpz']; self.ifInitWvl = self.settings['ifInitWvl']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl'] 
-        self.SDGnum = self.settings['SDGnum']; self.ifIQ = self.settings['ifIQ']
+        self.SDGnum = self.settings['SDGnum']
+        self.ifIQ = self.settings['ifIQ']
 
         # SRS object
         self.srs = SRS(SRSnum=self.SRSnum)
@@ -81,11 +91,22 @@ class ScanRRFreq(Instrument):
             self.srs.enableIQmodulation()
         self.srs.enable_RFOutput()
 
+        if self.if2sources:
+            self.srs2 = SRS(SRSnum=self.SRSnum2)
+            self.srs2.set_freq(MWFreq2) #Hz
+            self.srs2.set_RFAmplitude(MWPower2) #dBm
+            if self.ifIQ:
+                self.srs2.enableIQmodulation()
+            self.srs2.enable_RFOutput()
+
         # AWG object
         ifAWG = self.settings['ifAWG']; self.ifAWG = ifAWG
         if self.ifAWG:
             self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
             global AWG; AWG = self.AWG
+            if self.if2sources:
+                self.AWG2 = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum2)
+                global AWG2; AWG2 = self.AWG2
 
         # Pulse parameters
         num_loops               = self.settings['num_loops'];           AWG_buffer           = self.settings['AWG_buffer']
@@ -93,7 +114,11 @@ class ScanRRFreq(Instrument):
         laser_to_MWI_delay      = self.settings['laser_to_MWI_delay'];  MW_duration        = self.settings['MW_duration']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];  read_duration       = self.settings['read_duration']   
         read_laser_duration     = self.settings['read_laser_duration']; MW_to_read_delay    = self.settings['MW_to_read_delay']
-        AWG_output_delay        = self.settings['AWG_output_delay'];    
+        AWG_output_delay        = self.settings['AWG_output_delay'];   
+        if self.if2sources:
+            MW_duration2        = self.settings['MW_duration2']
+            shift_btwn_2NV_MW   = self.settings['shift_btwn_2NV_MW']
+            AWG_output_delay2   = AWG_output_delay
         
         when_init_end              = laser_init_delay + laser_init_duration
         MWI_delay                  = when_init_end    + laser_to_MWI_delay; self.MWI_delay = MWI_delay
@@ -105,16 +130,28 @@ class ScanRRFreq(Instrument):
         else:
             when_pulse_end = MWI_delay + MW_duration
         
-        laser_read_signal_delay    = when_pulse_end   + MW_to_read_delay;           
+        if self.if2sources:
+            MWI_delay2            = when_init_end  + shift_btwn_2NV_MW; self.MWI_delay2 = MWI_delay2
+            MW_delay_for_AWG2     = MWI_delay2 - AWG_output_delay2
+            MW_duration_for_AWG2  = int(2*int((2*AWG_buffer + MW_duration2 + 1)/2)) # to make it even
+
+            if ifAWG:
+                when_pulse_end2 = MWI_delay2 + MW_duration_for_AWG2
+            else:
+                when_pulse_end2 = MWI_delay2 + MW_duration2
+        else: when_pulse_end2=0
+        
+        laser_read_signal_delay    = np.max((when_pulse_end,when_pulse_end2))   + MW_to_read_delay  
         laser_read_signal_duration = read_laser_duration
         read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
-        laser_init_ref_delay = when_read_signal_end + laser_init_delay
+        laser_init_ref_delay = when_laser_read_signal_end + laser_init_delay
         when_init_ref_end    = laser_init_ref_delay + laser_init_duration
-        laser_read_ref_delay = when_init_ref_end + laser_to_MWI_delay + MW_duration + MW_to_read_delay
+        # laser_read_ref_delay = when_init_ref_end + laser_to_MWI_delay + MW_duration + MW_to_read_delay
+        laser_read_ref_delay = laser_read_signal_delay + (laser_init_ref_delay-laser_init_delay)
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  
         read_ref_duration    = read_duration;       when_read_ref_end = read_ref_delay + read_ref_duration
         laser_read_ref_duration = read_laser_duration
@@ -124,7 +161,10 @@ class ScanRRFreq(Instrument):
 
         if ifAWG:
             global ch1plot; global ch2plot
-            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MW_duration), buffer=int(AWG_buffer))  
+            ch1plot, ch2plot = AWG.send_fastRabi_seq(pulse_width=int(MW_duration), buffer=int(AWG_buffer)) 
+        if self.if2sources:
+            global ch1plot2; global ch2plot2
+            ch1plot2, ch2plot2 = AWG2.send_fastRabi_seq(pulse_width=int(MW_duration2), buffer=int(AWG_buffer))  
 
         # Make pulse sequence (per each freq)
         pulse_sequence = []
@@ -135,6 +175,8 @@ class ScanRRFreq(Instrument):
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
         if ifAWG:
             pulse_sequence += [spc.Pulse('AWG',          MW_delay_for_AWG,    duration=50)]
+        if self.if2sources:
+            pulse_sequence += [spc.Pulse('AWG2',         MW_delay_for_AWG2,    duration=50)]
         else:
             pulse_sequence += [spc.Pulse('MWswitch',     MWI_delay,           duration=int(MW_duration))]
         pulse_sequence += [spc.Pulse('Counter',      read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
@@ -245,21 +287,29 @@ class ScanRRFreq(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
         
         if self.ifPlotPulse:
             pulsePlotFilename = data.location + "/pulsePlot.png"
             plotPulseObject = PlotPulse(measurementObject=self, plotFilename=pulsePlotFilename, ifShown=True,
                                         readColor=self.readColor, initColor=self.initColor)
             if self.ifAWG:
-                fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.MWI_delay)
+                fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.MWI_delay, label1='chnl1-AWG1', label2='chnl2-AWG1')
+                if self.if2sources:
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot2, ch2plot2, self.MWI_delay2,
+                                                           fig=fig, offset1=17.75, offset2=17.5, label1='chnl1-AWG2', label2='chnl2-AWG2')
             else:
                 plotPulseObject.makePulsePlot()
         
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
         if self.ifAWG: self.AWG.turn_off()
+
+        if self.if2sources:
+            self.srs2.disable_RFOutput()
+            self.srs2.disableModulation()
+            if self.ifAWG: self.AWG2.turn_off()
 
     def runScanInPulseSequence(self):
         sig = self.sig # this is implemented as a Parameter
@@ -431,20 +481,29 @@ class WvlFromWM(Parameter):
         time.sleep(self.timeSleepReadWvl)
         if self.velNum==1:
             dropbox_path = '/wlm_laser1.txt'
+        # elif self.velNum==2:
+        #     dropbox_path = '/wlm_laser2.txt'
+            _, response = self.dbx.files_download(dropbox_path)
+            file_content = response.content
+
+            # Convert bytes to string
+            data_str = file_content.decode('utf-8')
+
+            # Split the string into lines
+            lines = data_str.split('\r\n')
+
+            # Convert each line to a float
+            data_float = [float(line) for line in lines if line]
+            data = np.array(data_float)
+            lastData = np.round(data[-1],6)
         elif self.velNum==2:
-            dropbox_path = '/wlm_laser2.txt'
-        _, response = self.dbx.files_download(dropbox_path)
-        file_content = response.content
+            filepath = 'C:/Users/lukin2dmaterials/pylabnet/b00_wlm//wlm_laser2.txt'
 
-        # Convert bytes to string
-        data_str = file_content.decode('utf-8')
-
-        # Split the string into lines
-        lines = data_str.split('\r\n')
-
-        # Convert each line to a float
-        data_float = [float(line) for line in lines if line]
-        data = np.array(data_float)
-        lastData = np.round(data[-1],6)
+            data = []
+            with open(filepath, 'r') as file:
+                for line in file:
+                    data.append(float(line.strip()))
+            data = np.array(data)
+            lastData = np.round(data[-1],6)
 
         return lastData

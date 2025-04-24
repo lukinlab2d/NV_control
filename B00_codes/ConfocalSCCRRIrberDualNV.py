@@ -549,6 +549,26 @@ class Signal(Parameter):
         #     pulse_sequence += [spc.Pulse('hiLoMWPwr',    hilo_ref_NV2_delay,  duration=int(hilo_ref_duration))]
         
         pulse_sequence += [spc.Pulse('Counter',      DAQ_ref_NV2_delay,        duration=int(DAQ_ref_duration))] 
+
+        # ########################### Make hilo pulse ###########################
+        # if self.ifHiloExtra==1:
+        #     plotPulseObject = PlotPulse(pulseSequence=pulse_sequence, ifSave=False)
+        #     _, ch11, ch21 = plotPulseObject.makeTraceAWG(ch1plot, ch2plot, self.delay_for_plot)
+        #     _, ch12, ch22 = plotPulseObject.makeTraceAWG(ch1plot2, ch2plot2, self.delay_for_plot2)
+        #     all_ch = ch11 + ch21 + ch12 + ch22
+        #     zeroSegments = plotPulseObject.find_zero_segments(all_ch)
+        #     for start, length in zeroSegments:
+        #         margin_start = self.settings['hilo_margin_start']; margin_end = self.settings['hilo_margin_end']
+        #         hilo_delay = start + margin_start
+        #         hilo_duration = length - (margin_start + margin_end)
+        #         if hilo_duration >= self.settings['hilo_min']:
+        #             pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]   
+
+        pulse_sequence += [spc.Pulse('hiLoMWPwr',laser_init_delay,        duration=int(laser_init_duration))] 
+        pulse_sequence += [spc.Pulse('hiLoMWPwr',laser_init_ref_delay,        duration=int(laser_init_duration))]
+        pulse_sequence += [spc.Pulse('hiLoMWPwr',ion_strong_delay,        duration=int(ion_strong_duration))] 
+        pulse_sequence += [spc.Pulse('hiLoMWPwr',ion_ref_strong_delay, duration=int(ion_strong_duration))]           
+        
 ##############################################################################################################################
 ##############################################################################################################################
         self.read_duration = DAQ_signal_duration

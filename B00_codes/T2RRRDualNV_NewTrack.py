@@ -46,10 +46,11 @@ class T2RRRDualNV_NewTrack(Instrument):
         self.MWQ2Param =         {'delay_time': 2, 'channel':settings['MWQ2_channel']}
         self.MWswitch2Param =    {'delay_time': 2, 'channel':settings['MWswitch2_channel']}
         self.AWG2Param =         {'delay_time': 2, 'channel':settings['AWG2_channel']}
+        self.hiLoMWPwrParam =    {'delay_time': 2, 'channel':settings['hiLoMWPwr_channel']}
         global laserInitChannel; laserInitChannel = self.LaserInitParam['channel']
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
-                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,
+                          'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam,'hiLoMWPwr': self.hiLoMWPwrParam,
                           'AWG': self.AWGParam, 'AWG2': self.AWG2Param,
                           'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                           'LaserRead2': self.LaserRead2Param, 'LaserInit': self.LaserInitParam,
@@ -263,6 +264,7 @@ class Signal(Parameter):
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
         self.ifAWG = self.settings['ifAWG']
+        self.ifHiloExtra = self.settings['ifHiloExtra']
 
         self.vel_vpz_target = self.settings['vel_vpz_target']
         self.vel_vpz_target2 = self.settings['vel_vpz_target2']
@@ -414,8 +416,8 @@ class Signal(Parameter):
         AWG_buffer              = self.settings['AWG_buffer'];          AWG_output_delay    = self.settings['AWG_output_delay']  
         AWG_buffer2             = self.settings['AWG_buffer2'];         AWG_output_delay2   = self.settings['AWG_output_delay2']         
         
-        MW_duration_for_AWG = int(2*int((AWG_buffer + 4*MW_duration + tau_ns + 1)/2))
-        MW_duration_for_AWG2 = int(2*int((AWG_buffer2 + 4*MW_duration2 + tau_ns + 1)/2))
+        MW_duration_for_AWG = int(2*int((AWG_buffer + 2*MW_duration + tau_ns + 1)/2))
+        MW_duration_for_AWG2 = int(2*int((AWG_buffer2 + 2*MW_duration2 + tau_ns + 1)/2))
         
         if tau_ns/2 > 30:
             MWI_to_switch_delay  = self.settings['MWI_to_switch_delay']
@@ -427,12 +429,12 @@ class Signal(Parameter):
         ################# Signal  ################################################################
         ###### NV1 ######################################
         MW_delay                  = when_init_end + laser_to_MWI_delay              
-        global MW_del;      MW_del = MW_delay + AWG_output_delay
+        global MW_del;      MW_del = MW_delay + AWG_output_delay # true time when pulse appears
 
         MW2_delay      = MW_delay + pi2time + tau_ns;         MW2_duration = pi2time
 
         if self.ifAWG:
-            when_pulse_end = MW_del + MW_duration_for_AWG
+            when_pulse_end = MW_del + MW_duration_for_AWG # true time when pulse ends
         else:
             when_pulse_end = MW2_delay + MW2_duration
 
@@ -445,7 +447,7 @@ class Signal(Parameter):
 
         ###### NV2 ######################################
         MW_delay2                  = MW_delay + shift_btwn_2NV_MW 
-        global MW_del2;     MW_del2 = MW_delay2 + AWG_output_delay2
+        global MW_del2;     MW_del2 = MW_delay2 + AWG_output_delay2 # true time when pulse appears
 
         MW2_delay2        = MW_delay2 + pi2time2 + tau_ns;         MW2_duration2 = pi2time2
 
@@ -476,7 +478,7 @@ class Signal(Parameter):
         read_ref_duration           = read_duration
         when_read_ref_end           = read_ref_delay + read_ref_duration
 
-        sig_to_ref_wait             = laser_read_ref_delay - 2*MW_duration_for_AWG - MW_del
+        sig_to_ref_wait             = laser_read_ref_delay - (when_pulse_end + MW_duration_for_AWG + MW_to_read_delay)
 
         ###### NV2 ######################################
         MW3_delay2        = when_init_ref_end + laser_to_MWI_delay + shift_btwn_2NV_MW;    MW3_duration2 = pi2time
@@ -547,7 +549,20 @@ class Signal(Parameter):
             pulse_sequence += [spc.Pulse('MW_I2', MW4_delay2-MWI_to_switch_delay, duration=int(MW4_duration2 + 2*MWI_to_switch_delay))]
             pulse_sequence += [spc.Pulse('MW_Q2', MW4_delay2-MWI_to_switch_delay, duration=int(MW4_duration2 + 2*MWI_to_switch_delay))]
         
-        
+        ########################### Make hilo pulse ###########################
+        if self.ifHiloExtra==1:
+            plotPulseObject = PlotPulse(pulseSequence=pulse_sequence, ifSave=False)
+            _, ch11, ch21 = plotPulseObject.makeTraceAWG(ch1plot, ch2plot, MW_del)
+            _, ch12, ch22 = plotPulseObject.makeTraceAWG(ch1plot2, ch2plot2, MW_del2)
+            all_ch = ch11 + ch21 + ch12 + ch22
+            zeroSegments = plotPulseObject.find_zero_segments(all_ch)
+            for start, length in zeroSegments:
+                margin_start = self.settings['hilo_margin_start']; margin_end = self.settings['hilo_margin_end']
+                hilo_delay = start + margin_start
+                hilo_duration = length - (margin_start + margin_end)
+                if hilo_duration >= self.settings['hilo_min']:
+                    pulse_sequence += [spc.Pulse('hiLoMWPwr', int(hilo_delay), duration=int(hilo_duration))]
+                    
         ################################################################################################
         self.pulse_sequence = pulse_sequence
         self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
