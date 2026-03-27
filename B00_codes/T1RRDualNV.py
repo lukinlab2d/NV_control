@@ -363,8 +363,8 @@ class Signal(Parameter):
         hilo_extra_ref_delay = noise_ref_delay2
         hilo_extra_ref_duration = noise_ref_duration2
 
-        if self.loopCounter==0: sleepTime = 12
-        else: sleepTime = 3
+        if self.loopCounter==0: sleepTime = 10
+        else: sleepTime = 1
 
         if self.ifAWG:
             global ch1plot; global ch2plot

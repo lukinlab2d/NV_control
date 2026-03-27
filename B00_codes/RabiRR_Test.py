@@ -15,19 +15,19 @@ REF_MINUS_SIG  = 3
 ####################################################################################################################
 reps = 1;  ifLooped = (reps != 1); laserInit_channel = 3; ifAWG=1; ifInitWvl = 0
 vel_vpz_start = 57;  vel_vpz_end       = 62;                       ifNeedVel = 0
-vel_vpz_step  = 0.1; vel_vpz_step_time = 0.3; ifScanVpz   = 0;     ifInitVpz = 0; ifFakeRabi=0
+vel_vpz_step  = 0.1; vel_vpz_step_time = 0.3; ifScanVpz   = 0;     ifInitVpz = 0; ifFakeRabi=1
 
 for i in np.linspace(1, reps, reps):
     # RabiRR
-    start = 4; stop = 120; num_sweep_points = 30
+    start = 4; stop = 120; num_sweep_points = 300000
     tausArray = np.linspace(start, stop, num_sweep_points)        
     
-    if False:
-        velNum = 1; vel_current = 62.7; vel_wvl = 637.20; laserRead_channel = 5; vel_vpz_target = 28.58
+    if True:
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.22; laserRead_channel = 5; vel_vpz_target = 28.58
     else:
-        velNum = 2; vel_current = 67.0; vel_wvl = 636.88; laserRead_channel = 14;vel_vpz_target = 27.04; 
-    if False: 
-        SRSnum = 1; MWPower = -6.0; MWI_duration = 40; MWFreq  = 2954e6   #NV D1
+        velNum = 2; vel_current = 67.05; vel_wvl = 636.94; laserRead_channel = 14;vel_vpz_target = 55.92; 
+    if True: 
+        SRSnum = 1; MWPower = 0; MWI_duration = 70; MWFreq  = 3861e6   #NV D1
         SDGnum = 1; AWG_channel = 18
         MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2 
     else:
@@ -35,8 +35,8 @@ for i in np.linspace(1, reps, reps):
         SDGnum = 2; AWG_channel = 19
         MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11
     
-    num_loops                    = int(5e4)
-    laser_init_delay             = 1e2;        laser_init_duration    = 30e3
+    num_loops                    = int(3e4)
+    laser_init_delay             = 5e2;        laser_init_duration    = 8e3
     MW_to_read_delay             = 1e2
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14:900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   

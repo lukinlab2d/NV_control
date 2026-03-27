@@ -7,7 +7,7 @@
 6: strong 589
 7: 532 2nd
 8: pigtail 637
-9: weak 589
+9: weak 589. CHANGE TO AWG2
 10: pigtail 637 2nd
 11: 2nd MW switch
 12: 2nd MW I
@@ -17,4 +17,7 @@
 16: 4th MW switch for ms+1, NV2
 17: toggle hi/lo MW power. off = high; on = low
 18: AWG1
-19: AWG2
+19: AWG2. CHANGE TO WEAK GREEN
+
+250702: channel 19,20,21,22 are dead
+

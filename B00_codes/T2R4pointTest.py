@@ -19,27 +19,25 @@ THREE_PI_HALF_FINAL = 2
 
 ####################################################################################################################
 
-reps = 1
-ifLooped = False; f = 2839.5e6
-for i in np.linspace(f-0e5, f+0e5, 1):
+reps = int(2); ifLooped = (reps!=-1)
+for i in np.linspace(1,reps,reps):
     # T2R
-    tausArray = np.linspace(2, 202,51)
+    tausArray = np.linspace(10,500,50)
 
     # Params
     laserInit_channel            = 3;          laserRead_channel = 3 # 532 is 3, 589 is 6
     num_loops                    = int(3e5)
     laser_init_delay             = 0;          laser_init_duration       = 0
-    pi2time                      = 40;         read_duration             = 300
+    pi2time                      = 17;         read_duration             = 300
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
-    laser_to_AWG_delay           = 0
+    laser_to_AWG_delay           = 100
     AWG_output_delay = 1450; AWG_channel = 18; SRSnum = 1; SDGnum = 1; AWG_buffer = 1
-    DAQ_to_laser_off_delay       = 400;        read_offset_from_AWG_delay = 300
+    DAQ_to_laser_off_delay       = 3e3;        read_offset_from_AWG_delay = 300
 
+    uwPower = -8; uwFreq = 2681.49e6
     ifRandomized = 0; normalized_style = Q_FINAL
-    uwPower = -2; uwFreq = i
 
-    
     if True: 
         if_tracking = 0 # 2 is for the monty setup
         laserTrack_channel     = 7;       
@@ -83,5 +81,5 @@ for i in np.linspace(f-0e5, f+0e5, 1):
     print('Total time = ' + str(time.time() - start) + ' s')
 
     dataFilename = T2R4pointObject.getDataFilename()
-    if not ifLooped: dataReader.readData4point(dataFilename, typeNorm = normalized_style, ifFit=0)
+    # if not ifLooped: dataReader.readData4point(dataFilename, typeNorm = normalized_style, ifFit=0)
     T2R4pointObject.close()

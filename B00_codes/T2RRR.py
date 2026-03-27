@@ -278,7 +278,7 @@ class Signal(Parameter):
         pulse_sequence += [spc.Pulse('Counter',       read_ref_delay,          duration=int(read_ref_duration))] 
 
         if self.ifAWG:
-            pulse_sequence += [spc.Pulse('AWG',      MW_delay,    duration=50)]
+            pulse_sequence += [spc.Pulse('AWG',      MW_delay,    duration=100)]
         else:
             pulse_sequence += [spc.Pulse('MWswitch', MW_delay,    duration=int(pi2time))]
             pulse_sequence += [spc.Pulse('MWswitch', MW2_delay,   duration=int(MW2_duration))]

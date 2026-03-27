@@ -52,8 +52,6 @@ class ScanRRFreq(Instrument):
         self.LaserInitParam =   {'delay_time': 2, 'channel':settings['laserInit_channel']}
         self.LaserReadParam =   {'delay_time': 2, 'channel':settings['laserRead_channel']}
         self.CounterParam =     {'delay_time': 2, 'channel':4}
-        self.MWIParam =         {'delay_time': 2, 'channel':settings['MWI_channel']}
-        self.MWQParam =         {'delay_time': 2, 'channel':settings['MWQ_channel']}
         self.MWswitchParam =    {'delay_time': 2, 'channel':settings['MWswitch_channel']}
         self.AWGParam =         {'delay_time': 2, 'channel':settings['AWG_channel']}
         if self.if2sources:
@@ -62,7 +60,7 @@ class ScanRRFreq(Instrument):
     
         settings_extra = {'clock_speed': self.clock_speed, 'Counter': self.CounterParam,
                           'LaserRead': self.LaserReadParam, 'LaserInit': self.LaserInitParam, 'AWG': self.AWGParam,
-                          'MW_I': self.MWIParam, 'MW_Q': self.MWQParam, 'MWswitch': self.MWswitchParam,'PB_type': 'USB',
+                          'MWswitch': self.MWswitchParam,'PB_type': 'USB',
                           'min_pulse_dur': int(5*1e3/self.clock_speed)}
         if self.if2sources:
             settings_extra['AWG2'] = self.AWGParam2
@@ -147,8 +145,10 @@ class ScanRRFreq(Instrument):
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
+
+
         
-        laser_init_ref_delay = when_laser_read_signal_end + laser_init_delay
+        laser_init_ref_delay = np.max((when_laser_read_signal_end,when_read_signal_end)) + laser_init_delay
         when_init_ref_end    = laser_init_ref_delay + laser_init_duration
         # laser_read_ref_delay = when_init_ref_end + laser_to_MWI_delay + MW_duration + MW_to_read_delay
         laser_read_ref_delay = laser_read_signal_delay + (laser_init_ref_delay-laser_init_delay)
@@ -480,30 +480,47 @@ class WvlFromWM(Parameter):
     def get_raw(self):
         time.sleep(self.timeSleepReadWvl)
         if self.velNum==1:
-            dropbox_path = '/wlm_laser1.txt'
-        # elif self.velNum==2:
-        #     dropbox_path = '/wlm_laser2.txt'
-            _, response = self.dbx.files_download(dropbox_path)
-            file_content = response.content
+        #     dropbox_path = '/wlm_laser1.txt'
+        # # elif self.velNum==2:
+        # #     dropbox_path = '/wlm_laser2.txt'
+        #     _, response = self.dbx.files_download(dropbox_path)
+        #     file_content = response.content
 
-            # Convert bytes to string
-            data_str = file_content.decode('utf-8')
+        #     # Convert bytes to string
+        #     data_str = file_content.decode('utf-8')
 
-            # Split the string into lines
-            lines = data_str.split('\r\n')
+        #     # Split the string into lines
+        #     lines = data_str.split('\r\n')
 
-            # Convert each line to a float
-            data_float = [float(line) for line in lines if line]
-            data = np.array(data_float)
-            lastData = np.round(data[-1],6)
+        #     # Convert each line to a float
+        #     data_float = [float(line) for line in lines if line]
+        #     data = np.array(data_float)
+        #     lastData = np.round(data[-1],6)
+
+            try:
+                filepath = 'C:/Users/lukin2dmaterials/pylabnet/b00_wlm//wlm_laser2.txt'
+
+                data = []
+                with open(filepath, 'r') as file:
+                    for line in file:
+                        data.append(float(line.strip()))
+                data = np.array(data)
+                lastData = np.round(data[-1],6)
+                self.prevLastData=lastData
+            except:
+                lastData = self.prevLastData
         elif self.velNum==2:
-            filepath = 'C:/Users/lukin2dmaterials/pylabnet/b00_wlm//wlm_laser2.txt'
+            try:
+                filepath = 'C:/Users/lukin2dmaterials/pylabnet/b00_wlm//wlm_laser2.txt'
 
-            data = []
-            with open(filepath, 'r') as file:
-                for line in file:
-                    data.append(float(line.strip()))
-            data = np.array(data)
-            lastData = np.round(data[-1],6)
+                data = []
+                with open(filepath, 'r') as file:
+                    for line in file:
+                        data.append(float(line.strip()))
+                data = np.array(data)
+                lastData = np.round(data[-1],6)
+                self.prevLastData=lastData
+            except:
+                lastData = self.prevLastData
 
         return lastData

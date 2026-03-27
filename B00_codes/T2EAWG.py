@@ -50,7 +50,7 @@ class T2EAWG(Instrument):
         if ifRandomized: np.random.shuffle(self.tausArray)
 
         self.SRSnum=self.settings['SRSnum']; self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
-        self.SDGnum = self.settings['SDGnum']
+        self.SDGnum = self.settings['SDGnum']; self.srate=self.settings['srate']
 
         self.add_parameter(
             name = "sig",
@@ -76,7 +76,7 @@ class T2EAWG(Instrument):
         self.srs.enable_RFOutput()
     
         # AWG object
-        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum, srate=self.srate)
         global AWG; AWG = self.AWG
 
     def runScan(self):
@@ -136,6 +136,7 @@ class Signal(Parameter):
         self.loopCounter = 0
         self.timeLastTracking = time.time()
         self.tausArray = self.settings['tausArray']
+        self.srate = self.settings['srate']
 
     def get_raw(self):
         self.ctrtask.start()
@@ -191,7 +192,7 @@ class Signal(Parameter):
         num_loops               = self.settings['num_loops']
         laser_init_delay        = self.settings['laser_init_delay'];       laser_init_duration = self.settings['laser_init_duration']
         laser_to_AWG_delay      = self.settings['laser_to_AWG_delay'];     pi2time             = self.settings['pi2time']
-        pitime                  = self.settings['pitime']
+        pitime                  = self.settings['pitime'];                 MW_to_read_delay    = self.settings['MW_to_read_delay']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];     read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; AWG_output_delay    = self.settings['AWG_output_delay']
         AWG_buffer              = self.settings['AWG_buffer'];             phi_IQ              = self.settings['phi_IQ']
@@ -201,8 +202,10 @@ class Signal(Parameter):
         MW_delay       = when_init_end + laser_to_AWG_delay
         when_sigMW_end = AWG_output_delay + MW_delay + MW_duration 
         global MW_del; MW_del = MW_delay + AWG_output_delay
+
+        when_pulse_end = MW_del + MW_duration
         
-        laser_read_signal_delay    = when_sigMW_end
+        laser_read_signal_delay    = when_sigMW_end + MW_to_read_delay
         read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
@@ -216,7 +219,8 @@ class Signal(Parameter):
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
 
         self.read_duration = read_signal_duration
-        sig_to_ref_wait = laser_read_ref_delay - 2*MW_duration - MW_del
+        # sig_to_ref_wait = laser_read_ref_delay - 2*MW_duration - MW_del
+        sig_to_ref_wait = laser_read_ref_delay - (when_pulse_end + MW_duration + MW_to_read_delay)
 
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")
@@ -225,10 +229,16 @@ class Signal(Parameter):
         I = round(32767*np.cos(phi_IQ))
         Q = round(32767*np.sin(phi_IQ))
 
+        if self.srate is not None:
+            if self.loopCounter==0: sleepTime = 10
+            else: sleepTime = 1
+        else:
+            sleepTime = 0
+
         global ch1plot; global ch2plot
         ch1plot, ch2plot = AWG.send_T2E_seq(pi_2time=int(pi2time), pitime = int(pitime), tau = int(tau_ns/2),
                                              buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait),
-                                             special_I=int(I), special_Q=int(Q))
+                                             special_I=int(I), special_Q=int(Q), sleepTime=sleepTime)
 
         # Make pulse sequence
         pulse_sequence = []
@@ -236,7 +246,7 @@ class Signal(Parameter):
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,              duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('AWG', MW_delay,                     duration=20)]
+        pulse_sequence += [spc.Pulse('AWG', MW_delay,                     duration=100)]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,             duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
            
@@ -279,9 +289,6 @@ class Signal(Parameter):
             if self.loopCounter == 0 or self.loopCounter == len(self.tausArray)-1: # only save first and last pulse sequence
                 self.T2EAWGObject.savedPulseSequencePlots[self.loopCounter] = deepcopy(fig)
             self.loopCounter += 1
-    
-    # def turn_on_mid_sweep(self):
-    #     pb = TurnOnLaser.turnOnLaser(channel=laserChannel)
 
     def turn_on_at_end(self):
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)

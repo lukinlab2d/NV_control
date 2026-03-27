@@ -7,20 +7,20 @@ from B00_codes.PlotPulse import *
 from B00_codes.CalibRedRRIznRateWithIznPulse import *
 
 ####################################################################################################################
-reps = 1
+reps = 2
 for iii in np.linspace(1,reps,reps):
 # for ti in np.array((4e3)):
     # CalibRedRRIznRateWithIznPulse
     ifPlotPulse=(reps==-1); ifIonizedRef=1; ifIznWithRR=1; ifIznWithMW=0; ifMWReadLowDutyCycle=0
-    laserInit_channel=3;   laserIon_channel=10; ifInitVpz=0; ifInitWvl=0; ifNeedVel=0
-    hiLoMWPwr_channel=17;  ifAWG=1; ifMWDuringRead = 1; ifMW2DuringRead = 1; ifPi = 0
+    laserInit_channel=3;   laserIon_channel=8; ifInitVpz=0; ifInitWvl=0; ifNeedVel=0
+    hiLoMWPwr_channel=17;  ifAWG=1; ifMWDuringRead = ifMW2DuringRead = 1; ifPi = 0
     if True: 
-        velNum = 1; vel_current = 62.7; vel_wvl = 637.20; vel_vpz_target=-1; laserRead_channel=5
-        SRSnum = 1; MWPower = -7.1; MWFreq  = 2598.1e6   #NV D1
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.25; vel_vpz_target=-1; laserRead_channel=5
+        SRSnum = 1; MWPower = 0; MWFreq  = 3886e6   #NV D1
         MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
         SDGnum  = 1; AWG_channel = 18; srate = 2.5e8
 
-        SRSnum2 = 3; MWPower2 = 3; MWFreq2 = 3162e6  #NV D1
+        SRSnum2 = 3; MWPower2 = -4; MWFreq2 = 1928e6  #NV D1
         MWI2_channel = 1; MWQ2_channel = 0; MWswitch2_channel = 15
     else:
         velNum = 2; vel_current = 67; vel_wvl = 636.88; vel_vpz_target=-1; laserRead_channel=14
@@ -32,19 +32,19 @@ for iii in np.linspace(1,reps,reps):
         MWI2_channel = 0; MWQ2_channel = 0; MWswitch2_channel = 16
 
     num_loops                    = int(5e3)
-    laser_init_delay             = 1e2;      laser_init_duration       = int(1050e3)
+    laser_init_delay             = 1e3;      laser_init_duration       = int(500e3)
     laserSwitch_delay_directory  = {3:850, 6:1150, 9:1150, 7:900, 5:1750, 10:120, 14:  900}
     RRLaserSwitch_delay          = laserSwitch_delay_directory.get(laserRead_channel, 0)       
     laser_to_ion_delay           = laserSwitch_delay_directory.get(laserInit_channel, 0) + 5e2
-    ion_duration                 = 12e3;     ion_to_read_delay         = 3e5
-    DAQ_to_laser_off_delay       = 1e2;      read_duration             = 7500
+    ion_duration                 = 100;      ion_to_read_delay         = 50e3
+    DAQ_to_laser_off_delay       = 1e2;      read_duration             = 20000
     delay_between_reads          = 1000;     laserRead_to_MWmix        = RRLaserSwitch_delay
     iznLaserSwitch_delay         = laserSwitch_delay_directory.get(laserIon_channel, 0)
-    total_read_duration          = 1.5e6
+    total_read_duration          = 20e6
     MWmix_duration_short         = -1;       delay_between_MWmix       = -1
     AWG_buffer                   = 40;       AWG_output_delay          = 1450
-    pi_time                      = 48
-    laser_to_pi_delay            = laserSwitch_delay_directory.get(laserInit_channel, 0) + 5e3
+    pi_time                      = 68
+    laser_to_pi_delay            = laserSwitch_delay_directory.get(laserInit_channel, 0) + 5e2
 
     start = total_read_duration; stop = total_read_duration; num_sweep_points = 1
     tausArray = np.linspace(start, stop, num_sweep_points)  

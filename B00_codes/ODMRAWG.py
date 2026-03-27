@@ -19,7 +19,6 @@ from nidaqmx.constants import(
     AcquisitionType,
     FrequencyUnits
 )
-from PIL import Image
 from B00_codes.PlotPulseNew import *  
 from B00_codes.Confocal import *
 
@@ -51,6 +50,9 @@ class ODMRAWG(Instrument):
 
         # List of frequencies and power
         self.freqsArray = self.settings['freqsArray']
+        ifRandomized = self.settings['ifRandomized']
+        if ifRandomized: np.random.shuffle(self.freqsArray)
+        
         self.SRSnum=self.settings['SRSnum']; uwPower = self.settings['uwPower']
         self.SDGnum=self.settings['SDGnum']
 
@@ -62,19 +64,20 @@ class ODMRAWG(Instrument):
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];    read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];wait_btwn_sig_ref   = DAQ_to_laser_off_delay 
         AWG_output_delay        = self.settings['AWG_output_delay']
+        MW_to_read_delay        = self.settings['MW_to_read_delay']
 
         when_init_end   = laser_init_delay+laser_init_duration
         MW_delay = laser_to_AWG_delay + AWG_output_delay; when_pulse_end = MW_delay + MW_duration
         global MW_del; MW_del = MW_delay
 
-        laser_read_signal_delay    = when_pulse_end
-        read_signal_delay          = when_pulse_end + laser_to_DAQ_delay
+        laser_read_signal_delay    = when_pulse_end + MW_to_read_delay
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
-        laser_read_ref_delay = when_laser_read_signal_end + laser_to_AWG_delay + 1000
+        laser_read_ref_delay = when_laser_read_signal_end + laser_read_signal_delay
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  
         read_ref_duration    = read_duration; when_read_ref_end = read_ref_delay + read_ref_duration
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
@@ -96,7 +99,7 @@ class ODMRAWG(Instrument):
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay, duration=int(laser_read_signal_duration))] # times are in ns
         if self.ifSingleGreenRead == 0:
             pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,    duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('AWG', laser_to_AWG_delay,               duration=20)]
+        pulse_sequence += [spc.Pulse('AWG', laser_to_AWG_delay,               duration=100)]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,       duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,          duration=int(read_ref_duration))] # times are in ns
         self.pulse_sequence = pulse_sequence

@@ -57,7 +57,7 @@ class T2ERR(Instrument):
         # Vpiezos, MW power, and MW frequency
         self.tausArray = self.settings['tausArray']
         self.SRSnum = self.settings['SRSnum'];      MWPower = self.settings['MWPower']; MWFreq = self.settings['MWFreq']
-        self.SDGnum = self.settings['SDGnum']
+        self.SDGnum = self.settings['SDGnum']; self.srate=self.settings['srate']
         self.velNum = self.settings['velNum']; self.ifNeedVel = self.settings['ifNeedVel']
         vel_current = self.settings['vel_current']; vel_wvl = self.settings['vel_wvl']; 
         self.vel_vpz_start = self.settings['vel_vpz_start']; self.vel_vpz_step = self.settings['vel_vpz_step']
@@ -90,7 +90,7 @@ class T2ERR(Instrument):
         # AWG object
         ifAWG = self.settings['ifAWG']; self.ifAWG = ifAWG
         if self.ifAWG:
-            self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+            self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum, srate=self.srate)
             global AWG; AWG = self.AWG
 
         # Velocity object
@@ -175,8 +175,6 @@ class T2ERR(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
 
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
@@ -225,6 +223,7 @@ class Signal(Parameter):
         self.tausArray = self.settings['tausArray']
         self.RRtrackingSettings = self.settings['RRtrackingSettings']
         self.timeLastRRtracking = time.time()
+        self.srate = self.settings['srate']
 
         self.readColor    = self.settings['LaserRead']['channel']
         self.initColor    = self.settings['LaserInit']['channel']
@@ -351,12 +350,18 @@ class Signal(Parameter):
         #  Set I and Q for special pi/2 pulse
         I = round(32767*np.cos(phi_IQ))
         Q = round(32767*np.sin(phi_IQ))
+
+        if self.srate is not None:
+            if self.loopCounter==0: sleepTime = 10
+            else: sleepTime = 1
+        else:
+            sleepTime = 0
         
         if self.ifAWG:
             global ch1plot; global ch2plot
             ch1plot, ch2plot = AWG.send_T2E_seq(pi_2time=int(pi2time), pitime = int(pitime), tau = int(tau_ns/2),
                                              buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait),
-                                             special_I=int(I), special_Q=int(Q))
+                                             special_I=int(I), special_Q=int(Q), sleepTime=sleepTime)
 
         # Make pulse sequence
         pulse_sequence = []

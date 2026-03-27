@@ -8,7 +8,7 @@ from B00_codes.T1RRDualNV import *
 from qcodes_contrib_drivers.drivers.Agilent.Agilent_33522A import AG33522A
 
 ###########################################################################################e#########################
-reps = int(10)
+reps = int(2444)
 for noisePower in np.linspace(-106,-106,reps):
     # T1RRDualNV
     ifRandomized=0; ifPlotPulse=(reps==1); ifNeedVel=0; ifAWG=ifAWG2=ifIQ=ifIQ2=1
@@ -16,25 +16,25 @@ for noisePower in np.linspace(-106,-106,reps):
     laserInit_channel=3; laserIon_channel=10; hiLoMWPwr_channel=17; ifInitVpz=0; ifInitWvl=0
     ifTestSig=0; ifRndPhaseNoise=0; AGBW = 50e3; AGfreq = 2.5e6; AGamp = 0*0.2 # beware of heating!!
     
-    tausArray = np.round(np.logspace(np.log10(3e3),np.log10(25e6),21),-2) # sweep pi_to_ion_delay
+    tausArray = np.round(np.logspace(np.log10(3e3),np.log10(40e6),21),-2) # sweep pi_to_ion_delay
     ##############################################################################################################
     if True:
         # NV1
-        velNum  = 1; vel_current = 62.7; vel_wvl = 637.22; vel_vpz_target = -1; laserRead_channel = 5
-        SRSnum  = 1; MWPower  = -5.7;  pi_time  = 40; MWFreq   = 2598.44e6   #NV D1 ms-1
-        SRSnum3 = 3; MWPower3 = -6.5;  pi_time3 = 40; MWFreq3  = 3161.27e6     #NV D1 ms+1
+        velNum  = 1; vel_current = 62.7; vel_wvl = 637.25; vel_vpz_target = -1; laserRead_channel = 5
+        SRSnum  = 1; MWPower  = 0;  pi_time  = 72; MWFreq   = 3886e6   #NV D1 ms-1
+        SRSnum3 = 3; MWPower3 = -104;  pi_time3 = 68; MWFreq3  = 400e6     #NV D1 ms+1
         SDGnum  = 1; AWG_channel = 18 
         MWI_channel  = 1; MWQ_channel  = 0; MWswitch_channel  = 2; MWswitch3_channel = 15
         
         # NV2
         velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.88; vel_vpz_target2 = -1; laserRead2_channel = 14
-        SRSnum2 = 2; MWPower2 = -9.8; pi_time2 = 40; MWFreq2  = 2788.70e6   #NV D2 ms-1
-        SRSnum4 = 4; MWPower4 = -8.0; pi_time4 = 40; MWFreq4  = 3037.20e6     #NV D2 ms+1
+        SRSnum2 = 2; MWPower2 = -104; pi_time2 = 68; MWFreq2  = 400e6   #NV D2 ms-1
+        SRSnum4 = 4; MWPower4 = -104; pi_time4 = 68; MWFreq4  = 400e6     #NV D2 ms+1
         SDGnum2 = 2; AWG2_channel = 19
         MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11; MWswitch4_channel = 16
     ##############################################################################################################
-    num_loops                    = int(5e4);  nSpinInit                 = -1
-    laser_init_delay             = 1e2;       laser_init_duration       = int(30e3)
+    num_loops                    = int(1e4);  nSpinInit                 = -1
+    laser_init_delay             = 5e2;       laser_init_duration       = int(6e3)
     laserSwitch_delay_directory  = {3:860, 6:1160, 9:1160, 7:900, 5:1760, 10:120, 14:900}
     RRLaserSwitch_delay          = laserSwitch_delay_directory.get(laserRead_channel, 0)   
     RRLaser2Switch_delay         = laserSwitch_delay_directory.get(laserRead2_channel, 0)        
@@ -42,12 +42,12 @@ for noisePower in np.linspace(-106,-106,reps):
     pi_to_ion_delay              = -1;        DAQ_to_laser_off_delay       = 1e2;       
     read_duration                = 2e3;       read_laser_duration    = read_duration
     read_duration2               = 2e3;       read_laser_duration2   = read_duration2
-    shift_btwn_2NV_MW            = 100;       shift_btwn_2NV_read    = read_duration+1.7e3
+    shift_btwn_2NV_MW            = 100;       shift_btwn_2NV_read    = read_duration+2.5e3
     AWG_buffer                   = 10;        AWG_output_delay       = 1448  
     AWG_buffer2                  = 10;        AWG_output_delay2      = 1448
     spinInit_RR_duration         = 0;         spinInit_RR_to_pi_delay= 0
     spinInit_pi_to_RR_delay      = 0;         pi_to_hilo_extra_delay = 1e2
-    pi_pulse_bf_read             = 'plus'
+    pi_pulse_bf_read             = None
     hilo_margin_start = 200; hilo_margin_end = 200; hilo_min = 60
 
     settings = {'tausArray': tausArray,

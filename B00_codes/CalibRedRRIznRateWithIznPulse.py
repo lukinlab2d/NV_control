@@ -314,6 +314,7 @@ class Signal(Parameter):
             if self.ifIznWithRR:
                 pulse_sequence += [spc.Pulse('LaserRead',ion_ref_RR_delay,     duration=int(ion_duration))] 
             if self.ifIznWithMW:
+                pulse_sequence += [spc.Pulse('hiLoMWPwr',ion_ref_strong_delay, duration=int(ion_duration))]
                 pulse_sequence += [spc.Pulse('MWswitch', ion_ref_strong_delay, duration=int(ion_duration))] 
                 pulse_sequence += [spc.Pulse('MWswitch2',ion_ref_strong_delay, duration=int(ion_duration))] 
             pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay, duration=int(laser_read_ref_duration))] 

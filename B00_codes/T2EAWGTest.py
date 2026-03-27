@@ -3,15 +3,9 @@ This file is part of B00 codes based on b26_toolkit. Questions are addressed to 
 """
 import numpy as np
 from nidaqmx.constants import *
-from nidaqmx.constants import(
-    Edge,
-    CountDirection,
-    AcquisitionType,
-    FrequencyUnits
-)
 from B00_codes.PlotPulse import *
 from B00_codes.T2EAWG import *
-import B00_codes.dataReader as dataReader
+from B00_codes.T2EDEERNeumannEcho import *
 
 NO_MS_EQUALS_1 = 0
 Q_FINAL = 1
@@ -19,28 +13,30 @@ THREE_PI_HALF_FINAL = 2; pi = np.pi
 
 ####################################################################################################################
 
-reps = 1; ifLooped = (reps!=1)
+reps = int(1); ifLooped = (reps!=1); srate=None#2.5e8
 for i in np.linspace(1,reps,reps):
-    # tausArray = np.linspace(4,20004,51)
-    tausArray = np.round(np.logspace(2,np.log10(2e6),35),-2)
-
+    # T2EAWG
+    tausArray = np.linspace(20,5020,51)
+    # tausArray = np.concatenate((np.linspace(20,200,10),np.round(np.logspace(np.log10(250),np.log10(4e3),12),-1)))
+    # tausArray = np.round(np.logspace(np.log10(20),np.log10(60e3),26),-1)
+    # tausArray = np.concatenate((np.linspace(20,156,35),np.round(np.logspace(np.log10(160),np.log10(60e3),20),-1)))
+        
     # Params for T2EAWG
-    laserInit_channel            = 3;         laserRead_channel   = 3
-    num_loops                    = int(3e5);  phi_IQ              = pi/2 #rad, angle of last pi/2
-    laser_init_delay             = 0;         laser_init_duration = 0
-    pi2time                      = 17;        pitime              = 34
+    laserInit_channel            = 3;        laserRead_channel   = 3
+    num_loops                    = int(5e5); phi_IQ              = pi/2 #rad, angle of last pi/2
+    laser_init_delay             = 0;        laser_init_duration = 0
+    pitime                       = 24;       pi2time             = pitime/2;       
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
-    laser_to_AWG_delay           = 0;         read_duration       = 300
-    AWG_output_delay = 1450; AWG_channel = 18; SRSnum = 1; SDGnum = 1; AWG_buffer = 1
-    DAQ_to_laser_off_delay       = 400
+    laser_to_AWG_delay           = 5e3;      read_duration       = 300
+    DAQ_to_laser_off_delay       = 5e3;      MW_to_read_delay    = 40
 
-    uwPower = 0; uwFreq = 2785.5e6
-    ifRandomized = 1; normalized_style = Q_FINAL
+    AWG_output_delay = 1450; AWG_channel = 18; SRSnum = 1; SDGnum = 1; AWG_buffer = 10
+    uwPower = -23.9; uwFreq = 2690.04e6; ifRandomized = 0
 
     if True: 
         if_tracking = 0 # 2 is for the monty setup
-        if np.mod(i,5)==0: if_tracking = 1
+        if np.mod(i,3)==0: if_tracking = 0
         laserTrack_channel     = 3;       
         xy_scan_read_time      = 10;       xy_scan_settle_time    = 5;  
         xy_scan_resolution_hor = 20;       xy_scan_resolution_ver = 20
@@ -73,7 +69,7 @@ for i in np.linspace(1,reps,reps):
                 'AWG_output_delay':    AWG_output_delay,   'ifRandomized':              ifRandomized,
                 'laserInit_channel':      laserInit_channel,     'laserRead_channel':         laserRead_channel,
                 'AWG_channel': AWG_channel, 'SRSnum': SRSnum, 'SDGnum': SDGnum, 'AWG_buffer': AWG_buffer,
-                'phi_IQ': phi_IQ}
+                'phi_IQ': phi_IQ, 'srate':srate,'MW_to_read_delay':MW_to_read_delay}
     
     start = time.time()
     T2EAWGObject = T2EAWG(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument

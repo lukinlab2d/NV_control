@@ -2,9 +2,10 @@
 This file is part of B00 codes based on b26_toolkit. Questions are addressed to Hoang Le.
 """
 import numpy as np
-from nidaqmx.constants import *
-from B00_codes.PlotPulse import *
-from B00_codes.Rabi import *
+import time
+# from nidaqmx.constants import *
+# from B00_codes.PlotPulse import *
+# from B00_codes.Rabi import *
 from qcodes_contrib_drivers.drivers.Agilent.Agilent_33522A import AG33522A
 from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
@@ -23,13 +24,14 @@ for SRSnum in np.array((1,2,3,4)):
 # Turn off AWGs
 for SDGnum in np.array((1,2)):
     AWG = SDG6022X(name='SDG6022X', SDGnum=SDGnum)
+    time.sleep(1)
     AWG.turn_off()
     print('SDG %.0f turned off' % SDGnum)
 
-# Turn off test source
-AG = AG33522A()
-AG.disable_PM(channel=1);       AG.disable_PM(channel=2)
-AG.disable_RFOutput(channel=1); AG.disable_RFOutput(channel=2)
-print('Agilent turned off')
+# # Turn off test source
+# AG = AG33522A()
+# AG.disable_PM(channel=1);       AG.disable_PM(channel=2)
+# AG.disable_RFOutput(channel=1); AG.disable_RFOutput(channel=2)
+# print('Agilent turned off')
 
 

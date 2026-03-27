@@ -255,7 +255,7 @@ class VoltageX(Parameter):
         print('Current y = '+ str(y_current) + " V")
 
         xref_pitime = self.settings['xref_pitime']#; pi_incr_factor = self.settings['pi_incr_factor']
-        pi_increment = int((x-(xref_pitime))*pi_incr_factor)
+        pi_increment = (x-(xref_pitime))*pi_incr_factor
         ## if x <= -1.15:
         ##     # pi_increment = int(((-2)-(xref_pitime))*pi_incr_factor)
         ##     pi_increment = self.settings['pitime2']-self.settings['pitime']
@@ -278,12 +278,12 @@ class VoltageX(Parameter):
         global num_loops; global read_duration
 
         # Pulse parameters
-        AWGbuffer               = self.settings['AWGbuffer'];               pitime              = pitime + pi_increment
+        AWG_buffer               = self.settings['AWG_buffer'];             pitime              = pitime + pi_increment
         num_loops               = self.settings['num_loops'];               DAQ_error_factor    = self.settings['DAQ_error_factor']
         num_loops               = int(num_loops/DAQ_error_factor);          AWG_output_delay    = self.settings['AWG_output_delay']
-        MW_duration             = int(2*int((2*AWGbuffer + pitime + 1)/2)); MW_to_DAQ_delay     = self.settings['MW_to_DAQ_delay']
+        MW_duration             = int(2*int((2*AWG_buffer + pitime + 1)/2)); MW_to_DAQ_delay     = self.settings['MW_to_DAQ_delay']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
-        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  wait_btwn_sig_ref   = DAQ_to_laser_off_delay
+        wait_btwn_sig_ref       = self.settings['wait_btwn_sig_ref']
         padding                 = padding - pi_increment;                   padding_green1      = self.settings['padding_green1']
 
         # if pitime < 300 and 950 <= padding and padding <= 1200: padding = 1250
@@ -332,7 +332,7 @@ class VoltageX(Parameter):
         
         global num_reads; num_reads = int(num_loops * num_reads_per_iter * DAQ_error_factor) # the results look like this: sig-ref-sig-ref-...-sig-ref for num_loops times
 
-        ch1, ch2 = AWG.send_ODMR_seq(pulse_width=int(pitime), buffer=int(AWGbuffer))
+        ch1, ch2 = AWG.send_ODMR_seq(pulse_width=int(pitime), buffer=int(AWG_buffer))
         global ch1plot; global ch2plot 
         ch1plot = ch1; ch2plot = ch2 
 

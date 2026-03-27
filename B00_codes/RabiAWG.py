@@ -43,6 +43,9 @@ class RabiAWG(Instrument):
         self.metadata.update(self.settings)
         self.tausArray = self.settings['tausArray']
 
+        ifRandomized = self.settings['ifRandomized']
+        if ifRandomized: np.random.shuffle(self.tausArray)
+
         self.SRSnum=self.settings['SRSnum']; self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
         self.SDGnum = self.settings['SDGnum']
 
@@ -164,23 +167,24 @@ class Signal(Parameter):
         laser_to_AWG_delay      = self.settings['laser_to_AWG_delay'];      MW_duration         = int(2*int((2*AWGbuffer + tau_ns + 1)/2)) # to make it even
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration       = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  AWG_output_delay    = self.settings['AWG_output_delay']
+        MW_to_read_delay        = self.settings['MW_to_read_delay']
 
         if self.ifFakeRabi:
             tau_ns              = self.settings['MWI_duration']
             MW_duration         = int(2*int((2*AWGbuffer + tau_ns + 1)/2)) # to make it even
 
         when_init_end   = laser_init_delay + laser_init_duration
-        MW_delay        = when_init_end + laser_to_AWG_delay;               when_pulse_end = MW_delay+MW_duration+AWG_output_delay
-        global MW_del; MW_del = MW_delay+AWG_output_delay
+        MW_delay        = when_init_end + laser_to_AWG_delay;              
+        when_pulse_end  = MW_delay + MW_duration + AWG_output_delay
+        global MW_del; MW_del = MW_delay + AWG_output_delay
 
-        laser_read_signal_delay    = when_pulse_end
-        read_signal_delay          = when_pulse_end + laser_to_DAQ_delay  
+        laser_read_signal_delay    = when_pulse_end + MW_to_read_delay
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay  
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
-        # laser_read_ref_delay = when_laser_read_signal_end + laser_to_AWG_delay + MW_duration+ 1000
         laser_read_ref_delay = when_laser_read_signal_end + laser_read_signal_delay
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  
         read_ref_duration    = read_duration; when_read_ref_end = read_ref_delay + read_ref_duration
@@ -199,7 +203,7 @@ class Signal(Parameter):
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,             duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,      duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,         duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('AWG',          MW_delay,                     duration=20)]
+        pulse_sequence += [spc.Pulse('AWG',          MW_delay,                     duration=100)]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,            duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,               duration=int(read_ref_duration))] # times are in ns
         self.pulse_sequence = pulse_sequence

@@ -450,12 +450,12 @@ class Child(QtWidgets.QWidget):#, **kwargs): # kwargs needed?
         def toggle_laser_fnc_589w():
             if toggle_laser_checkbox_589w.isChecked():
                 global pb_589w; global channel_currently_on
-                channel_currently_on = np.concatenate((channel_currently_on,(9,)))
+                channel_currently_on = np.concatenate((channel_currently_on,(19,)))
                 pb_589w = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_589w")
                 print("Channels currently on: " + str(channel_currently_on))
                 print("-------------------------------------")
             else:
-                channel_off_idx = np.where(channel_currently_on==9)[0][0]
+                channel_off_idx = np.where(channel_currently_on==19)[0][0]
                 channel_currently_on = np.delete(channel_currently_on, channel_off_idx)
                 pb_589w.close()
                 pb_589w_off = TurnOnLaser.turnOnLaser(channels=channel_currently_on, instrument_name="PB_589w_off")

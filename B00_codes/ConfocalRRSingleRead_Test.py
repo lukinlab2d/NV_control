@@ -13,26 +13,26 @@ THREE_PI_HALF_FINAL = 2
 REF_MINUS_SIG  = 3
 
 ####################################################################################################################
-reps = 1;  ifLooped=(reps!=1); laserInit_channel = 7; vel_vpz_target = 76.18; vel_vpz_target2 = 62.7
+reps = 1;  ifLooped=(reps!=1); laserInit_channel = 3; vel_vpz_target = 76.18; vel_vpz_target2 = 62.7
 ifInitWvl = 0; ifInitVpz = 0; ifNeedVel1 = 0; ifNeedVel2 = 0; ifNeedSRS = 0
 
 # ConfocalRRSingleRead
-xArray = np.linspace(0.78,0.68,51); yArray = np.linspace(0.07,0.10,16)  
+xArray = np.linspace(-1,1,401); yArray = np.linspace(1.4,2.9,301)  
 
-num_loops                    = int(30e3);  settleTime             = 30e6
-laser_init_delay             = 1e2;        laser_init_duration    = 8e3
+num_loops                    = int(5e3);  settleTime             = 4e6
+laser_init_delay             = 1e2;       laser_init_duration    = 4e3
 MW_to_read_delay             = 1e2
 laser_to_DAQ_delay_directory = {3:850, 6:1150, 9:1150, 7:900, 5:1750, 10:120, 14:900}
 laser_to_MWI_delay           = laser_to_DAQ_delay_directory.get(laserInit_channel, 0) + 150
-read_duration                = 12300;      read_laser_duration    = 12200
-shift_btwn_2NV_MW            = 0;          shift_btwn_2NV_read    = 0
+read_duration                = 50e3;       read_laser_duration    = read_duration
+shift_btwn_2NV_MW            = 0;         shift_btwn_2NV_read    = 0
 
 for i in np.linspace(1, reps, reps):
     # NV 1
-    velNum = 1; vel_current = 62.2; vel_wvl = 637.22; laserRead_channel = 5
+    velNum = 1; vel_current = 62.7; vel_wvl = 637.25; laserRead_channel = 5
     laser_to_DAQ_delay = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)
 
-    SRSnum = 1; MWPower = -2.7; MWI_duration = 44; MWFreq  = 2747.88e6   
+    SRSnum = 1; MWPower = 0; MWI_duration = 68; MWFreq  = 1930e6   
     MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
     # SRSnum = 3; MWPower = -6;  MWI_duration = 44; MWFreq  = 3007.65e6   #NV D1 ms+1
     # MWI_channel = 0; MWQ_channel = 0; MWswitch_channel = 15
@@ -41,7 +41,7 @@ for i in np.linspace(1, reps, reps):
     velNum2 = 2; vel_current2 = 67; vel_wvl2 = 636.83; laserRead2_channel = 14
     laser_to_DAQ_delay2 = laser_to_DAQ_delay_directory.get(laserRead2_channel, 0)
 
-    SRSnum2 = 2; MWPower2 = -1; MWI_duration2 = 44; MWFreq2  = 2838.26e6 
+    SRSnum2 = 2; MWPower2 = -104; MWI_duration2 = 44; MWFreq2  = 2838.26e6 
     MWI2_channel = 12; MWQ2_channel = 13; MWswitch2_channel = 11
     # SRSnum2 = 4; MWPower2 = 10;   MWI_duration2 = 44; MWFreq2  = 2932.8e6   #NV D2 ms+1
     # MWI2_channel = 0; MWQ2_channel = 0; MWswitch2_channel = 16

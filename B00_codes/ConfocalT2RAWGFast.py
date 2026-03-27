@@ -10,7 +10,7 @@ from qcodes_contrib_drivers.drivers.StanfordResearchSystems.SG386 import SRS
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
 from qcodes_contrib_drivers.drivers.Siglent.SDG6022X import SDG6022X
 from copy import deepcopy
-
+import pickle
 from qcodes_contrib_drivers.drivers.NationalInstruments.DAQ import *
 from qcodes_contrib_drivers.drivers.NationalInstruments.class_file import *
 
@@ -59,9 +59,8 @@ class ConfocalT2RAWGFast(Instrument):
         self.ifPlotPulse  = ifPlotPulse
 
         # List of frequencies and power
-        # self.freqsArray = self.settings['freqsArray']
         self.SRSnum=self.settings['SRSnum']; MWPower = self.settings['MWPower']
-        self.SDGnum=self.settings['SDGnum']
+        self.SDGnum=self.settings['SDGnum']; self.srate=self.settings['srate']
 
         self.xArray = self.settings['xArray']; self.yArray = self.settings['yArray']
         
@@ -73,7 +72,7 @@ class ConfocalT2RAWGFast(Instrument):
         self.srs.enable_RFOutput()
 
         # AWG object
-        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum, srate=self.srate)
         global AWG; AWG = self.AWG
 
         self.add_parameter(
@@ -147,63 +146,61 @@ class Signal(Parameter):
         self.settings = settings
         self.loopCounter = 0
         self.ConfocalT2RAWGFastObject = measurementObject
+        self.srate = self.settings['srate']
 
     def get_raw(self):
-        self.loopCounter += 1        
         ctrtask.start()
 
         pb.start_pulse_seq()
         pb.wait()
         pb.stop_pulse_seq_without_closing()
 
-        data = np.array(ctrtask.read(num_reads, timeout=10))
+        data = np.array(ctrtask.read(self.num_reads, timeout=10))
 
-        ctrtask.stop()#; self.ctrtask.close()
+        ctrtask.stop()#; ctrtask.close()
         
-        rate = data/(read_duration/1e9)/1e3
-        sig = rate[::num_reads_per_iter]
-        ref = rate[1::num_reads_per_iter]
+        rate = data/(self.read_duration/1e9)/1e3
+        sig = rate[::self.num_reads_per_iter]
+        ref = rate[1::self.num_reads_per_iter]
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
         global sig_avg_over_ref_avg; sig_avg_over_ref_avg = sig_avg/ref_avg
 
-        # time.sleep(0.4)
-
         return sig_avg
     
-    def set_raw(self, value):
-        srs.set_freq(value)
+    def set_raw(self, tau_ns):
         print("Loop " + str(self.loopCounter))
-        print("Set SRS freq to " + str(np.round(value/1e6,3)) + ' MHz') # set the SRS frequency in reality
 
         pitime = self.settings['pitime']; pi_incr_factor = self.settings['pi_incr_factor']
         pitime2 = self.settings['pitime2']; pi_incr_factor2 = self.settings['pi_incr_factor2']
 
         xref_pitime = self.settings['xref_pitime']
-        pi_increment = int((current_x-(xref_pitime))*pi_incr_factor)
+        pi_increment = int((x_current-(xref_pitime))*pi_incr_factor)
         pi_increment = int(2*int(pi_increment/2))
-        print('pi_increment = ' + str(pi_increment))
-
-        pi_increment2 = int((current_x-(xref_pitime))*pi_incr_factor2)
+        
+        pi_increment2 = int((x_current-(xref_pitime))*pi_incr_factor2)
         pi_increment2 = int(2*int(pi_increment2/2))
-        print('pi_increment2 = ' + str(pi_increment2))
 
         global num_loops; global read_duration
 
         # Pulse parameters
-        tau_ns                  = self.settings['tau'];                     
-        pitime                  = pitime + pi_increment;                    pitime2                 = pitime2 + pi_increment2
+        # tau_ns                  = self.settings['tau'];                     
         num_loops               = self.settings['num_loops'];               laser_init_delay        = self.settings['laser_init_delay']
         laser_init_duration     = self.settings['laser_init_duration'];     laser_to_AWG_delay      = self.settings['laser_to_AWG_delay']
-        pi2time                 = int(pitime/2);                            pi2time2                = int(pitime2/2)
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];      read_duration           = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];  AWG_output_delay        = self.settings['AWG_output_delay']
         AWGbuffer               = self.settings['AWGbuffer'];               read_offset_from_AWG_delay = self.settings['read_offset_from_AWG_delay']
         DAQ_error_factor        = self.settings['DAQ_error_factor'];        num_loops               = int(num_loops/DAQ_error_factor)
+        pitime                  = pitime + pi_increment;                    pitime2                 = pitime2 + pi_increment2
+        pi2time                 = int(pitime/2);                            pi2time2                = int(pitime2/2)
         
-        if np.mod(self.loopCounter,2)==1:
-            pi2time = pi2time2
-        print('Pi half = ' + str(pi2time) + ' ns')
+        if ifOnFlake==0:
+            pitime=pitime2; pi2time=pi2time2
+        if np.mod(self.loopCounter,len(self.ConfocalT2RAWGFastObject.tausArray))==0:    
+            print('pi_increment2 = ' + str(pi_increment2))
+            print('pi_increment = ' + str(pi_increment))
+            print('pi_half = ' + str(pi2time))
+            print('-----o-o-o-o-o-o-----')
 
         MW_duration = int(2*int((AWGbuffer + 2*pi2time + tau_ns + 1)/2))
 
@@ -232,6 +229,12 @@ class Signal(Parameter):
 
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")
+        
+        if self.srate is not None:
+            if self.loopCounter==0: sleepTime = 10
+            else: sleepTime = 1
+        else:
+            sleepTime = 0
 
         global ch1plot; global ch2plot
         ch1plot, ch2plot = AWG.send_T2R_seq(pi_2time=int(pi2time), tau = int(tau_ns), buffer=int(AWGbuffer), sig_to_ref_wait=int(sig_to_ref_wait))
@@ -242,11 +245,14 @@ class Signal(Parameter):
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,              duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('AWG', MW_delay,                     duration=20)]
+        pulse_sequence += [spc.Pulse('AWG', MW_delay,                     duration=40)]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,             duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
            
         self.pulse_sequence = pulse_sequence
+        global pb
+        pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
+        pb.program_pb(pulse_sequence, num_loops=num_loops)
 
         global num_reads_per_iter; num_reads_per_iter = 0
         for pulse in pulse_sequence:
@@ -272,20 +278,31 @@ class Signal(Parameter):
         pulseWidthChan.ci_ctr_timebase_src = "/cDAQ1Mod1/PFI0" # counter out PFI str gated/counter PFI channel str
         pulseWidthChan.ci_pulse_width_term = "/cDAQ1Mod1/PFI1" # gate PFI string
 
+        print('Set tau to ' + str(tau_ns) + " ns")
+        if not self.settings['ifPlotPulse']: self.loopCounter += 1
         
-        # Pulse Blaster object inittialized here to avoid long delay between initialization and first run
-        global pb
-        pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
-        pb.program_pb(pulse_sequence, num_loops=num_loops)
+        # # Pulse Blaster object inittialized here to avoid long delay between initialization and first run
+        # global pb
+        # pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
+        # pb.program_pb(pulse_sequence, num_loops=num_loops)
 
-        self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
-        self.pb.program_pb(pulse_sequence, num_loops=num_loops)
+        # self.pb = spc.B00PulseBlaster("SpinCorePB", settings=self.settings, verbose=False)
+        # self.pb.program_pb(pulse_sequence, num_loops=num_loops)
 
     def close(self):
         ctrtask.close()
         pb = spc.B00PulseBlaster("SpinCorePBFinal", settings=self.settings, verbose=False)
         channels = np.linspace(laserInitChannel,laserInitChannel,1)
         pb.turn_on_infinite(channels=channels)
+
+
+
+
+
+
+
+
+
 
 class Reference(Parameter):
     def __init__(self, name='ref',**kwargs):
@@ -302,6 +319,9 @@ class VoltageY(Parameter):
 
     def set_raw(self,y):
         galvo.voltage_cdaq1mod2ao1(y)
+        print('--------------------------------------------------------')
+        print('--------------------------------------------------------')
+        print('--------------------------------------------------------')
         print('Set y to ' + str(y) + " V")
 
         global y_current; y_current=y
@@ -312,27 +332,70 @@ class VoltageX(Parameter):
         self.settings = settings
         self.ConfocalT2RAWGFastObject = measurementObject
         self.settleTime = settings['settleTime']
-        self.freqsArray = self.settings['freqsArray']
+        self.tausArray = self.settings['tausArray']
+        self.tausArray2 = self.settings['tausArray2']
+        self.MWfreqDictFile = self.settings['MWfreqDictFile']
+        self.MWfreqDictFilePlus = self.settings['MWfreqDictFilePlus']
+        self.BThres = self.settings['BThres']
+        self.BExt = self.settings['BExt']
+
+        with open(self.MWfreqDictFile, 'rb') as f:
+            self.MWfreqDict = pickle.load(f)
+        prev = None
+        for key, value in self.MWfreqDict.items():
+            if value >= 0:
+                prev = value
+            else:
+                if prev is not None:
+                    self.MWfreqDict[key] = prev  # Replace with last non-negative value
+        
+        with open(self.MWfreqDictFilePlus, 'rb') as f:
+            self.MWfreqDictPlus = pickle.load(f)
+        prev = None
+        for key, value in self.MWfreqDictPlus.items():
+            if value >= 0:
+                prev = value
+            else:
+                if prev is not None:
+                    self.MWfreqDictPlus[key] = prev  # Replace with last non-negative value
 
         sig = self.ConfocalT2RAWGFastObject.sig # this is implemented as a Parameter
         ref = self.ConfocalT2RAWGFastObject.ref # this is implemented as a Parameter
         self.loop = Loop(
-            sig.sweep(keys=self.freqsArray),
+            sig.sweep(keys=self.tausArray),
             delay = 0,
             sleepTimeAfterFinishing=0).each(sig,ref).then(qctask(sig.close))
 
     def set_raw(self,x):
         sig = self.ConfocalT2RAWGFastObject.sig # this is implemented as a Parameter
-        self.freqsArray = self.settings['freqsArray']       
-        self.ConfocalT2RAWGFastObject.freqsArray = self.freqsArray
-        self.loop.sweep_values = sig.sweep(keys=self.freqsArray)
+        self.tausArray = self.settings['tausArray']      
+        self.tausArray2 = self.settings['tausArray2']  
 
-        global current_x
-        current_x = x
+        global x_current
+        x_current = x
         galvo.voltage_cdaq1mod2ao0(x)
         time.sleep(self.settleTime/1e9)
+        print('--------------------------------------------------------')
         print('Set x to ' + str(x) + " V")
         print('Current y = '+ str(y_current) + " V")
+
+        MWfreq = self.MWfreqDict[(np.round(x_current,2), np.round(y_current,2))]
+        MWfreqPlus = self.MWfreqDictPlus[(np.round(x_current,2), np.round(y_current,2))]
+        srs.set_freq(MWfreq)
+        print("Set SRS freq to " + str(np.round(MWfreq/1e6,3)) + ' MHz')
+
+        Bstray = ((MWfreqPlus-MWfreq)/1e3) / (2*28) - self.BExt
+        global ifOnFlake
+        if Bstray <= self.BThres:
+            print("Bstray = %.0f $\mu$T. On flake" % Bstray)
+            ifOnFlake=1
+            self.ConfocalT2RAWGFastObject.tausArray = self.tausArray
+            self.loop.sweep_values = sig.sweep(keys=self.tausArray)
+        else:
+            print("Bstray = %.0f $\mu$T. Off flake" % Bstray)
+            ifOnFlake=0
+            self.ConfocalT2RAWGFastObject.tausArray = self.tausArray2
+            self.loop.sweep_values = sig.sweep(keys=self.tausArray2)
 
         
 

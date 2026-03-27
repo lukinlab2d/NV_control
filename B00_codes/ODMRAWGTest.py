@@ -37,25 +37,31 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
 
 ifCW = 0
 if ifCW == 0:
-    reps = 1
-    for i in range(reps):
+    reps = 122; ifRandomized=0; ifLooped = (reps != -1)
+    for i in range(int(reps)):
         # Test for Pulsed ODMR
-        start = 2550e6; stop = 3210e6; num_sweep_points = 166
+        start = 2620e6; stop =2720e6; num_sweep_points = 26
         freqsArray = np.linspace(start, stop, num_sweep_points)
-        SDGnum=1; SRSnum=1; uwPower = 0; ifLooped = 1#(reps != 1)
-        laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18
+        start = 3040e6; stop =3140e6; num_sweep_points = 26
+        freqsArray2 = np.linspace(start, stop, num_sweep_points)
+        freqsArray = np.concatenate((freqsArray,freqsArray2))
+        freqsArray = np.linspace(1038e6,1049e6,56)
 
-        num_loops                    = int(3e5)
+        SDGnum=1; SRSnum=1; uwPower = -65; AWG_channel = 18
+        # SDGnum=2; SRSnum=2; uwPower = 5; AWG_channel = 9
+        laserInit_channel = 3; laserRead_channel = 3
+
+        num_loops                    = int(10e5)
         laser_init_delay             = 0;       laser_init_duration    = 0
-        pitime                       = 28;      laser_to_AWG_delay     = 0
+        pitime                       = 1663;    laser_to_AWG_delay     = 100
         laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
         laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   
-        AWG_output_delay             = 1450;    AWGbuffer = 1
-        read_duration                = 300;     DAQ_to_laser_off_delay = 400
-        ifSingleGreenRead            = 0
+        AWG_output_delay             = 1450;    AWGbuffer = 10
+        read_duration                = 300;     DAQ_to_laser_off_delay = 4000
+        ifSingleGreenRead            = 0;       MW_to_read_delay       = 100
 
         if True:
-            settings = {'num_loops':num_loops, 'freqsArray':freqsArray, 
+            settings = {'num_loops':num_loops, 'freqsArray':freqsArray, 'ifRandomized':ifRandomized,
                         'SRSnum':SRSnum, 'uwPower':uwPower, 'SDGnum':SDGnum,
                         'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,
                         'laser_to_AWG_delay':     laser_to_AWG_delay,    'pitime':         pitime,
@@ -64,7 +70,7 @@ if ifCW == 0:
                         'laserInit_channel':      laserInit_channel,     'laserRead_channel':   laserRead_channel, 
                         'AWG_channel':    AWG_channel,
                         'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':    trackingSettings,
-                        'ifSingleGreenRead': ifSingleGreenRead}
+                        'ifSingleGreenRead': ifSingleGreenRead, 'MW_to_read_delay':MW_to_read_delay}
 
             start = time.time()
             ODMRAWGObject = ODMRAWG(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
@@ -72,23 +78,23 @@ if ifCW == 0:
             print('Total time = ' + str(time.time() - start) + ' s')
             ODMRAWGObject.close()
 
-
+#############################################################################################
 elif ifCW == 1:
     # Test for CW ODMR
-    reps = 1
+    reps = 10; ifRandomized=1
     for i in range(reps):
-        start = 2900e6; stop = 2660e6; num_sweep_points = 81
+        start = 2880e6; stop = 2720e6; num_sweep_points = 81
         freqsArray = np.linspace(start, stop, num_sweep_points)
         uwPower = -15; ifLooped = 1#(reps != 1)
         laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18
         SRSnum = 1; SDGnum = 1
 
-        num_loops = int(5e5); wait_btwn_sig_ref = 0.4e3; AWGbuffer = 1
+        num_loops = int(5e5); wait_btwn_sig_ref = 0.4e3; AWGbuffer = 10
         AWG_output_delay = 1445; MW_duration = 1e3
         laser_delay = 10; MW_off_to_read_signal_off = 0
         
         if True:
-            settings = {'num_loops':num_loops, 'freqsArray':freqsArray, 
+            settings = {'num_loops':num_loops, 'freqsArray':freqsArray, 'ifRandomized':ifRandomized,
                         'SRSnum':SRSnum, 'uwPower':uwPower, 'SDGnum':SDGnum, 'AWGbuffer': AWGbuffer,
                         'AWG_output_delay':AWG_output_delay, 'MW_duration':MW_duration, 
                         'laserInit_channel':laserInit_channel, 'laserRead_channel':laserRead_channel,'AWG_channel':AWG_channel,

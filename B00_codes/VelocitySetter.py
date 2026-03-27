@@ -9,6 +9,11 @@ from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import Parameter
 from qcodes_contrib_drivers.drivers.TLB_6700_222.Velocity import Velocity
 
-vel = Velocity(velNum=2, ifInitVpz=0, ifInitWvl=0, initWvl=636.77)
-vel.set_current(67.1)
-# vel.set_vpiezo(36)
+# vel = Velocity(velNum=1, ifInitVpz=1, ifInitWvl=1, initWvl=637.2)
+# vel.set_current(62.7)
+
+
+vel = Velocity(velNum=2, ifInitVpz=1, ifInitWvl=1, initWvl=636.9)
+vel.set_current(67)
+
+# "subnet": "140.247.189"

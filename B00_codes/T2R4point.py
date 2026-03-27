@@ -212,7 +212,7 @@ class Signal(Parameter):
 
         read_offset = (laser_to_DAQ_delay-read_offset_from_AWG_delay)
         
-        laser_read_signal_delay    = when_sigMW_end - read_offset
+        laser_read_signal_delay    = when_sigMW_end - read_offset # do MW while waiting for green to turn on
         read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
         read_signal_duration       = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration

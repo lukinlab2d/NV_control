@@ -18,21 +18,25 @@ ifNeedVel = 0; ifInitVpz = 0; ifInitWvl = 0; ifAWG = 1
 
 for i in np.linspace(1, reps, reps):
     # Pulsed ODMR_RR
-    freqsArray = np.linspace(2950e6, 2958e6, 81)        
+    freqsArray = np.linspace(1890e6, 1920e6, 16)    
+    freqsArray2 = np.linspace(3846e6, 3876e6, 16)        
+    freqsArray = np.concatenate((freqsArray,freqsArray2))
+
+    # freqsArray = np.linspace(2900e6, 2400e6, 251) 
     
-    if False:
-        velNum = 1; vel_current = 62.7; vel_wvl = 637.22; laserRead_channel = 5; vel_vpz_target = 69.8
-        SRSnum = 1; MWPower = -5.5; MWI_duration = 36; MWFreq  = 2598.1e6   #NV D1
+    if True:
+        velNum = 1; vel_current = 62.7; vel_wvl = 637.25; laserRead_channel = 5; vel_vpz_target = 63.77
+        SRSnum = 1; MWPower = 0; MWI_duration = 70   #NV D1
         SDGnum = 1; AWG_channel = 18
         MWI_channel = 1; MWQ_channel = 0; MWswitch_channel = 2
     else:
         velNum = 2; vel_current = 67; vel_wvl = 636.88; laserRead_channel = 14; vel_vpz_target = 75
-        SRSnum = 2; MWPower = -28; MWI_duration = 320; MWFreq  = 2789.2e6   #NV D2
+        SRSnum = 2; MWPower = -28; MWI_duration = 320   #NV D2
         SDGnum = 2; AWG_channel = 19
         MWI_channel = 12; MWQ_channel = 13; MWswitch_channel = 11        
     
-    num_loops                    = int(3e4)
-    laser_init_delay             = 1e2;        laser_init_duration    = 30e3
+    num_loops                    = int(10e4)
+    laser_init_delay             = 5e2;        laser_init_duration    = 8e3
     MW_to_read_delay             = 1e2      
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900, 5: 1650, 14:900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0)   

@@ -47,6 +47,10 @@ class ODMR_CWAWG(Instrument):
 
         # List of frequencies and power
         self.freqsArray = self.settings['freqsArray']
+
+        ifRandomized = self.settings['ifRandomized']
+        if ifRandomized: np.random.shuffle(self.freqsArray)
+
         uwPower = self.settings['uwPower']
         self.SRSnum=self.settings['SRSnum']
         self.SDGnum=self.settings['SDGnum']

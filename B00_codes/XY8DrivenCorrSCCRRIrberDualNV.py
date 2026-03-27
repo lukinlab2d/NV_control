@@ -889,7 +889,8 @@ class Signal(Parameter):
             if np.mod(self.loopCounter,5) == 0 or self.loopCounter == len(self.tausArray)-1: # plot every 5 sequences and plot the last seq
                 plotPulseObject = PlotPulse(pulseSequence=self.pulse_sequence, ifShown=True, ifSave=False, readColor=self.readColor)
                 if self.ifAWG:
-                    fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.delay_for_plot, label1='ch1-AWG1', label2='ch2-AWG1')
+                    fig = plotPulseObject.makePulsePlotAWG(ch1plot, ch2plot, self.delay_for_plot, 
+                                                           label1='ch1-AWG1', label2='ch2-AWG1')
                     fig = plotPulseObject.makePulsePlotAWG(ch1plot2,ch2plot2,self.delay_for_plot,
                                                            fig=fig, offset1=17.75, offset2=17.5, label1='ch1-AWG2', label2='ch2-AWG2')
                 else:

@@ -50,6 +50,8 @@ class ODMRAWGFast(Instrument):
         
         # List of frequencies and power
         self.freqsArray = self.settings['freqsArray']
+        ifRandomized = self.settings['ifRandomized']
+        if ifRandomized: np.random.shuffle(self.freqsArray)
         self.SRSnum=self.settings['SRSnum']; uwPower = self.settings['uwPower']
         self.SDGnum=self.settings['SDGnum']
 
@@ -58,7 +60,7 @@ class ODMRAWGFast(Instrument):
         num_loops               = self.settings['num_loops'];             AWG_output_delay    = self.settings['AWG_output_delay']
         MW_duration             = int(2*int((2*AWGbuffer + pitime + 1)/2));MW_to_DAQ_delay    = self.settings['MW_to_DAQ_delay']
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];    read_duration       = self.settings['read_duration']   
-        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay'];wait_btwn_sig_ref   = DAQ_to_laser_off_delay
+        wait_btwn_sig_ref       = self.settings['wait_btwn_sig_ref']
         padding                 = self.settings['padding'];               padding_green1      = self.settings['padding_green1']
 
         # new delays
@@ -79,18 +81,18 @@ class ODMRAWGFast(Instrument):
         read_ref_delay = read_signal_delay + read_signal_duration + wait_btwn_sig_ref
 
         total_time = read_signal_delay + serious_duration 
-
+        
         # if when_pulse_end < laser_to_DAQ_delay:
         laser_read_part1_duration = total_time - laser_to_DAQ_delay
         laser_read_part1_delay    = 0
         laser_read_part2_duration = serious_duration - laser_read_part1_duration
         laser_read_part2_delay    = total_time - laser_read_part2_duration + padding
-        when_read_part2_ends      = laser_read_part2_delay + laser_read_part2_duration
+        when_laser_read_part2_ends= laser_read_part2_delay + laser_read_part2_duration
 
-        if self.settings['AWG_delay'] > when_read_part2_ends + 20:
-            AWG_delay = when_read_part2_ends - (self.settings['AWG_delay']-when_read_part2_ends)
+        if self.settings['AWG_delay'] > when_laser_read_part2_ends + 20:
+            AWG_delay = 2*when_laser_read_part2_ends - self.settings['AWG_delay']
         else:
-            AWG_delay = when_read_part2_ends - self.settings['AWG_delay']
+            AWG_delay = when_laser_read_part2_ends - self.settings['AWG_delay']
 
         # else:
         #     laser_read_part1_duration = laser_to_AWG_delay

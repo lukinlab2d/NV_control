@@ -242,7 +242,7 @@ class Signal(Parameter):
         when_read_signal_end       = read_signal_delay + read_signal_duration
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
-        laser_init_ref_delay = when_read_signal_end + laser_init_delay
+        laser_init_ref_delay = np.max((when_read_signal_end, when_laser_read_signal_end)) + laser_init_delay
         when_init_ref_end    = laser_init_ref_delay + laser_init_duration
         laser_read_ref_delay = when_init_ref_end + laser_to_MWI_delay + MWI_duration + MW_to_read_delay
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  

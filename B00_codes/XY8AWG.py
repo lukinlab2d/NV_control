@@ -50,7 +50,7 @@ class XY8AWG(Instrument):
         if ifRandomized: np.random.shuffle(self.tausArray)
 
         self.SRSnum=self.settings['SRSnum']; self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
-        self.SDGnum = self.settings['SDGnum']
+        self.SDGnum = self.settings['SDGnum']; self.srate=self.settings['srate']
 
         self.add_parameter(
             name = "sig",
@@ -63,8 +63,12 @@ class XY8AWG(Instrument):
             parameter_class = Reference,
         )
         self.add_parameter(
-            name = "sigOverRef",
-            parameter_class = SigOverRef,
+            name = "sigStd",
+            parameter_class = SigStd,
+        )
+        self.add_parameter(
+            name = "refStd",
+            parameter_class = RefStd,
         )
         self.savedPulseSequencePlots = {}
 
@@ -76,20 +80,21 @@ class XY8AWG(Instrument):
         self.srs.enable_RFOutput()
     
         # AWG object
-        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum, srate=self.srate)
         global AWG; AWG = self.AWG
 
     def runScan(self):
         sig = self.sig # this is implemented as a Parameter
         ref = self.ref # this is implemented as a Parameter
-        sigOverRef = self.sigOverRef
+        sigStd = self.sigStd
+        refStd = self.refStd
 
         # For each iteration, sweep tau (sig.sweep calls set_raw() method of Parameter sig)
         # and measure Parameter sig, ref (each(sig,ref)) by calling get_raw() method of sig, ref
         loop = Loop(
             sig.sweep(keys=self.tausArray),
             delay = 0,
-            sleepTimeAfterFinishing=0).each(sig, ref, sigOverRef,
+            sleepTimeAfterFinishing=0).each(sig, ref, sigStd, refStd,
                                             qctask(sig.plotPulseSequences),
                                             ).then(qctask(sig.turn_on_at_end))
 
@@ -111,8 +116,8 @@ class XY8AWG(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
 
         self.srs.disable_RFOutput()
         self.srs.disableModulation()
@@ -136,6 +141,7 @@ class Signal(Parameter):
         self.loopCounter = 0
         self.timeLastTracking = time.time()
         self.tausArray = self.settings['tausArray']
+        self.srate = self.settings['srate']
 
     def get_raw(self):
         self.ctrtask.start()
@@ -153,7 +159,8 @@ class Signal(Parameter):
         ref = rate[1::self.num_reads_per_iter]
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
-        global sig_avg_over_ref_avg; sig_avg_over_ref_avg = sig_avg/ref_avg
+        global sig_std;  sig_std = np.std(sig)
+        global ref_std;  ref_std = np.std(ref)
 
         # NV tracking
         if self.trackingSettings['if_tracking'] == 1:
@@ -188,35 +195,52 @@ class Signal(Parameter):
         print("Loop " + str(self.loopCounter))
         
         # Pulse parameters
-        num_loops               = self.settings['num_loops'];          mode = self.settings['mode']
-        numxy8                  = self.settings['numxy8']
-        laser_init_delay        = self.settings['laser_init_delay'];   laser_init_duration = self.settings['laser_init_duration']
-        laser_to_AWG_delay      = self.settings['laser_to_AWG_delay']; DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']
-        pi2time                 = self.settings['pi2time'];            pitime              = self.settings['pitime']
-        laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay']; read_duration       = self.settings['read_duration']   
-        AWG_output_delay        = self.settings['AWG_output_delay'];   AWG_buffer          = self.settings['AWG_buffer']
-
-        sig_to_ref_wait = read_duration+laser_to_DAQ_delay+DAQ_to_laser_off_delay+laser_to_AWG_delay
-        MW_duration = int(2*int((AWG_buffer + 2*pi2time + numxy8*tau_ns*8 + numxy8*pitime*8 + 1)/2))
+        rest_after_first_pulse=0
+        num_loops               = self.settings['num_loops']
+        mode                    = self.settings['mode'];                   numxy8              = self.settings['numxy8']
+        laser_init_delay        = self.settings['laser_init_delay'];       laser_init_duration = self.settings['laser_init_duration']
+        laser_to_AWG_delay      = self.settings['laser_to_AWG_delay'];     tau                 = self.settings['tau']
+        pi2time                 = self.settings['pi2time'];                pitime              = self.settings['pitime']
+        laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];     read_duration       = self.settings['read_duration']   
+        DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; AWG_output_delay    = self.settings['AWG_output_delay']
+        AWG_buffer              = self.settings['AWG_buffer'];             sweepWhich          = self.settings['sweepWhich']
+        
+        if sweepWhich=='N':
+            numxy8 = tau_ns
+            tau_ns = tau
+        
+        # sig_to_ref_wait = (read_duration + laser_to_DAQ_delay + DAQ_to_laser_off_delay) + laser_to_AWG_delay
+        MW_duration     = int(2*int((AWG_buffer + 2*pi2time + numxy8*tau_ns*8 + numxy8*pitime*8 + 1 + (pitime+rest_after_first_pulse ))/2))
+        # the last (pitime+rest_after_first_pulse ) should be updated if we prepare ms=0 vs ms=+-1
 
         when_init_end = laser_init_delay + laser_init_duration
         
         temp = when_init_end + laser_to_AWG_delay - AWG_output_delay
         if temp > 0:
-            MW_delay = temp
+            AWG_trig_delay = temp
         else:
-            MW_delay = 0    
+            AWG_trig_delay = 0    
         
-        when_sigMW_end = AWG_output_delay + MW_delay + MW_duration 
-        global MW_del; MW_del = MW_delay+AWG_output_delay
+        when_sigMW_end = AWG_output_delay + AWG_trig_delay + MW_duration 
+        rounded_when_sigMW_end = np.ceil(when_sigMW_end / 10) * 10
+
+        global MW_del; MW_del = AWG_trig_delay+AWG_output_delay
         
-        laser_read_signal_delay    = when_sigMW_end
-        read_signal_delay          = when_sigMW_end + laser_to_DAQ_delay;   read_signal_duration = read_duration
+        laser_read_signal_delay    = rounded_when_sigMW_end
+        read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay;   read_signal_duration = read_duration
         when_read_signal_end       = read_signal_delay + read_signal_duration
         laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
         when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
         
-        laser_read_ref_delay = when_laser_read_signal_end + laser_to_AWG_delay + MW_duration
+        MW_del_ref      = when_laser_read_signal_end + MW_del
+        # print(when_laser_read_signal_end)
+        # print(MW_del)
+        sig_to_ref_wait = MW_del_ref - when_sigMW_end
+
+        laser_init_ref_delay = when_laser_read_signal_end + laser_init_delay
+        when_init_ref_end    = laser_init_ref_delay + laser_init_duration
+
+        laser_read_ref_delay = when_laser_read_signal_end + laser_read_signal_delay
         read_ref_delay       = laser_read_ref_delay + laser_to_DAQ_delay;  read_ref_duration    = read_duration; 
         when_read_ref_end    = read_ref_delay + read_ref_duration
         laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
@@ -224,23 +248,33 @@ class Signal(Parameter):
 
         if read_signal_duration != read_ref_duration:
             raise Exception("Duration of reading signal and reference must be the same")
+        
+        if self.srate is not None:
+            if self.loopCounter==0: sleepTime = 10
+            else: sleepTime = 0.75
+        else:
+            sleepTime = 0
 
         global ch1plot; global ch2plot
-        ch1plot, ch2plot = AWG.send_XY8_seq(mode = mode, numxy8=numxy8, pi_2time=int(pi2time), pitime = int(pitime), tau = int(tau_ns), buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait))
+        ch1plot, ch2plot = AWG.send_XY8_seq(mode = mode, numxy8=numxy8, pi_2time=int(pi2time),rest_after_first_pulse=rest_after_first_pulse,
+                                            pitime = int(pitime), tau = int(tau_ns),AWGnum=2,
+                                              buffer=int(AWG_buffer), sig_to_ref_wait=int(sig_to_ref_wait),
+                                              sleepTime=sleepTime)
 
         # Make pulse sequence
         pulse_sequence = []
         if not laser_init_delay == 0:
             pulse_sequence += [spc.Pulse('LaserInit',laser_init_delay,              duration=int(laser_init_duration))] # times are in ns
+            pulse_sequence += [spc.Pulse('LaserInit',laser_init_ref_delay,          duration=int(laser_init_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('LaserRead',    laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
-        pulse_sequence += [spc.Pulse('AWG', MW_delay,                     duration=20)]
+        pulse_sequence += [spc.Pulse('AWG',          AWG_trig_delay,                     duration=50)]
         pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,             duration=int(read_signal_duration))] # times are in ns
         pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
         
-        print(laser_read_signal_delay)
-        print(when_sigMW_end)
-        print(MW_duration)
+        # print(laser_read_signal_delay)
+        # print(when_sigMW_end)
+        # print(MW_duration)
 
         self.pulse_sequence = pulse_sequence
         
@@ -270,7 +304,10 @@ class Signal(Parameter):
         pulseWidthChan.ci_ctr_timebase_src = "/cDAQ1Mod1/PFI0" # counter out PFI str gated/counter PFI channel str
         pulseWidthChan.ci_pulse_width_term = "/cDAQ1Mod1/PFI1" # gate PFI string
 
-        print('Set tau to ' + str(tau_ns) + " ns")
+        if sweepWhich == 'tau':
+            print('Set tau to ' + str(tau_ns) + " ns")
+        elif sweepWhich == 'N':
+            print('Set N to ' + str(numxy8))
         if not self.settings['ifPlotPulse']: self.loopCounter += 1
     
     def plotPulseSequences(self):
@@ -298,9 +335,16 @@ class Reference(Parameter):
     def get_raw(self):
         return ref_avg
 
-class SigOverRef(Parameter):
-    def __init__(self, name='sigOverRef',**kwargs):
+class SigStd(Parameter):
+    def __init__(self, name='sigStd',**kwargs):
         super().__init__(name, **kwargs)
 
     def get_raw(self):
-        return sig_avg_over_ref_avg
+        return sig_std
+
+class RefStd(Parameter):
+    def __init__(self, name='refStd',**kwargs):
+        super().__init__(name, **kwargs)
+
+    def get_raw(self):
+        return ref_std

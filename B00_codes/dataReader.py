@@ -39,6 +39,8 @@ def linear(x, a,b):
     return a*x+b
 def sinusoidDecay(t, A, Tpi, phi,C, T2):
     return A*np.cos(np.pi/Tpi*t + phi)*np.exp(-t/T2) + C
+def sinusoidDecay2(t, A, omega, phi,C, T2):
+    return A*np.cos(omega*t + phi)*np.exp(-t/T2) + C
 def besselNormedConstant(t,a,c):
     return 0.5* (1+ j0(a*t))+c
 def besselNormed(t,a):
@@ -55,6 +57,8 @@ def risedecay(t, A ,T1, T2, C):
     return A*(np.exp(-t/T1) - np.exp(-t/T2)) + C
 def strDecay(t, A, C, T2, n):
     return A*np.exp(-(t/T2)**n) + C
+def strDecayNorm(t, T2, n):
+    return np.exp(-(t/T2)**n)
 def strDecaySinusoid(t, A, T2, n, Tosc, phi, B, C):
     return A*np.exp(-(t/T2)**n)*np.cos(2*np.pi/Tosc*t + phi) + B*np.exp(-(t/T2)**n) + C
 def lor(f, A, f0, g, C):
@@ -65,6 +69,9 @@ def lorThree(f, A0, f0, g0, A1, f1, g1, A2, f2, g2, C):
     return A0*g0/((f-f0)**2 + (g0/2)**2) + A1*g1/((f-f1)**2 + (g1/2)**2) + A2*g2/((f-f2)**2 + (g2/2)**2) + C
 def lorFour(f, A0, f0, g0, A1, f1, g1, A2, f2, g2, A3, f3, g3, C):
     return A0*g0/((f-f0)**2 + (g0/2)**2) + A1*g1/((f-f1)**2 + (g1/2)**2) + A2*g2/((f-f2)**2 + (g2/2)**2) + A3*g3/((f-f3)**2 + (g3/2)**2) + C
+def lorStrDecay(x, A, f0, g, T2,n):
+    f = 1000/2/x
+    return (1-A*g/((f-f0)**2 + (g/2)**2))*np.exp(-(x/T2)**n)
 def twoPois(x,A,mu,B,nu):
     if x <= 170:
         return A*np.exp(-mu)*mu**x/scipy.special.factorial(x) + B*np.exp(-nu)*nu**x/scipy.special.factorial(x)
@@ -125,7 +132,57 @@ def pms(ns, gm, g0, nm, n0, tr):
     return np.array(p_arr)
 def corrT1(x, A, ga, gb):
     return A*(-np.exp(-ga*x) + 1/2*(np.exp(-(ga+gb)*x) + np.exp(-(ga-gb)*x)))
+def MvsT(T,M0,Tc,beta):
+    return M0*((Tc-T)/Tc)**beta
+def coscos(d,A,phi_NV,d0):
+    return A*np.cos(phi_NV*np.cos(d-d0))
+def coscoscos(d,A,phi_NV,d0,k,d1):
+    return A*np.cos(phi_NV*np.cos(d-d0)*np.cos(k*(d-d1)))
+def phioptVsTau(taus,K,A):
+    return K-A/taus
 
+def fitMvsT(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0,0,0)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(MvsT, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = MvsT(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitLorStrDecay(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.inf,0,0,0,0)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(lorStrDecay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = lorStrDecay(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitCoscos(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0,0,-np.inf)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(coscos, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = coscos(xfit, *popt)
+    return xfit, yfit, popt, perr
+def fitCoscoscos(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0,      0,     -np.inf, 0,     -np.inf)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf, np.inf,np.inf)
+    popt, pcov = curve_fit(coscoscos, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = coscoscos(xfit, *popt)
+    return xfit, yfit, popt, perr
+def fitPhioptVsTau(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.inf, -np.inf)
+    if upperBounds is None: upperBounds = (np.inf, np.inf)
+    popt, pcov = curve_fit(phioptVsTau, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = phioptVsTau(xfit, *popt)
+    return xfit, yfit, popt, perr
 def fitTwoPois(xdata, ydata, guess=None):
     lowerBounds = (0,0,0,0)
     upperBounds = (np.inf, np.inf, np.pi, np.inf)
@@ -139,15 +196,15 @@ def fitTwoPois(xdata, ydata, guess=None):
     xfit = xdata
     yfit = twoPois(xfit, *popt)
     return xfit, yfit, popt, perr
-
-def fitSinusoid(xdata, ydata, guess=None):
-    lowerBounds = (0,0,-np.pi, -np.inf)
-    upperBounds = (np.inf, np.inf, np.pi, np.inf)
+def fitSinusoid(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (0,0,-np.pi, -np.inf)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.pi, np.inf)
     popt, pcov = curve_fit(sinusoid, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
     xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = sinusoid(xfit, *popt)
     return xfit, yfit, popt, perr
+
 
 def fitBesselNormed(xdata, ydata, guess=None):
     lowerBounds = (-np.inf)
@@ -233,18 +290,27 @@ def fitCosFour(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
     yfit = cosFour(xfit, *popt)
     return xfit, yfit, popt, perr
 
-def fitSinusoidDecay(xdata, ydata, guess=None):
-    lowerBounds = (-np.inf,0,-np.pi, -np.inf,0)
-    upperBounds = (np.inf, np.inf, np.pi, np.inf, np.inf)
+def fitSinusoidDecay(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.inf,0,-np.pi, -np.inf,0)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.pi, np.inf, np.inf)
     popt, pcov = curve_fit(sinusoidDecay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
     xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = sinusoidDecay(xfit, *popt)
     return xfit, yfit, popt, perr
 
+def fitSinusoidDecay2(xdata, ydata, guess=None, lowerBounds=None, upperBounds=None):
+    if lowerBounds is None: lowerBounds = (-np.inf,0,-np.pi, -np.inf,0)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, np.pi, np.inf, np.inf)
+    popt, pcov = curve_fit(sinusoidDecay2, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds),maxfev=200000)
+    perr = np.sqrt(np.diag(pcov))
+    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = sinusoidDecay2(xfit, *popt)
+    return xfit, yfit, popt, perr
+
 def fitDecay(xdata, ydata, guess=None, upperBounds=None,lowerBounds=None, logx=1):
-    lowerBounds = (-np.inf, -np.inf,0)
-    upperBounds = (np.inf, np.inf, 1e8)
+    if lowerBounds is None: lowerBounds = (-np.inf, -np.inf,0)
+    if upperBounds is None: upperBounds = (np.inf, np.inf, 1e8)
     popt, pcov = curve_fit(decay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
     if logx==1:
@@ -303,14 +369,30 @@ def fitLinear(xdata, ydata, guess=None):
     yfit = linear(xfit, *popt)
     return xfit, yfit, popt, perr
 
-def fitStrDecay(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
+def fitStrDecay(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None, logx=1):
     if lowerBounds is None: lowerBounds = (-np.pi, -np.inf, 0,      0)
     if upperBounds is None: upperBounds = (np.inf, np.inf,  np.inf, 4.2)
     popt, pcov = curve_fit(strDecay, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
     perr = np.sqrt(np.diag(pcov))
 
-    xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    if logx==1:
+        xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
+    else:
+        xfit = np.linspace(xdata[0], xdata[-1], 1001)
     yfit = strDecay(xfit, *popt)
+    return xfit, yfit, popt, perr
+
+def fitStrDecayNorm(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None, logx=1):
+    if lowerBounds is None: lowerBounds = (0,      0)
+    if upperBounds is None: upperBounds = (np.inf, 4.2)
+    popt, pcov = curve_fit(strDecayNorm, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    perr = np.sqrt(np.diag(pcov))
+
+    if logx==1:
+        xfit = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), 1001)
+    else:
+        xfit = np.linspace(xdata[0], xdata[-1], 1001)
+    yfit = strDecayNorm(xfit, *popt)
     return xfit, yfit, popt, perr
 
 def fitStrDecaySinusoid(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
@@ -335,8 +417,9 @@ def fitLor(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
 
 def fitLorTwo(xdata, ydata, guess=None, upperBounds=None, lowerBounds=None):
     if lowerBounds is None: lowerBounds = (-np.inf,0,0,-np.inf,0,0,0)
-    if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf,  np.inf, np.inf, np.inf, np.inf)
-    popt, pcov = curve_fit(lorTwo, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds))
+    if upperBounds is None: upperBounds = (0, np.inf, np.inf,  0, np.inf, np.inf, np.inf)
+    # if upperBounds is None: upperBounds = (np.inf, np.inf, np.inf,  np.inf, np.inf, np.inf, np.inf)
+    popt, pcov = curve_fit(lorTwo, xdata, ydata, p0=guess, bounds=(lowerBounds, upperBounds),maxfev=200000)
     perr = np.sqrt(np.diag(pcov))
 
     xfit = np.linspace(xdata[0], xdata[-1], 1001)
@@ -447,13 +530,13 @@ def readDataConfocalRRSingleRead(datafile):
     nx = np.count_nonzero(y == np.min(y))
     ny = int(len(y)/nx)
 
-    y = np.reshape(y,(nx,ny))
-    x = np.reshape(x,(nx,ny))
-    sig = np.reshape(sig,(nx,ny))
+    y = np.reshape(y,(ny,nx))
+    x = np.reshape(x,(ny,nx))
+    sig = np.reshape(sig,(ny,nx))
 
     return x,y,sig
 
-def readDataConfocalODMR(datafile,freqSplitFactor=1):
+def readDataConfocalODMR(datafile,freqSplitFactor=1,ifYCountDown=0):
     readfile = np.loadtxt(datafile)
     y = [xAxisAndResult[0] for xAxisAndResult in readfile]
     x = [xAxisAndResult[1] for xAxisAndResult in readfile]
@@ -461,20 +544,145 @@ def readDataConfocalODMR(datafile,freqSplitFactor=1):
     ref = [xAxisAndResult[3] for xAxisAndResult in readfile]
     sig = [xAxisAndResult[4] for xAxisAndResult in readfile]
 
+    try:
+        dummy = [xAxisAndResult[5] for xAxisAndResult in readfile]
+    except:
+        dummy = None
+
+    if dummy is not None:
+        ref_err = [xAxisAndResult[4] for xAxisAndResult in readfile]
+        sig = [xAxisAndResult[5] for xAxisAndResult in readfile]
+        sig_err = [xAxisAndResult[6] for xAxisAndResult in readfile]
+
+        ref_err = np.array(ref_err); sig_err = np.array(sig_err)
+
     y = np.array(y); x = np.array(x); sig = np.array(sig); ref = np.array(ref); freq = np.array(freq)
     npixel = np.count_nonzero(freq == np.min(freq))*freqSplitFactor
-    nfreq = int(len(freq)/npixel)
+    nfreq = -(-len(freq) //npixel) # ceiling division
+    # nfreq = int(len(freq)/npixel)
     nx = int(np.count_nonzero(y == np.min(y))/nfreq)
-    ny = int(len(y)/nfreq/nx)
-    print()
+    if ifYCountDown==1:
+        nx = int(np.count_nonzero(y == np.max(y))/nfreq)
+    ny,mody = np.divmod(len(y), (nfreq*nx))
+    
+    if mody>0: 
+        ny=ny+1
+        print('Incomplete last row')
+    
+    target_size = ny * nx * nfreq
+    current_size = y.size
 
+    if current_size < target_size:
+        padding = target_size - current_size
+        y = np.pad(y, (0, padding), mode='constant', constant_values=0)  # or 0
+        x = np.pad(x, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+        freq = np.pad(freq, (0, padding), mode='constant', constant_values=0)  # or 0
+        sig = np.pad(sig, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+        ref = np.pad(ref, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+        if dummy is not None:
+            sig_err = np.pad(sig_err, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+            ref_err = np.pad(ref_err, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+
+    # newy = np.zeros((ny, nx, nfreq))
     y = np.reshape(y,(ny, nx, nfreq))
     x = np.reshape(x,(ny, nx, nfreq))
     freq = np.reshape(freq,(ny, nx, nfreq))
     sig = np.reshape(sig,(ny, nx, nfreq))
     ref = np.reshape(ref,(ny, nx, nfreq))
+    if dummy is not None:
+        sig_err = np.reshape(sig_err,(ny, nx, nfreq))
+        ref_err = np.reshape(ref_err,(ny, nx, nfreq))
 
-    return x,y,freq,sig,ref
+    # get the coordinates for incomplete rows
+    if len(x)>=2:
+        x[-1] = x[-2]
+        y[-1] = y[-2] + (y[-1,0]-y[-2,0])
+    if dummy is not None:
+        return x,y,freq,sig,ref, sig_err, ref_err
+    else:
+        sig_err = ref_err = None
+        return x,y,freq,sig,ref, sig_err, ref_err
+
+def readDataConfocalODMR4point(datafile,freqSplitFactor=1,ifYCountDown=0):
+    readfile = np.loadtxt(datafile)
+    y = [xAxisAndResult[0] for xAxisAndResult in readfile]
+    x = [xAxisAndResult[1] for xAxisAndResult in readfile]
+    freq = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    ref = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    sig = [xAxisAndResult[4] for xAxisAndResult in readfile]
+
+    try:
+        dummy = [xAxisAndResult[5] for xAxisAndResult in readfile]
+    except:
+        dummy = None
+
+    if dummy is not None:
+        ref2    = [xAxisAndResult[4] for xAxisAndResult in readfile]
+        ref3    = [xAxisAndResult[5] for xAxisAndResult in readfile]
+        ref_err = [xAxisAndResult[6] for xAxisAndResult in readfile]
+        ref_err2= [xAxisAndResult[7] for xAxisAndResult in readfile]
+        ref_err3= [xAxisAndResult[8] for xAxisAndResult in readfile]
+        sig     = [xAxisAndResult[9] for xAxisAndResult in readfile]
+        sig_err = [xAxisAndResult[10] for xAxisAndResult in readfile]
+
+        ref_err = np.array(ref_err); sig_err = np.array(sig_err)
+        ref_err2 = np.array(ref_err2); ref_err3 = np.array(ref_err3)
+        ref2 = np.array(ref2); ref3 = np.array(ref3)
+
+    y = np.array(y); x = np.array(x); sig = np.array(sig); ref = np.array(ref); freq = np.array(freq)
+    npixel = np.count_nonzero(freq == np.min(freq))*freqSplitFactor
+    nfreq = -(-len(freq) //npixel) # ceiling division
+    # nfreq = int(len(freq)/npixel)
+    nx = int(np.count_nonzero(y == np.min(y))/nfreq)
+    if ifYCountDown==1:
+        nx = int(np.count_nonzero(y == np.max(y))/nfreq)
+    ny,mody = np.divmod(len(y), (nfreq*nx))
+    
+    if mody>0: 
+        ny=ny+1
+        print('Incomplete last row')
+    
+    target_size = ny * nx * nfreq
+    current_size = y.size
+
+    if current_size < target_size:
+        padding = target_size - current_size
+        y = np.pad(y, (0, padding), mode='constant', constant_values=0)  # or 0
+        x = np.pad(x, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+        freq = np.pad(freq, (0, padding), mode='constant', constant_values=0)  # or 0
+        sig = np.pad(sig, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+        ref = np.pad(ref, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+        if dummy is not None:
+            sig_err  = np.pad(sig_err, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+            ref_err  = np.pad(ref_err, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+            ref_err2 = np.pad(ref_err2, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+            ref_err3 = np.pad(ref_err3, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+            ref2     = np.pad(ref2, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+            ref3     = np.pad(ref3, (0, padding), mode='constant', constant_values=np.nan)  # or 0
+
+    # newy = np.zeros((ny, nx, nfreq))
+    y = np.reshape(y,(ny, nx, nfreq))
+    x = np.reshape(x,(ny, nx, nfreq))
+    freq = np.reshape(freq,(ny, nx, nfreq))
+    sig = np.reshape(sig,(ny, nx, nfreq))
+    ref = np.reshape(ref,(ny, nx, nfreq))
+    if dummy is not None:
+        sig_err  = np.reshape(sig_err,(ny, nx, nfreq))
+        ref_err  = np.reshape(ref_err,(ny, nx, nfreq))
+        ref_err2 = np.reshape(ref_err2,(ny, nx, nfreq))
+        ref_err3 = np.reshape(ref_err3,(ny, nx, nfreq))
+        ref2     = np.reshape(ref2,(ny, nx, nfreq))
+        ref3     = np.reshape(ref3,(ny, nx, nfreq))
+
+    # get the coordinates for incomplete rows
+    if len(x)>=2:
+        x[-1] = x[-2]
+        y[-1] = y[-2] + (y[-1,0]-y[-2,0])
+    if dummy is not None:
+        return x,y,freq, sig,ref,ref2,ref3, sig_err, ref_err, ref_err2, ref_err3
+    else:
+        sig_err = ref_err = ref_err2 = ref_err3 = ref2 = ref3 = None
+        return x,y,freq, sig,ref,ref2,ref3, sig_err, ref_err, ref_err2, ref_err3
 
 def readDataConfocalT2R4point(datafile,freqSplitFactor=1):
     readfile = np.loadtxt(datafile)
@@ -1092,14 +1300,25 @@ def readDataSigMinusRef(datafile):
     ax.set_xlabel(r"$\tau$ (ns)")
     return fig
 
-def readDataNoPlot(datafile):
+def readDataNoPlot(datafile, ifStd=0):
     readfile = np.loadtxt(datafile)
-    # print(readfile)
+    
+    
     x_s = [xAxisAndResult[0] for xAxisAndResult in readfile]
     ref = [xAxisAndResult[1] for xAxisAndResult in readfile]
-    sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
+    if ifStd==1:
+        sig = [xAxisAndResult[3] for xAxisAndResult in readfile]
+    else:
+        sig = [xAxisAndResult[2] for xAxisAndResult in readfile]
+
+    if ifStd==1:
+        ref_std = [xAxisAndResult[2] for xAxisAndResult in readfile]
+        sig_std = [xAxisAndResult[4] for xAxisAndResult in readfile]
     
-    return x_s, sig, ref
+    if ifStd==0:
+        return x_s, sig, ref
+    else:
+        return x_s, sig, ref, sig_std, ref_std
 def readDataNoPlotDual(datafile):
     readfile = np.loadtxt(datafile)
     

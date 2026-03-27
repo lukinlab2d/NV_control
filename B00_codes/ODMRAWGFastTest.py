@@ -35,27 +35,42 @@ trackingSettings = {'xy_scan_read_time':      xy_scan_read_time,     'xy_scan_se
                     'z_minus_range':          z_minus_range ,        'z_plus_range':           z_plus_range,
                     'xz_displacement_limit':  xz_displacement_limit,}
 
-IF_CW = 0
+IF_CW = 0; reps=1
 if IF_CW == 0:
-    reps = 1
-    for i in range(reps):
+    paddings = np.array((5e2,))#2e3,4e3,6e3,8e3,10e3,15e3,20e3,30e3,40e3,60e3,80e3,100e3))
+    for i in range(int(reps)):
         # Test for Pulsed ODMR Fast
-        freqsArray = np.linspace(2585e6,2605e6,41)
+        if True:
+            a11 = 2693e6; a1 = a11-16e6; b1 = a1+32e6; num_sweep_points = 9
+            f1 = np.linspace(a1, b1, num_sweep_points)
+            a22 = 3061e6; a2 = a22-16e6; b2 = a2+32e6; num_sweep_points = 9
+            f2 = np.linspace(a2, b2, num_sweep_points)
+            f3 = np.linspace(a1-28e6,a1-8e6,  3); f4 = np.linspace(b2+8e6,  b2+28e6,3)
+            f5 = np.linspace(b1+8e6 ,b1+28e6, 3); f6 = np.linspace(a2-28e6, a2-8e6, 3)
+            freqsArray = np.concatenate((f3,f1,f5,f6,f2,f4))
+            # freqsArray = np.linspace(2600e6,3200e6,121)
+        if False:
+            f0 = 596e6; a1 = f0-20e6; b1 = f0+20e6; num_sweep_points = 11
+            f1 = np.linspace(a1, b1, num_sweep_points)
+            f3 = np.linspace(a1-45e6,a1-9e6,  5)
+            f5 = np.linspace(b1+9e6 ,b1+45e6, 5)
+            freqsArray = np.concatenate((f3,f1,f5))
 
-        SDGnum=1; SRSnum=1; uwPower = -5.7; ifLooped = (reps != 1)
-        laserInit_channel=3; laserRead_channel=3; AWG_channel=18
+        SDGnum=1; SRSnum=1; uwPower = -24.2+2*0; AWG_channel=18
+        # SDGnum=2; SRSnum=2; uwPower = 15; AWG_channel=9
+        laserInit_channel=3; laserRead_channel=3; ifLooped = (reps != -1); ifRandomized=0
 
         pi_increment = 0
-        num_loops                    = int(4e5);          pitime                 = 40
+        num_loops                    = int(5e5);          pitime                 = 24
         laser_init_delay             = 0;                 laser_init_duration    = 0
         laser_to_DAQ_delay_directory = {3:860, 6:1160, 9:1160, 7:900, 5:1660, 10:170, 14:800}
         AWG_output_delay             = 1450;              AWGbuffer              = 10
-        read_duration                = 300;               DAQ_to_laser_off_delay = 400
-        padding                      = 900+pi_increment;  MW_to_DAQ_delay        = 0
-        padding_green1               = 100;               AWG_delay              = 1800
-
+        read_duration                = 300;               wait_btwn_sig_ref      = 2000
+        padding                      = 5e2;               MW_to_DAQ_delay        = 100 #500+pi_increment
+        padding_green1               = 200;               AWG_delay              = AWG_output_delay#??
+        # padding is extra time after all sig and ref in the usual unwrapped sequence
         if True:
-            settings = {'num_loops':num_loops, 'freqsArray':freqsArray, 
+            settings = {'num_loops':num_loops, 'freqsArray':freqsArray, 'ifRandomized':ifRandomized,
                         'SRSnum':SRSnum, 'uwPower':uwPower, 'SDGnum':SDGnum,
                         'laser_init_delay':       laser_init_delay,      'laser_init_duration': laser_init_duration,
                         'pitime':         pitime, 'MW_to_DAQ_delay':MW_to_DAQ_delay,
@@ -63,29 +78,29 @@ if IF_CW == 0:
                         'AWG_output_delay':       AWG_output_delay,      'AWGbuffer': AWGbuffer, 'AWG_delay': AWG_delay,
                         'laserInit_channel':      laserInit_channel,     'laserRead_channel':   laserRead_channel, 
                         'AWG_channel':    AWG_channel, 'padding':padding,'padding_green1':padding_green1,
-                        'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':    trackingSettings}
+                        'wait_btwn_sig_ref': wait_btwn_sig_ref,'trackingSettings':    trackingSettings}
 
             start = time.time()
             ODMRAWGFastObject = ODMRAWGFast(settings=settings, ifPlotPulse=not(ifLooped)) # this is implemented as an Instrument
             ODMRAWGFastObject.runScan()
             print('Total time = ' + str(time.time() - start) + ' s')
 
-            dataFilename = ODMRAWGFastObject.getDataFilename()
-            guess=(-2e6, 2.87e9, 0.02e9, 1)
-            # if not ifLooped: dataReader.readData(dataFilename, type='ODMR', ifFit=0, guess=guess)
+            # dataFilename = ODMRAWGFastObject.getDataFilename()
+            # guess=(-2e6, 2.87e9, 0.02e9, 1)
+            # # if not ifLooped: dataReader.readData(dataFilename, type='ODMR', ifFit=0, guess=guess)
             ODMRAWGFastObject.close()
 
 elif IF_CW == 1:
     # Test for CW ODMR
     reps = 1
     for i in range(reps):
-        start = 2550e6; stop = 3210e6; num_sweep_points = 166
+        start = 950e6; stop = 5000e6; num_sweep_points = 200
         freqsArray = np.linspace(start, stop, num_sweep_points)
-        uwPower = -8; ifLooped = 1#(reps != 1)
+        uwPower = -50; ifLooped = 1#(reps != 1)
         laserInit_channel = 3; laserRead_channel = 3; AWG_channel = 18
-        SRSnum = 1; SDGnum = 1
+        SRSnum = 1; SDGnum = 1; ifRandomized=0
 
-        num_loops = int(2e5); wait_btwn_sig_ref = 1e3; AWGbuffer = 1
+        num_loops = int(2e5); wait_btwn_sig_ref = 1e3; AWGbuffer = 10
         AWG_output_delay = 1450; MW_duration = 1e3
         laser_delay = 10; MW_off_to_read_signal_off = 0
         
@@ -96,7 +111,7 @@ elif IF_CW == 1:
                         'laserInit_channel':laserInit_channel, 'laserRead_channel':laserRead_channel,'AWG_channel':AWG_channel,
                         'MW_off_to_read_signal_off':MW_off_to_read_signal_off,
                         'wait_btwn_sig_ref':wait_btwn_sig_ref, 'laser_delay':laser_delay,
-                        'trackingSettings': trackingSettings,
+                        'trackingSettings': trackingSettings, 'ifRandomized':ifRandomized,
                         }
 
             start = time.time()

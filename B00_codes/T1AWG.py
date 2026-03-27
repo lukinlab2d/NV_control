@@ -48,7 +48,7 @@ class T1AWG(Instrument):
         if ifRandomized: np.random.shuffle(self.tausArray)
 
         self.SRSnum=self.settings['SRSnum']; self.uwPower = self.settings['uwPower']; self.uwFreq = self.settings['uwFreq']
-        self.SDGnum = self.settings['SDGnum']
+        self.SDGnum = self.settings['SDGnum']; self.srate=self.settings['srate']
 
         self.add_parameter(
             name = "sig",
@@ -74,7 +74,7 @@ class T1AWG(Instrument):
         self.srs.enable_RFOutput()
     
         # AWG object
-        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum)
+        self.AWG = SDG6022X(name='SDG6022X', SDGnum=self.SDGnum, srate=self.srate)
         global AWG; AWG = self.AWG
     
     def runScan(self):
@@ -102,12 +102,6 @@ class T1AWG(Instrument):
             name = 'sig'
             )
         plot.add(data.T1AWGObject_ref, name='ref')
-        # plot = QtPlot(
-        #     data.T1AWGObject_sigOverRef, # this is implemented as a Parameter
-        #     figsize = (1200, 600),
-        #     interval = 1,
-        #     name = 'sig/ref'
-        #     )
 
         loop.with_bg_task(plot.update, bg_final_task=None)
         loop.run()
@@ -115,8 +109,8 @@ class T1AWG(Instrument):
 
         dataPlotFilename = data.location + "/dataPlot.png"
         dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # img = Image.open(dataPlotFile)
+        # img.show()
         
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:
@@ -140,6 +134,7 @@ class Signal(Parameter):
         self.loopCounter = 0
         self.timeLastTracking = time.time()
         self.tausArray = self.settings['tausArray']
+        self.srate = self.settings['srate']
 
     def get_raw(self):
         self.ctrtask.start()
@@ -186,12 +181,14 @@ class Signal(Parameter):
         laser_to_DAQ_delay      = self.settings['laser_to_DAQ_delay'];     read_duration           = self.settings['read_duration']   
         DAQ_to_laser_off_delay  = self.settings['DAQ_to_laser_off_delay']; sig_to_ref_delay_Shimon = self.settings['sig_to_ref_delay_Shimon']
         AWG_output_delay        = self.settings['AWG_output_delay'];       AWG_buffer              = self.settings['AWG_buffer']
+        MW_to_read_delay        = self.settings['MW_to_read_delay']
+
         MW_duration = int(2*int((2*AWG_buffer + pi_time + 1)/2))
         when_init_end  = laser_init_delay + laser_init_duration
         MW_delay       = when_init_end    + laser_to_AWG_delay
         when_sigMW_end = MW_delay         + AWG_output_delay + MW_duration 
 
-        temp = when_init_end + laser_to_AWG_delay - AWG_output_delay
+        temp = MW_delay - AWG_output_delay
         if temp > 0:
             MW_delay = temp
         else:
@@ -204,8 +201,9 @@ class Signal(Parameter):
         global ch1plot; global ch2plot
 
         if ifShimon == 0:
-            laser_read_signal_delay    = when_sigMW_end + tau_ns
-            read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay;   read_signal_duration = read_duration
+            laser_read_signal_delay    = when_sigMW_end + MW_to_read_delay + tau_ns
+            read_signal_delay          = laser_read_signal_delay + laser_to_DAQ_delay
+            read_signal_duration       = read_duration
             when_read_signal_end       = read_signal_delay + read_signal_duration
             laser_read_signal_duration = when_read_signal_end + DAQ_to_laser_off_delay - laser_read_signal_delay
             when_laser_read_signal_end = laser_read_signal_delay + laser_read_signal_duration
@@ -215,18 +213,25 @@ class Signal(Parameter):
             read_ref_duration    = read_duration; when_read_ref_end = read_ref_delay + read_ref_duration
             laser_read_ref_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_ref_delay
 
-            ch1plot, ch2plot = AWG.send_T1_seq(pitime = int(pi_time), buffer=int(AWG_buffer))
+            if self.srate is not None:
+                if self.loopCounter==0: sleepTime = 10
+                else: sleepTime = 1
+            else:
+                sleepTime = 0
+
+            ch1plot, ch2plot = AWG.send_T1_seq(pitime = int(pi_time), buffer=int(AWG_buffer),
+                                                sleepTime=sleepTime)
 
             if not laser_init_delay == 0:
                 pulse_sequence += [spc.Pulse('Laser',laser_init_delay,              duration=int(laser_init_duration))] # times are in ns
             pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
             pulse_sequence += [spc.Pulse('Laser',    laser_read_ref_delay,          duration=int(laser_read_ref_duration))]
-            pulse_sequence += [spc.Pulse('AWG',      MW_delay,                      duration=20)]
+            pulse_sequence += [spc.Pulse('AWG',      MW_delay,                      duration=100)]
             pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,             duration=int(read_signal_duration))] # times are in ns
             pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
         
         elif ifShimon == 1:
-            laser_read_signal_delay = when_sigMW_end + tau_ns
+            laser_read_signal_delay = when_sigMW_end + tau_ns + MW_to_read_delay
             read_signal_delay       = laser_read_signal_delay + laser_to_DAQ_delay;   read_signal_duration = read_duration
             when_read_signal_end    = read_signal_delay + read_signal_duration
 
@@ -235,12 +240,18 @@ class Signal(Parameter):
 
             laser_read_signal_duration = when_read_ref_end + DAQ_to_laser_off_delay - laser_read_signal_delay
 
-            ch1plot, ch2plot = AWG.send_T1_seq(pitime = int(pi_time), buffer=int(AWG_buffer))
+            if self.srate is not None:
+                if self.loopCounter==0: sleepTime = 10
+                else: sleepTime = 1
+            else:
+                sleepTime = 0
+
+            ch1plot, ch2plot = AWG.send_T1_seq(pitime = int(pi_time), buffer=int(AWG_buffer), sleepTime=sleepTime)
 
             if not laser_init_delay == 0:
                 pulse_sequence += [spc.Pulse('Laser',laser_init_delay,              duration=int(laser_init_duration))] # times are in ns
             pulse_sequence += [spc.Pulse('Laser',    laser_read_signal_delay,       duration=int(laser_read_signal_duration))] # times are in ns
-            pulse_sequence += [spc.Pulse('AWG',      MW_delay,                      duration=20)]
+            pulse_sequence += [spc.Pulse('AWG',      MW_delay,                      duration=100)]
             pulse_sequence += [spc.Pulse('Counter',  read_signal_delay,             duration=int(read_signal_duration))] # times are in ns
             pulse_sequence += [spc.Pulse('Counter',  read_ref_delay,                duration=int(read_ref_duration))] # times are in ns
 

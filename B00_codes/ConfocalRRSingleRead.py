@@ -206,22 +206,22 @@ class ConfocalRRSingleRead(Instrument):
         data.add_metadata(self.settings)
         self.data = data
         
-        plot = QtPlot(
-            data.ConfocalRRSingleReadObject_sig, # this is implemented as a Parameter
-            figsize = (1200, 600),
-            interval = 1,
-            name = 'sig'
-            )
-        # plot.add(data.ConfocalRRSingleReadObject_sig, name='sig')
+        # plot = QtPlot(
+        #     data.ConfocalRRSingleReadObject_sig, # this is implemented as a Parameter
+        #     figsize = (1200, 600),
+        #     interval = 1,
+        #     name = 'sig'
+        #     )
+        # # plot.add(data.ConfocalRRSingleReadObject_sig, name='sig')
+        # loopy.with_bg_task(plot.update, bg_final_task=None)
 
-        loopy.with_bg_task(plot.update, bg_final_task=None)
         loopy.run()
         print('Data saved to ' + str(data.location) + '/')
 
-        dataPlotFilename = data.location + "/dataPlot.png"
-        dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
-        img = Image.open(dataPlotFile)
-        img.show()
+        # dataPlotFilename = data.location + "/dataPlot.png"
+        # dataPlotFile = plot.save(filename=dataPlotFilename, type='data')
+        # # img = Image.open(dataPlotFile)
+        # # img.show()
         
         if self.settings['ifPlotPulse']: # save the first and last pulse sequence plot
             for index in self.savedPulseSequencePlots:

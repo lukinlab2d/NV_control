@@ -110,7 +110,6 @@ class Signal(Parameter):
     def __init__(self, settings=None, name='sig', measurementObject=None, **kwargs):
         super().__init__(name, **kwargs)
         self.settings = settings
-        self.trackingSettings = self.settings['trackingSettings']
         self.CalibrateLaser2DAQDelayObject = measurementObject
         self.loopCounter = 0
         self.tausArray = self.settings['tausArray']
@@ -132,16 +131,6 @@ class Signal(Parameter):
         global sig_avg;  sig_avg = np.average(sig)
         global ref_avg;  ref_avg = np.average(ref)
         global sig_avg_over_ref_avg; sig_avg_over_ref_avg = sig_avg/ref_avg
-
-        # NV tracking
-        if self.trackingSettings['if_tracking'] == 1:
-            if np.mod(self.loopCounter, self.trackingSettings['tracking_period']) == self.trackingSettings['tracking_period']-1:
-                print()
-                cfcObject = Confocal(settings=self.trackingSettings)
-                cfcObject.optimize_xz()
-                time.sleep(1)
-                cfcObject.optimize_xy()
-                time.sleep(1)
                 
         return sig_avg
 

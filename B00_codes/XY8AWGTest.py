@@ -3,15 +3,8 @@ This file is part of B00 codes based on b26_toolkit. Questions are addressed to 
 """
 import numpy as np
 from nidaqmx.constants import *
-from nidaqmx.constants import(
-    Edge,
-    CountDirection,
-    AcquisitionType,
-    FrequencyUnits
-)
 from B00_codes.PlotPulse import *
 from B00_codes.XY8AWG import *
-import B00_codes.dataReader as dataReader
 
 NO_MS_EQUALS_1 = 0
 Q_FINAL = 1
@@ -19,29 +12,30 @@ THREE_PI_HALF_FINAL = 2
 
 ####################################################################################################################
 
-mode = 0
-reps = 1
-ifLooped = False
+mode = 0 # mode = 0: cos mag, mode = 1: sin mag
+reps = 100; ifLooped = (reps != 1); srate=None#2.5e8
 for i in range(reps):
-    tausArray = np.linspace(100, 200, 2)
+    # tausArray = np.linspace(8,16,5)#; np.linspace(20,520,51)
+    tausArray = np.concatenate((np.linspace(8,16,5),np.linspace(20,520,51)))
 
     # Params
-    laserInit_channel            = 7;          laserRead_channel = 7 # 532 is 3, 589 is 6
-    num_loops                    = int(1e6)
-    laser_init_delay             = 0;          laser_init_duration       = 0
-    pi2time                      = 20;         pitime = 40; read_duration  = 250; numxy8 = 1
+    laserInit_channel            = 3;          laserRead_channel   = 3 # 532 is 3, 589 is 6
+    num_loops                    = int(5e5);   sweepWhich          = 'tau'
+    laser_init_delay             = 0;          laser_init_duration = 0
+    pi2time                      = 16;         pitime              = 24; tau = 80
+    read_duration                = 300;        numxy8              = 3
     laser_to_DAQ_delay_directory = {3: 850, 6: 1150, 9: 1150, 7: 900}
     laser_to_DAQ_delay           = laser_to_DAQ_delay_directory.get(laserRead_channel, 0) 
-    laser_to_AWG_delay           = 1000
-    AWG_output_delay = 1450; AWG_channel = 18; SRSnum = 1; SDGnum = 1; AWG_buffer = 1
-    DAQ_to_laser_off_delay       = 1000
+    laser_to_AWG_delay           = 5e3
+    AWG_output_delay = 1450; AWG_channel = 18; SRSnum = 1; SDGnum = 1; AWG_buffer = 10
+    DAQ_to_laser_off_delay       = 5e3
 
-    ifRandomized = 0; normalized_style = Q_FINAL
-    uwPower = -15; uwFreq = 2824.6e6
+    ifRandomized = 1; normalized_style = Q_FINAL
+    uwPower = -23.8; uwFreq = 2704.797e6 
 
     
     if True: 
-        if_tracking = 2 # 2 is for the monty setup
+        if_tracking = 0 # 2 is for the monty setup
         laserTrack_channel     = 7;       
         xy_scan_read_time      = 50;      xy_scan_settle_time    = 30;  
         xy_scan_resolution_hor = 20;      xy_scan_resolution_ver = 20
@@ -73,7 +67,8 @@ for i in range(reps):
                 'DAQ_to_laser_off_delay': DAQ_to_laser_off_delay,'trackingSettings':          trackingSettings,
                 'AWG_output_delay':    AWG_output_delay,   'ifRandomized':              ifRandomized,
                 'laserInit_channel':      laserInit_channel,     'laserRead_channel':         laserRead_channel,
-                'AWG_channel': AWG_channel, 'SRSnum': SRSnum, 'SDGnum': SDGnum, 'AWG_buffer': AWG_buffer
+                'AWG_channel': AWG_channel, 'SRSnum': SRSnum, 'SDGnum': SDGnum, 'AWG_buffer': AWG_buffer,
+                'srate':srate,'sweepWhich':sweepWhich,'tau':tau
                 }
     
     start = time.time()
@@ -82,5 +77,5 @@ for i in range(reps):
     print('Total time = ' + str(time.time() - start) + ' s')
 
     dataFilename = XY8AWGObject.getDataFilename()
-    if not ifLooped: dataReader.readData(dataFilename, typeNorm = normalized_style)
+    # if not ifLooped: dataReader.readData(dataFilename, typeNorm = normalized_style)
     XY8AWGObject.close()
